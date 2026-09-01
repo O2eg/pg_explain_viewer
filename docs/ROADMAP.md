@@ -494,6 +494,18 @@ claims the query could settle.
 Explicitly **not** done, and not planned: a SQL parser, a SQL linter, any
 rewriting of the user's query.
 
+### Batch 8 — charts pane (M) — planned
+
+A tab of donut charts over quantities the model already guarantees to be
+a whole: latency composition (planning / JIT / in-tree / out-of-tree),
+self time by relation, buffer traffic, rows kept vs discarded, I/O time
+vs the rest. Each chart is gated on the whole being trustworthy — a
+truncated plan, an `excl_overshoot`, a plan without `BUFFERS` — and says
+why instead of drawing. Hover tooltips carry the numbers, through the
+widget's existing `data-pv-tip` machinery.
+
+Design and step-by-step plan: `docs/charts.md`.
+
 ### Deliberately re-sequenced vs. a naive reading
 
 - **Native structured adapters wait for Batch 4**: replacing the working
