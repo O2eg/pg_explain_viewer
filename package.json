@@ -1,6 +1,6 @@
 {
   "name": "pg-explain-viewer",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "PostgreSQL query plan parser and visualizer (text/JSON/YAML), zero dependencies",
   "main": "src/pgplan.js",
   "scripts": {

@@ -161,6 +161,55 @@ Execution Time: 900.5 ms"""
     open_input(page)
     page.fill("#sql", "")
 
+    # ---- export: the page clones itself, the copy renders the same plan ----
+    # a plan whose text carries $-patterns and a closing script tag: both are
+    # traps for the splice that writes the payload into the copy
+    EXPORT_PLAN = """Index Scan using t_pk on t  (cost=0.29..8.30 rows=1 width=8) (actual time=0.02..30.00 rows=100 loops=1)
+  Index Cond: (id = $1)
+  Filter: ((note <> '$&x</script>'::text) AND (tag = $2))
+  Rows Removed by Filter: 5000
+Execution Time: 30.5 ms"""
+    open_input(page)
+    page.fill("#src", EXPORT_PLAN)
+    page.fill("#sql", "SELECT * FROM t WHERE t.id = $1 AND t.tag = $2")
+    page.click("#go")
+    page.wait_for_selector(".pv-summary")
+    snap = """() => ({
+      tabs: [...document.querySelectorAll('.pv-tab')].map(t => t.textContent),
+      rows: document.querySelectorAll('.pv-table tbody tr').length,
+      codes: [...document.querySelectorAll('.pv-badge')].map(b => b.textContent),
+      exportBtn: !!document.querySelector('.vw-export'),
+      readOnly: document.getElementById('src').readOnly,
+      xss: window.__pwXss || 0,
+    })"""
+    page.evaluate("() => { window.__pwXss = 0; }")
+    original = page.evaluate(snap)
+    check("export button sits at the end of the tab bar",
+          page.evaluate("""() => { const e = document.querySelector('.vw-export');
+            return !!e && e.closest('.pv-tabbar').lastElementChild.contains(e); }"""))
+    exported = os.path.join(os.path.dirname(VIEWER), "_smoke-export.html")
+    with page.expect_download() as dl:
+        page.click(".vw-export")
+    dl.value.save_as(exported)
+    copy = browser.new_page()
+    copy_errors = []
+    copy.on("pageerror", lambda e: copy_errors.append(str(e)))
+    copy.on("console", lambda m: copy_errors.append(m.text) if m.type == "error" else None)
+    copy.goto("file://" + exported)
+    copy.evaluate("() => { window.__pwXss = window.__pwXss || 0; }")
+    copy.wait_for_selector(".pv-summary")
+    reopened = copy.evaluate(snap)
+    check("the exported copy renders the same plan",
+          reopened["rows"] == original["rows"] and reopened["tabs"] == original["tabs"]
+          and reopened["codes"] == original["codes"],
+          {"was": original, "now": reopened})
+    check("the copy carries no export button of its own", reopened["exportBtn"] is False)
+    check("the copy's input is read-only", reopened["readOnly"] is True)
+    check("a hostile plan in the payload executes nothing", reopened["xss"] == 0)
+    check("the copy loads without errors", not copy_errors, copy_errors[:2])
+    copy.close()
+    os.remove(exported)
+
     # ---- minor-observations section: collapsed by default, toggles ----
     MINOR_PLAN = """Sort  (cost=0.00..100.00 rows=10 width=8) (actual time=0.20..100.00 rows=10 loops=1)
   Sort Key: t.a

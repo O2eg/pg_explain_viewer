@@ -109,6 +109,23 @@
     font-weight: 600;
   }
   .vw-input .vw-btn.primary:hover { filter: brightness(1.06); }
+  /* Export sits in the widget's tab bar, so it is styled to match a tab
+     rather than the page's own buttons */
+  .vw-export {
+    font: inherit;
+    font-size: var(--pv-fs, 14px);
+    color: var(--pv-fg-muted, var(--vw-muted));
+    background: none;
+    border: 1px solid var(--pv-border, var(--vw-border));
+    border-radius: 999px;
+    padding: 6px 15px;
+    cursor: pointer;
+  }
+  .vw-export:hover:enabled {
+    color: var(--pv-fg, var(--vw-fg));
+    border-color: var(--pv-border-strong, var(--vw-border-strong));
+  }
+  .vw-export:disabled { opacity: 0.5; cursor: default; }
   .vw-input { margin-top: 14px; }
   .vw-input textarea {
     width: 100%;
@@ -209,7 +226,7 @@
     <div>
       <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
       <div class="vw-ident">
-        <span>version <span id="version">0.5.4</span></span>
+        <span>version <span id="version">0.6.0</span></span>
         <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
@@ -290,13 +307,88 @@
     try { localStorage.setItem('pv-theme', theme); } catch (e) {}
     applyTheme(theme);
     if (lastPlan) show(lastPlan); // re-render so heat colors pick up theme hues
+    if (frozen) $('go').disabled = $('clear').disabled = true;
   });
 
   let lastPlan = null;
+  let frozen = false;   // an exported copy is a snapshot, not a workbench
+
+  /* ---- export: the page clones itself with the input baked in ----------
+     Only the data goes into the copy; every tab is recomputed on open by
+     the same code that is already inlined here. That keeps the file small
+     relative to what it shows, and makes it a frozen snapshot of both the
+     input and the analysis.
+     Captured before anything renders: after that the DOM holds the widget
+     and the input form has moved into it. */
+  const PRISTINE = '<!doctype html>\n' + document.documentElement.outerHTML;
+  const SELF_CONTAINED = !/<link[^>]+rel=["']?stylesheet|<script[^>]+src=/i.test(PRISTINE);
+  const EXPORT_ID = 'pv-export-data';
+
+  const exportBtn = document.createElement('button');
+  exportBtn.type = 'button';
+  exportBtn.className = 'vw-export';
+  exportBtn.textContent = 'Export';
+  if (!SELF_CONTAINED) {
+    exportBtn.disabled = true;
+    exportBtn.title = 'Export needs the built page (python3 build.py): a page that '
+      + 'links its styles and scripts cannot put them into the copy.';
+  } else {
+    exportBtn.title = 'Save a self-contained copy of this page with the plan and query '
+      + 'baked in. The file carries your pasted data.';
+  }
+
+  exportBtn.addEventListener('click', () => {
+    if (!lastPlan || !SELF_CONTAINED) return;
+    // frozen: the copy shows the analysis, it is not a place to type in.
+    // The boot below makes the fields read-only and drops this very button.
+    const data = JSON.stringify({ plan: srcEl.value, sql: sqlEl.value, theme, frozen: true });
+    // the payload rides in a JSON island: no markup, and "<" is escaped so
+    // nothing in a plan or query can close the tag or open another
+    const island = '<script id="' + EXPORT_ID + '" type="application/json">'
+      + data.replace(/</g, '\\u003c') + '<\/script>\n';
+    // Spliced by index, not by replace(): the closing body tag also appears
+    // as a literal inside this very script, so a regex would match that one
+    // first, and the island's own closing script tag would then terminate
+    // the page's script there. Index splicing also keeps "$1" or "$&" in a
+    // plan from being read as replacement patterns.
+    // (Nothing here may spell a closing script tag literally — even inside a
+    //  comment it ends the inline script; build.py checks for that.)
+    const BODY_END = '<' + '/body>';
+    const at = PRISTINE.lastIndexOf(BODY_END);
+    const html = at < 0 ? PRISTINE + island
+      : PRISTINE.slice(0, at) + island + PRISTINE.slice(at);
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pg-explain-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  });
 
   function show(plan) {
     outEl.style.display = 'block';
-    PgPlanRender.render($('planview'), plan, { inputPane: inputBox });
+    exportBtn.disabled = !SELF_CONTAINED;
+    PgPlanRender.render($('planview'), plan, {
+      inputPane: inputBox,
+      tabActions: frozen ? null : exportBtn,
+    });
+  }
+
+  function freeze() {
+    frozen = true;
+    for (const t of [srcEl, sqlEl]) {
+      t.readOnly = true;
+      t.setAttribute('aria-readonly', 'true');
+    }
+    $('go').disabled = true;
+    $('clear').disabled = true;
+    const hint = document.querySelector('.vw-hint');
+    if (hint) {
+      hint.textContent = 'Exported snapshot — the plan and query below are the ones it was '
+        + 'built from and cannot be edited here. Open the viewer itself to analyze another plan.';
+    }
   }
 
   function visualize(scrollToResult) {
@@ -330,6 +422,34 @@
     t.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') visualize(true);
     });
+  }
+
+  /* An exported copy carries its input in a JSON island. The island is
+     written just before </body>, so it is parsed after this script — wait
+     for the document rather than looking for it now. */
+  function boot() {
+    const island = $(EXPORT_ID);
+    if (!island) return;
+    try {
+      const data = JSON.parse(island.textContent);
+      if (data.frozen) freeze();
+      srcEl.value = data.plan || '';
+      sqlEl.value = data.sql || '';
+      if (data.theme) {
+        theme = data.theme;
+        themeEl.checked = theme === 'light';
+        applyTheme(theme);
+      }
+      visualize(false);
+    } catch (e) {
+      errEl.textContent = 'This exported file carries data this page cannot read: ' + e.message;
+      errEl.style.display = 'block';
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 
 })();

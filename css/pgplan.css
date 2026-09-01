@@ -325,6 +325,10 @@ td.pv-nodecell {
 /* raw-input panes sit at the far end of the bar */
 .pv-tab-push { margin-left: auto; }
 
+/* host actions (Export, ...) close the row after them */
+.pv-tabactions { display: flex; gap: 6px; align-items: center; }
+.pv-tabbar > .pv-tabactions:first-child { margin-left: auto; }
+
 .pv-tab {
   padding: 6px 15px;
   border: 1px solid var(--pv-border);

@@ -4,6 +4,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.6.0] — 2026-09-01
+
+### Added
+
+- **Export**: the viewer page saves a self-contained copy of itself, with
+  the plan and query baked in. Only data travels — every tab is recomputed
+  on open by the code already inlined in the file. The copy is read-only:
+  no Export button of its own, input fields not editable, buttons
+  disabled (a `frozen` flag in the payload). The button sits at the end of
+  the tab bar through the new `opts.tabActions` slot, which lets a host
+  place its own actions there.
+- The viewer page is now a build output: `viewer.template.html` is the
+  source, and `build.py` writes the self-contained page to both `dist/`
+  and the repository root. A page that links its styles and scripts cannot
+  put them into an exported copy, so the page one opens while working has
+  to be self-contained too.
+- `build.py` refuses to write a page whose inline scripts spell a closing
+  script tag anywhere — including inside a comment, where it silently ends
+  the script and leaves the page dead on load.
+
 ## [0.5.4] — 2026-09-01
 
 ### Fixed

@@ -1,5 +1,7 @@
-# Build output (attached to releases / deployed to Pages by CI)
+# Build output (attached to releases / deployed to Pages by CI). The page at
+# the root is built too — viewer.template.html is the source for both.
 dist/
+/pg-explain-viewer.html
 
 # JavaScript dependencies and test output
 node_modules/

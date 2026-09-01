@@ -14,6 +14,8 @@
  *     opts.defaultTab : pane to open first (default 'plan')
  *     opts.expanded   : start with all plan nodes expanded
  *     opts.summary    : show the summary chip row (default true)
+ *     opts.tabActions : elements to place at the end of the tab bar (a host
+ *                       action such as Export); moved, never disposed
  *     opts.inputPane  : element to show as a first "Input data" tab; the
  *                       widget moves it into the pane and never disposes it.
  *                       The pane carries `.pv-pane-host`; note that the
@@ -1918,6 +1920,13 @@
         pane.appendChild(opts.inputPane);
       }
       paneEls.set(p.name, pane);
+    }
+
+    // host actions live at the end of the bar, past the right-hand tabs; they
+    // are not tabs, so they stay out of the tablist's roving focus order
+    if (tabbar && opts.tabActions) {
+      const acts = el('div', 'pv-tabactions', tabbar);
+      for (const a of [].concat(opts.tabActions)) if (a) acts.appendChild(a);
     }
 
     // roving focus on the tablist: arrows move and activate

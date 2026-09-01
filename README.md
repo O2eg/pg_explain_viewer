@@ -22,8 +22,8 @@ recommendations. No server, no history, no network.
 | `vendor/highlight-11.11.1.min.js` | highlight.js — the same library and version the pg_diag report vendors. Optional peer for SQL highlighting (query pane, CREATE INDEX blocks): the renderer uses `window.hljs` when present, otherwise falls back to plain text. Token colors are themed via `--pv-hl-*`. |
 | `css/pgplan-theme.css` | **Theme**: every color and font as `--pv-*` custom properties on the `.pv` container. Palette, fonts and sizing follow the **pg_diag report theme** (purple/gold surfaces, system-ui + ui-monospace). Typography is a unified three-step scale reused everywhere: `--pv-fs-lg` 15.5px (headings), `--pv-fs` 14px (base), `--pv-fs-sm` 13px (secondary) — no other text sizes exist in the widget. Built-in light (default for the bare container) and dark (`data-pv-theme="dark"` on the container or any ancestor — pg_diag's default scheme) variants. A host application re-skins the widget by overriding the variables. |
 | `css/pgplan.css` | Structural styles; contains no literal colors or fonts. |
-| `pg-explain-viewer.html` | Dev page (links the files directly). |
-| `build.py` | Builds the self-contained `dist/pg-explain-viewer.html` (inlines CSS + JS; works offline from `file://`). |
+| `viewer.template.html` | Source of the viewer page: markup, page chrome and the export logic, with build markers where the CSS/JS get inlined. |
+| `build.py` | Inlines CSS + JS and writes the self-contained page twice: `dist/pg-explain-viewer.html` (release / Pages artifact) and `./pg-explain-viewer.html` (the page you open while working). Both are build output and untracked — only a page carrying its own styles and scripts can export a working copy of itself. |
 | `test/plans/` | Real PG18 plans harvested from the pg_stand demo stand csvlog (auto_explain: text/json/yaml, DML, parallel, CTE, InitPlan/SubPlan, partitions, external sort + temp I/O) plus `EXPLAIN`-without-ANALYZE and psql-framed fixtures. |
 | `test/*.test.js` | `node:test` suite: `npm test` (parser invariants, golden-model snapshots, advisor spot checks, format-parity for the PG matrix). `UPDATE_GOLDEN=1 npm test` regenerates the snapshots in `test/golden/`. |
 
@@ -231,7 +231,7 @@ available with or without the query text.
 ```bash
 npm test                 # node:test suite (invariants, goldens, advisor, DDL, parity)
 tools/browser-smoke.py   # headless-browser regression: tabs/themes sweep + XSS fixture
-python3 build.py         # -> dist/pg-explain-viewer.html (self-contained)
+python3 build.py         # -> dist/ and ./pg-explain-viewer.html (self-contained)
 ```
 
 ## Embedding into pg_diag (outline)
@@ -268,6 +268,21 @@ harvest `auto_explain.sample_rate=1`, `log_min_duration=0`,
 - Everything heuristic (parallel wall-clock attribution, CTE/SubPlan
   charging, clamping) surfaces in `plan.diagnostics[]` — see
   [docs/how-it-works.md](docs/how-it-works.md).
+
+## Export
+
+The viewer page can save a self-contained copy of itself: **Export**, at the
+end of the tab bar. Only the plan text, the query and the chosen theme travel
+with it — every tab is recomputed on open by the same code already inlined in
+the file, so the copy is a frozen snapshot of both the input and the analysis,
+not a screenshot of the tabs.
+
+The copy opens read-only: no Export button of its own, the input fields are
+not editable and the buttons are disabled. **It carries the plan and query you
+pasted**, filter literals included — treat it as the data it contains.
+
+Export needs a built page (`python3 build.py`); a page that links its styles
+and scripts has no way to put them into the copy, and the button says so.
 
 ## Browser support
 
