@@ -888,7 +888,7 @@
   /* ================= charts: the data behind the pane =================
    * Pure: no DOM, no formatting decisions, no percentages stored back into
    * the plan. Every chart declares what it is allowed to claim — see
-   * docs/charts.md. A chart whose whole cannot be trusted is not drawn: it
+   * the notes below. A chart whose whole cannot be trusted is not drawn: it
    * comes back `blocked` with the reason, and the pane says so.
    */
 
@@ -896,7 +896,11 @@
   const blocksOf = (buf, keys) => keys.reduce((s, k) => s + (buf[k] || 0), 0);
 
   function buildCharts(plan, opts) {
-    const blockSize = (opts && opts.blockSize) || 8192;
+    // a public option, so it is checked rather than trusted: a negative or
+    // non-numeric block size would silently produce negative or NaN volumes
+    const wanted = opts && opts.blockSize;
+    const blockSize = (typeof wanted === 'number' && Number.isFinite(wanted)
+      && wanted > 0 && Number.isInteger(wanted)) ? wanted : 8192;
     const out = [];
     const nodes = plan.nodes || [];
     const totals = plan.totals || {};
@@ -935,21 +939,36 @@
             note: 'included in Execution Time, and BEFORE-trigger time is also inside '
               + 'the DML node — do not add it to the slices' });
         }
-        const residual = root == null ? null : et - root;
-        const items = (root == null || residual < -CHART_TOL)
+        // The root's inclusive time can exceed Execution Time — rounding, or
+        // the analyzer's monotonic repair raising it to the sum of its
+        // children (metric_raised). Clamping the residual to zero while
+        // keeping the raised root would make the slices add up to more than
+        // the whole and still call itself exact.
+        const raised = diag('metric_raised');
+        const overRoot = root != null && root > et + 1e-9;
+        const split = root != null && !overRoot;
+        const items = split
           ? [{ label: 'planning', value: pt, ids: [] },
-             { label: 'execution', value: et, ids: [] }]
-          : [{ label: 'planning', value: pt, ids: [] },
              { label: 'top plan node', value: root, ids: nodes.length ? [0] : [] },
-             { label: 'outside top-node timing', value: Math.max(0, residual), ids: [],
+             { label: 'outside top-node timing', value: et - root, ids: [],
                note: 'result transfer, triggers, serialization — everything Execution Time '
-                 + 'covers that the root node does not' }];
+                 + 'covers that the root node does not' }]
+          : [{ label: 'planning', value: pt, ids: [] },
+             { label: 'execution', value: et, ids: [] }];
         chart({ id, section: 'time', title, kind: 'donut', unit: 'ms',
-          whole: pt + et, quality: 'exact', diagnostics: [],
+          whole: pt + et,
+          quality: raised ? 'approximate' : 'exact',
+          diagnostics: raised ? ['metric_raised'] : [],
           items, annotations, blocked: null,
-          note: root != null && residual < -CHART_TOL
-            ? 'The root node reports more time than Execution Time; only the two-slice '
-              + 'split is defensible here.' : null });
+          note: overRoot
+            ? 'The root node reports more time than Execution Time'
+              + (raised ? ', after its time was raised to the sum of its children' : '')
+              + ': only the two-slice split is defensible here.'
+            : raised
+              ? 'Per-node times were raised to their children\'s sums somewhere in this '
+                + 'plan (metric_raised), so the split between the tree and what lies '
+                + 'outside it is approximate.'
+              : null });
       }
     }
 
@@ -1002,36 +1021,49 @@
     /* ---- time: spill hotspots ---- */
     {
       const id = 'spill', title = 'Spills past work_mem';
-      const items = [];
+      const items = [], hashes = [];
       for (const n of real) {
         const temp = (n.bufExcl && n.bufExcl['temp-written']) || 0;
-        if (n.sortSpace === 'Disk' && n.sortSizeKb > 0) {
-          items.push({ label: labelOfNode(n), value: n.sortSizeKb * 1024, ids: [n.id],
-            note: n.sortMethod || 'sort spilled to disk' });
+        // a parallel sort spills once per process: the node line carries the
+        // leader's volume and each Worker block its own
+        const wSort = (n.workers || []).filter(w => w.sortSizeKb > 0);
+        const wKb = wSort.reduce((a, w) => a + w.sortSizeKb, 0);
+        if ((n.sortSpace === 'Disk' && n.sortSizeKb > 0) || wKb > 0) {
+          const leader = n.sortSpace === 'Disk' ? (n.sortSizeKb || 0) : 0;
+          items.push({
+            label: labelOfNode(n), value: (leader + wKb) * 1024, ids: [n.id],
+            note: wSort.length
+              ? 'leader ' + leader + ' kB + ' + wSort.length + ' worker(s) '
+                + wSort.map(w => w.sortSizeKb + ' kB').join(' + ')
+              : (n.sortMethod || 'sort spilled to disk'),
+          });
         } else if (n.diskUsageKb > 0) {
           items.push({ label: labelOfNode(n), value: n.diskUsageKb * 1024, ids: [n.id],
             note: 'reported disk usage' });
         } else if (n.hashBatches > 1) {
-          items.push({ label: labelOfNode(n), value: (n.memUsageKb || 0) * 1024, ids: [n.id],
-            derived: true,
-            note: n.hashBatches + ' batches — the volume written is not reported, this is '
-              + 'the peak memory of one batch' });
+          // no volume is reported for a hash spill. A peak-memory figure is not
+          // one, and ranking it against measured volumes would reorder the
+          // chart on a quantity that does not mean the same thing.
+          hashes.push({ label: labelOfNode(n), value: n.hashBatches, unit: 'batches',
+            note: 'spilled into ' + n.hashBatches + ' batches; the volume written is not '
+              + 'reported, peak memory was ' + (n.memUsageKb || 0) + ' kB for one batch' });
         } else if (temp > 0) {
           items.push({ label: labelOfNode(n), value: temp * blockSize, ids: [n.id],
             note: temp + ' temp blocks written' });
         }
       }
-      if (!items.length) {
+      if (!items.length && !hashes.length) {
         blocked(id, 'time', title, 'no_spill', 'No node reports a sort, hash or temp spill.');
+      } else if (!items.length) {
+        blocked(id, 'time', title, 'no_spill_volume',
+          'Only hash spills are reported here, and PostgreSQL states no volume for them — '
+          + hashes.map(h => h.label + ': ' + h.value + ' batches').join('; ') + '.');
       } else {
-        const derived = items.some(i => i.derived);
         chart({ id, section: 'time', title, kind: 'bars', unit: 'bytes', whole: null,
-          quality: derived ? 'approximate' : 'exact', diagnostics: [],
-          items: items.sort(byTime), annotations: [], blocked: null,
-          note: derived
-            ? 'A hash spill reports only its batch count and the peak memory of one '
-              + 'batch, so its bar is an order of magnitude, not a measured volume.'
-            : 'Volumes as reported by the sort or the temp counters.' });
+          quality: 'exact', diagnostics: [],
+          items: items.sort(byTime), annotations: hashes, blocked: null,
+          note: 'Volumes as reported by the sort or the temp counters; a parallel sort '
+            + 'adds the leader and every worker.' });
       }
     }
 
@@ -1232,22 +1264,36 @@
       const id = 'workers', title = 'Parallel worker skew';
       const items = [];
       for (const n of real) {
-        if (!Array.isArray(n.workers) || n.workers.length < 2) continue;
+        if (!Array.isArray(n.workers) || !n.workers.length) continue;
+        // one worker may be printed as several blocks; skew needs at least
+        // two *distinct* workers that actually reported a time
+        const byNum = new Map();
         for (const w of n.workers) {
           if (w.timeTotal == null) continue;
+          const prev = byNum.get(w.num);
+          if (!prev || w.timeTotal > prev.timeTotal) byNum.set(w.num, w);
+        }
+        if (byNum.size < 2) continue;
+        for (const w of [...byNum.values()].sort((a, b) => a.num - b.num)) {
           items.push({ label: labelOfNode(n) + ' · worker ' + w.num, value: w.timeTotal,
             ids: [n.id], note: (w.rows != null ? w.rows + ' rows' : 'no row count') });
         }
       }
       if (!items.length) {
         blocked(id, 'resources', title, 'no_worker_stats',
-          'No node reports per-worker timings (they appear only with VERBOSE).');
+          'No node reports timings for two or more workers (they appear only with '
+          + 'VERBOSE, and a single worker says nothing about skew).');
       } else {
+        const partial = diag('partial_worker_stats');
         chart({ id, section: 'resources', title, kind: 'bars', unit: 'ms',
-          whole: null, quality: 'approximate', diagnostics: ['parallel_estimate'],
+          whole: null, quality: 'approximate',
+          diagnostics: partial ? ['parallel_estimate', 'partial_worker_stats']
+            : ['parallel_estimate'],
           items, annotations: [], blocked: null,
           note: 'Reported per-worker times. The leader is not shown as a worker, and no '
-            + 'share of elapsed time is derived from these.' });
+            + 'share of elapsed time is derived from these.'
+            + (partial ? ' Fewer Worker blocks were printed than workers were launched, '
+              + 'so the ones shown are not the whole picture.' : '') });
       }
     }
 
@@ -1332,7 +1378,9 @@
         el('span', 'pv-chart-off-t', row).textContent = c.title;
         el('span', 'pv-chart-off-m', row).textContent = c.blocked.message;
       }
-      if (ctx && ctx.setTab) {
+      // the same condition the diagnostics pane itself is gated on: without it
+      // the button would lead nowhere
+      if (ctx && ctx.setTab && diagItems(plan).length) {
         const b = btn('pv-chart-off-link', box);
         b.textContent = 'open diagnostics';
         b.addEventListener('click', () => ctx.setTab('diagnostics'));
@@ -1409,8 +1457,21 @@
       return () => ctx.goToNode(it.ids[0]);
     };
 
-    if (c.kind === 'donut') drawDonut(body, c, list, tipOf, activate, share);
-    else drawBars(body, c, list, tipOf, activate, share);
+    if (c.kind === 'donut') { drawDonut(body, c, list, tipOf, activate, share); return; }
+    drawBars(body, c, list, tipOf, activate, share);
+    // name what the segment colours mean; the bars carry no legend of their own
+    const seg = list.find(i => i.segments);
+    if (seg) {
+      const key = el('div', 'pv-bar-key', body);
+      seg.segments.forEach((g, i) => {
+        const item = el('span', 'pv-bar-key-i', key);
+        el('span', 'pv-legend-sw pv-cat-' + (i + 1), item);
+        el('span', null, item).textContent = g.label;
+      });
+      el('span', 'pv-bar-key-n', key).textContent =
+        c.kind === 'grouped-bars' ? '(values printed in this order)'
+          : '(segments in this order, values printed the same way)';
+    }
   }
 
   function drawDonut(body, c, list, tipOf, activate, share) {
@@ -1478,9 +1539,14 @@
         f.style.width = (it.value / max * 100) + '%';
       }
       const v = el('span', 'pv-bar-v', row);
-      // both compared values have to be readable without hovering anything
-      v.textContent = (c.kind === 'grouped-bars' && it.segments)
-        ? it.segments.map(g => chartValue(g.value, c.unit)).join(' / ')
+      // Every value has to be readable without a pointer: a tooltip answers to
+      // neither touch nor the keyboard. Segment values are printed too, in the
+      // order of the bars.
+      v.textContent = it.segments
+        // the unit belongs to the pair, not to each half of it
+        ? it.segments.slice(0, -1)
+            .map(g => chartValue(g.value, c.unit).replace(/\s+[A-Za-z]+$/, '')).join(' / ')
+          + ' / ' + chartValue(it.segments[it.segments.length - 1].value, c.unit)
         : chartValue(it.value, c.unit);
       const s = share(it.value);
       if (s != null) el('span', 'pv-bar-p', row).textContent = fmtNum(s, 1) + '%';

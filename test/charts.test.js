@@ -1,5 +1,5 @@
 'use strict';
-// The charts pane's data contract (docs/charts.md): what each chart is
+// The charts pane's data contract: what each chart is
 // allowed to claim, and what blocks it from being drawn at all. Pure — no
 // DOM is involved, so the arithmetic and the gates are testable here rather
 // than through a browser.
@@ -186,7 +186,7 @@ Execution Time: 0.5 ms`;
   assert.match(c.blocked.message, /BUFFERS/);
 });
 
-test('spill volumes are exact when reported and approximate when derived', () => {
+test('a sort spill is charted at the volume PostgreSQL reports', () => {
   const sort = `Sort  (cost=0.00..900.00 rows=100 width=8) (actual time=0.10..80.00 rows=100 loops=1)
   Sort Key: t.a
   Sort Method: external merge  Disk: 5000kB
@@ -195,12 +195,55 @@ Execution Time: 80.5 ms`;
   const measured = chart(sort, 'spill');
   assert.equal(measured.quality, 'exact');
   assert.equal(measured.items[0].value, 5000 * 1024);
+});
 
-  const hash = FULL.replace('Buckets: 1024  Batches: 1  Memory Usage: 9kB',
-    'Buckets: 1024  Batches: 64  Memory Usage: 900kB');
-  const derived = chart(hash, 'spill');
-  assert.equal(derived.quality, 'approximate');
-  assert.match(derived.note, /order of magnitude/);
+test('a parallel sort counts the leader and every worker', () => {
+  // each process sorts and spills on its own; the node line carries only the
+  // leader's volume
+  const par = `Gather Merge  (cost=0.00..900.00 rows=100 width=8) (actual time=0.10..80.00 rows=100 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  ->  Sort  (cost=0.00..400.00 rows=100 width=8) (actual time=0.01..40.00 rows=33 loops=3)
+        Sort Key: t.a
+        Sort Method: external merge  Disk: 1000kB
+        Worker 0:  Sort Method: external merge  Disk: 2000kB
+        Worker 1:  Sort Method: external merge  Disk: 3000kB
+        ->  Parallel Seq Scan on t  (cost=0.00..100.00 rows=100 width=8) (actual time=0.01..5.00 rows=33 loops=3)
+Execution Time: 80.5 ms`;
+  const c = chart(par, 'spill');
+  assert.equal(c.items[0].value, 6000 * 1024, 'worker spills were dropped');
+  assert.match(c.items[0].note, /leader 1000 kB \+ 2 worker/);
+});
+
+test('a hash spill is an annotation: PostgreSQL reports no volume for it', () => {
+  // a plan with both a measured sort spill and a hash spill
+  const mixed = `Sort  (cost=0.00..900.00 rows=100 width=8) (actual time=0.10..80.00 rows=100 loops=1)
+  Sort Key: t.a
+  Sort Method: external merge  Disk: 5000kB
+  ->  Hash Join  (cost=1.00..400.00 rows=100 width=8) (actual time=0.05..40.00 rows=100 loops=1)
+        Hash Cond: (a.id = b.id)
+        ->  Seq Scan on a  (cost=0.00..200.00 rows=100 width=8) (actual time=0.01..20.00 rows=100 loops=1)
+        ->  Hash  (cost=1.00..1.00 rows=1 width=8) (actual time=0.05..0.05 rows=1 loops=1)
+              Buckets: 1024  Batches: 64  Memory Usage: 900kB
+              ->  Seq Scan on b  (cost=0.00..1.00 rows=1 width=8) (actual time=0.01..0.02 rows=1 loops=1)
+Execution Time: 80.5 ms`;
+  const c = chart(mixed, 'spill');
+  // peak memory of one batch is not a volume, and ranking it against measured
+  // ones would reorder the chart on a different quantity
+  assert.ok(!c.items.some(i => /Hash/.test(i.label)), 'a hash spill entered the ranking');
+  assert.equal(c.items.length, 1);
+  const ann = c.annotations.find(a => /Hash/.test(a.label));
+  assert.ok(ann && ann.value === 64 && ann.unit === 'batches', JSON.stringify(c.annotations));
+
+  // and when a plan has nothing but hash spills, the chart says so
+  const onlyHash = `Hash Join  (cost=1.00..900.00 rows=100 width=8) (actual time=0.10..80.00 rows=100 loops=1)
+  Hash Cond: (a.id = b.id)
+  ->  Seq Scan on a  (cost=0.00..400.00 rows=100 width=8) (actual time=0.01..40.00 rows=100 loops=1)
+  ->  Hash  (cost=1.00..1.00 rows=1 width=8) (actual time=0.05..0.05 rows=1 loops=1)
+        Buckets: 1024  Batches: 32  Memory Usage: 900kB
+        ->  Seq Scan on b  (cost=0.00..1.00 rows=1 width=8) (actual time=0.01..0.02 rows=1 loops=1)
+Execution Time: 80.5 ms`;
+  assert.equal(chart(onlyHash, 'spill').blocked.reason, 'no_spill_volume');
 });
 
 test('temp volumes honour blockSize, and default to 8 KiB', () => {
@@ -271,4 +314,68 @@ Execution Time: 80.5 ms`;
   assert.match(c.note, /larger of its own two values/);
   // and the composition charts still declare themselves as stacked
   assert.equal(chart(FULL, 'discard').kind, 'stacked-bars');
+});
+
+
+/* ---------------- review fixes ---------------- */
+
+test('latency slices never add up to more than the whole', () => {
+  // the analyzer may raise a node's inclusive time to the sum of its children
+  // (metric_raised), which can put the root above Execution Time
+  const fs = require('fs'), path = require('path');
+  const dir = path.join(__dirname, 'plans', 'matrix');
+  let checked = 0;
+  for (const ver of fs.readdirSync(dir)) {
+    const sub = path.join(dir, ver);
+    if (!fs.statSync(sub).isDirectory()) continue;
+    for (const file of fs.readdirSync(sub)) {
+      if (!file.endsWith('.txt')) continue;
+      let p;
+      try { p = PgPlan.parse(fs.readFileSync(path.join(sub, file), 'utf8')); } catch (e) { continue; }
+      const c = buildCharts(p).find(x => x.id === 'latency');
+      if (!c || c.blocked) continue;
+      checked++;
+      const sum = c.items.reduce((s, i) => s + i.value, 0);
+      assert.ok(sum <= c.whole + 1e-9,
+        `${ver}/${file}: slices ${sum} exceed the whole ${c.whole}`);
+    }
+  }
+  assert.ok(checked > 50, 'expected the matrix fixtures to exercise this: ' + checked);
+});
+
+test('a raised root time is admitted, not hidden behind "exact"', () => {
+  const fs = require('fs'), path = require('path');
+  const p = PgPlan.parse(fs.readFileSync(
+    path.join(__dirname, 'plans', 'matrix', 'pg18', 'memoize.txt'), 'utf8'));
+  assert.ok(p.diagnostics.some(d => d.code === 'metric_raised'), 'fixture changed');
+  const c = buildCharts(p).find(x => x.id === 'latency');
+  assert.equal(c.quality, 'approximate');
+  assert.deepEqual(c.diagnostics, ['metric_raised']);
+  assert.deepEqual(c.items.map(i => i.label), ['planning', 'execution']);
+});
+
+test('worker skew needs two distinct workers, not two printed blocks', () => {
+  // PostgreSQL may print several blocks for the same worker
+  const dup = `Gather  (cost=0.00..900.00 rows=100 width=8) (actual time=0.10..20.00 rows=100 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  ->  Sort  (cost=0.00..400.00 rows=100 width=8) (actual time=0.01..18.00 rows=50 loops=2)
+        Sort Key: t.a
+        Worker 0:  Sort Method: quicksort  Memory: 25kB
+        Worker 0:  actual time=0.010..18.600 rows=50 loops=1
+        ->  Parallel Seq Scan on t  (cost=0.00..100.00 rows=100 width=8) (actual time=0.01..5.00 rows=50 loops=2)
+Execution Time: 20.5 ms`;
+  assert.equal(chart(dup, 'workers').blocked.reason, 'no_worker_stats');
+});
+
+test('blockSize is validated, never trusted', () => {
+  const temp = `Seq Scan on t  (cost=0.00..900.00 rows=100 width=8) (actual time=0.10..80.00 rows=100 loops=1)
+  Buffers: temp written=100
+Execution Time: 80.5 ms`;
+  for (const bad of [-8192, 0, 1.5, '8192', null, NaN, Infinity]) {
+    const c = chart(temp, 'spill', { blockSize: bad });
+    assert.equal(c.items[0].value, 100 * 8192,
+      'blockSize ' + String(bad) + ' was accepted');
+  }
+  assert.equal(chart(temp, 'spill', { blockSize: 32768 }).items[0].value, 100 * 32768);
 });

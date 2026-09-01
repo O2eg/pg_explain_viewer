@@ -25,6 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - name: Build offline viewer
         run: python3 build.py
       - name: Reproducible-build check
@@ -47,6 +52,11 @@ jobs:
         engine: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - name: Build offline viewer
         run: python3 build.py
       - name: Install playwright ${{ matrix.engine }}

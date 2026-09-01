@@ -4,6 +4,45 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.7.1] — 2026-09-02
+
+### Fixed
+
+- The latency donut could show slices adding up to more than its whole and
+  still call itself **exact**: the root's inclusive time may exceed
+  Execution Time, either by rounding or because the analyzer raised it to
+  the sum of its children (`metric_raised`), and the negative residual was
+  clamped to zero while the raised root stayed in the chart. Reproduced on
+  four `memoize` matrix fixtures at 102–103%. Any root above Execution
+  Time now falls back to the honest two-slice split, and a plan carrying
+  `metric_raised` is marked approximate with the reason stated. A test
+  walks every matrix fixture and asserts the slices never exceed the whole.
+- A parallel sort spills once per process; the chart counted only the
+  leader's volume and called it exact. A leader at 1000 kB with workers at
+  2000 and 3000 now reads 6000 kB, with the split in the tooltip.
+- Hash spills left the ranked bars: PostgreSQL reports no volume for them,
+  and the peak memory of one batch is not one — ranking it against measured
+  volumes reordered the chart on a different quantity. They are annotations
+  now, stating the batch count, and a plan whose only spills are hashes
+  says so instead of drawing a chart.
+- Worker skew was drawn from a single worker: PostgreSQL may print several
+  blocks for the same one, so the two-entry check passed and the filtered
+  result left one bar. It now needs two *distinct* workers that reported a
+  time, and carries `partial_worker_stats` when fewer blocks were printed
+  than workers launched.
+- Stacked and grouped bars printed only their total: the segment values and
+  the meaning of their colours lived in a tooltip, which answers to neither
+  touch nor the keyboard. Both are visible text now, with a colour key per
+  card.
+- `opts.blockSize` is validated instead of trusted — a negative, fractional
+  or non-numeric value produced negative or NaN volumes.
+- The "open diagnostics" link is rendered only when that pane exists.
+
+### Changed
+
+- The planning documents (`charts.md`, `ROADMAP.md`) moved out of the
+  repository; `docs/how-it-works.md` stays as the model contract.
+
 ## [0.7.0] — 2026-09-02
 
 ### Added

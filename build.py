@@ -8,19 +8,45 @@ styles and scripts can export a working copy of itself. Both are build
 output; neither is tracked.
 
 Inlines css/pgplan-theme.css, css/pgplan.css, src/pgplan-expr.js,
-src/pgplan-sql.js, src/pgplan.js and src/pgplan-render.js.
+src/pgplan-sql.js, src/pgplan.js and src/pgplan-render.js. Every executable
+inline script is minified with the lockfile-pinned Terser before it is written.
 No external resources remain — the result works from file:// offline.
 """
 import json
 import pathlib
 import re
+import subprocess
 
 ROOT = pathlib.Path(__file__).parent
 DIST = ROOT / "dist"
+MINIFIER = ROOT / "tools" / "minify-js.cjs"
 
 
 def read(p: pathlib.Path) -> str:
     return p.read_text(encoding="utf-8")
+
+
+def minify_js(source: str, label: str) -> str:
+    """Minify one script without joining independent browser script scopes."""
+    try:
+        result = subprocess.run(
+            ["node", str(MINIFIER)],
+            input=source,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            cwd=ROOT,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("Node.js is required to build the viewer") from exc
+    if result.returncode != 0:
+        detail = result.stderr.strip() or f"exit status {result.returncode}"
+        raise RuntimeError(f"could not minify {label}: {detail}")
+    code = result.stdout.strip()
+    if not code:
+        raise RuntimeError(f"could not minify {label}: Terser returned no code")
+    return code
 
 
 def main() -> None:
@@ -47,6 +73,32 @@ def main() -> None:
     inline_js("<!--PV:JS-RENDER-->", "src/pgplan-render.js")
 
     assert "PV:" not in html, "unresolved build markers remain"
+
+    # Minify after inlining so the page's own bootstrap/export script follows
+    # the same contract as the library sources. Keep separate <script> scopes:
+    # concatenating UMD wrappers would change how they detect their host.
+    script_re = re.compile(
+        r"(<script(?![^>]*\bsrc=)(?![^>]*\btype=[\"']application/json[\"'])[^>]*>)"
+        r"(.*?)"
+        r"(</script>)",
+        re.I | re.S,
+    )
+    script_count = 0
+    raw_js_bytes = 0
+    min_js_bytes = 0
+
+    def minify_inline(match: re.Match[str]) -> str:
+        nonlocal script_count, raw_js_bytes, min_js_bytes
+        source = match.group(2)
+        script_count += 1
+        raw_js_bytes += len(source.encode("utf-8"))
+        code = minify_js(source, f"inline script #{script_count}")
+        min_js_bytes += len(code.encode("utf-8"))
+        return match.group(1) + code + match.group(3)
+
+    html = script_re.sub(minify_inline, html)
+    assert script_count > 0, "the page carries no executable inline scripts"
+    assert min_js_bytes < raw_js_bytes, "Terser did not reduce the embedded JavaScript"
 
     # A literal closing script tag inside an inline script ends it, wherever it
     # appears — in a string, in a comment, anywhere. The page then dies with
@@ -86,7 +138,12 @@ def main() -> None:
     # the same file at the root: it is what a developer opens directly, and
     # only a self-contained page can export a working copy of itself
     (ROOT / "pg-explain-viewer.html").write_text(html, encoding="utf-8")
-    print(f"built {out} and ./pg-explain-viewer.html ({out.stat().st_size / 1024:.0f} KB)")
+    saved = 100 * (raw_js_bytes - min_js_bytes) / raw_js_bytes
+    print(
+        f"built {out} and ./pg-explain-viewer.html "
+        f"({out.stat().st_size / 1024:.0f} KB; embedded JS "
+        f"{raw_js_bytes / 1024:.0f} -> {min_js_bytes / 1024:.0f} KB, {saved:.0f}% smaller)"
+    )
 
 
 if __name__ == "__main__":

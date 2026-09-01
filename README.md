@@ -25,7 +25,6 @@ recommendations. No server, no history, no network.
 | `viewer.template.html` | Source of the viewer page: markup, page chrome and the export logic, with build markers where the CSS/JS get inlined. |
 | `build.py` | Inlines CSS + JS and writes the self-contained page twice: `dist/pg-explain-viewer.html` (release / Pages artifact) and `./pg-explain-viewer.html` (the page you open while working). Both are build output and untracked — only a page carrying its own styles and scripts can export a working copy of itself. |
 | `test/plans/` | Real PG18 plans harvested from the pg_stand demo stand csvlog (auto_explain: text/json/yaml, DML, parallel, CTE, InitPlan/SubPlan, partitions, external sort + temp I/O) plus `EXPLAIN`-without-ANALYZE and psql-framed fixtures. |
-| `docs/charts.md` | The charts pane: what each chart is allowed to claim, what blocks it, and where the implementation departed from the plan. |
 | `test/*.test.js` | `node:test` suite: `npm test` (parser invariants, golden-model snapshots, advisor spot checks, format-parity for the PG matrix). `UPDATE_GOLDEN=1 npm test` regenerates the snapshots in `test/golden/`. |
 
 ## Using the widget

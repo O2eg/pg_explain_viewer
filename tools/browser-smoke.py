@@ -192,6 +192,16 @@ Execution Time: 900.5 ms"""
           ch["donutSlices"] >= 2 and bool(ch["centre"]), ch)
     check("every mark and legend row carries a tooltip", ch["allMarksTipped"], ch)
     check("every value is readable without hovering", ch["valuesVisible"], ch)
+    check("stacked segments print their values and name their colours",
+          page.evaluate("""() => {
+            const card = [...document.querySelectorAll('.pv-chart-card')]
+              .find(c => /discarded|access mix|Memoize/i.test(c.textContent));
+            if (!card) return true;
+            const key = card.querySelector('.pv-bar-key');
+            const values = [...card.querySelectorAll('.pv-bar-v')];
+            return !!key && key.textContent.length > 4
+              && values.length > 0 && values.every(v => v.textContent.includes('/'));
+          }"""))
     check("a compared pair prints both of its numbers, not just the larger",
           page.evaluate("""() => {
             const card = [...document.querySelectorAll('.pv-chart-card')]

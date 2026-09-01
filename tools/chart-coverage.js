@@ -1,11 +1,12 @@
 'use strict';
 /*
- * How often each candidate chart of docs/charts.md would have real data.
+ * How often each chart of the charts pane would have real data.
  *
  *   node tools/chart-coverage.js <dir-with-plan-*.txt>
  *
  * Point it at any directory of plain-text plans. The figures quoted in
- * docs/charts.md come from a corpus of public archive plans that is NOT part
+ * the charts pane's design notes come from a corpus of public archive plans
+ * that is NOT part
  * of this repository (production identifiers), so they are reproducible only
  * with a comparable corpus — the script is here so the counting rule itself
  * is not a matter of trust.

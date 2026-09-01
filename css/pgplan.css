@@ -1051,6 +1051,16 @@ pre.pv-sql {
 .pv-bar-f { height: 100%; }
 .pv-bar-v { font-family: var(--pv-font-mono); }
 .pv-bar-p { font-family: var(--pv-font-mono); color: var(--pv-fg-muted); min-width: 48px; text-align: right; }
+.pv-bar-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+}
+.pv-bar-key-i { display: inline-flex; align-items: center; gap: 5px; }
 .pv-bar-go { cursor: pointer; }
 .pv-bar-go:hover .pv-bar-l { color: var(--pv-accent); }
 
