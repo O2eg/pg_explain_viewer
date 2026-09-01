@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for taking a look. The project is intentionally small and
-dependency-free — please keep it that way.
+free of runtime dependencies — please keep it that way.
 
 ## Ground rules
 

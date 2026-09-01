@@ -201,3 +201,43 @@ Once bound, the query is allowed to change exactly four things:
 
 `plan.parameters` (external `$N` vs InitPlan/SubPlan outputs) is derived from
 the plan alone and stays available without any query text.
+
+## Charts
+
+`buildCharts(plan, {blockSize})` (exported from `pgplan-render.js`, pure, no
+DOM) turns the model into the cards of the Charts pane. It is the same
+contract as everywhere else in this document, applied to pictures: **a chart
+is drawn only when its parts and its whole are both defensible.**
+
+A composition — the one donut, and every stacked bar — needs parts that are
+disjoint and add up to a whole that means something. That rules out three
+shapes that look obvious and are wrong:
+
+- **one pie over all buffer counters.** A block may be counted as read *and*
+  dirtied *and* written; they overlap, so they have no common total. The
+  access mix (`hit` vs `read`, which do share a denominator) and write
+  activity (absolute, no total) are separate views.
+- **a global kept-vs-discarded pie.** `totals.rows` is the *root's* output
+  while `totals.rowsRemoved` is a sum over every node: rows are counted at
+  several stages, so the two are not parts of one population. Discarded rows
+  are charted per node, against that node's own total.
+- **JIT and triggers as latency slices.** Both are printed separately but
+  counted inside node timing — on every JIT plan measured, the time outside
+  the tree is *smaller* than `jit.total`, so subtracting it would remove it
+  twice. They are annotations beside the composition, never slices of it.
+
+Each chart carries `quality: 'exact' | 'approximate'` and the diagnostic
+codes behind it, or `blocked: {reason, message}` and nothing else. What
+blocks what:
+
+| chart | blocked when |
+| --- | --- |
+| time composition | no `Planning Time` / `Execution Time`; a truncated plan (its visible root may not be the real one); a root above Execution Time falls back to the two-slice split rather than clamping a negative residual |
+| execution hotspots | a truncated plan (a missing subtree inflates its parent's self time). The share is offered only when the parts measurably fit inside the root — `excl_overshoot` means they do not |
+| buffer charts | the plan was captured without `BUFFERS` |
+| spills | nothing reports a sort, hash or temp spill. A hash spill has no reported volume, so it is an annotation with its batch count rather than a bar |
+| block I/O | no `I/O Timings`. A share of elapsed time is offered only on a non-parallel plan, where summed worker I/O cannot exceed it |
+| worker skew | fewer than two *distinct* workers reported a time (PostgreSQL may print several blocks for one worker) |
+
+Values are printed as text next to every mark, not only in its tooltip: hover
+answers to neither the keyboard nor touch.

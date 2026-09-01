@@ -9,7 +9,7 @@ Every tagged release publishes a ready-to-open, self-contained
 [GitHub Releases page](https://github.com/O2eg/pg_explain_viewer/releases).
 
 PostgreSQL query plan visualizer with built-in recommendations.
-Pure JavaScript, zero dependencies, fully static — designed to be embedded
+Pure JavaScript, zero runtime dependencies, fully static — designed to be embedded
 into reports and pages (pg_diag HTML report: "everything inline, no CDNs"),
 self-hosted, or used as a single offline HTML file.
 
@@ -31,6 +31,7 @@ recommendations. No server, no history, no network.
 | `viewer.template.html` | Source of the viewer page: markup, page chrome and the export logic, with build markers where the CSS/JS get inlined. |
 | `build.py` | Inlines CSS, minifies the embedded JS with the lockfile-pinned Terser, and writes the self-contained page twice: `dist/pg-explain-viewer.html` (release / Pages artifact) and `./pg-explain-viewer.html` (the page you open while working). Both are build output and untracked — only a page carrying its own styles and scripts can export a working copy of itself. |
 | `test/plans/` | Real PG18 plans harvested from the pg_stand demo stand csvlog (auto_explain: text/json/yaml, DML, parallel, CTE, InitPlan/SubPlan, partitions, external sort + temp I/O) plus `EXPLAIN`-without-ANALYZE and psql-framed fixtures. |
+| `tools/` | `browser-smoke.py` (headless regression), `gen-fixtures.sh` (the PG 10…18 format matrix, Docker), `chart-coverage.js` (how often each chart would have data over a corpus of plans), `minify-js.cjs` (the build's Terser entry point). |
 | `test/*.test.js` | `node:test` suite: `npm test` (parser invariants, golden-model snapshots, advisor spot checks, format-parity for the PG matrix). `UPDATE_GOLDEN=1 npm test` regenerates the snapshots in `test/golden/`. |
 
 ## Using the widget
@@ -185,6 +186,7 @@ write costs, or the rest of the workload. Codes and their badges:
 | `DISK_SORT` / `DISK_HASH` / `TEMP_SPILL` / `BITMAP_LOSSY` | working set spilled past work_mem — with a concrete `SET LOCAL work_mem` value sized from the observed spill (or, past a sane budget, the advice to cut the row set instead). `DISK_HASH` reads `Batches: N > 1` and flags a batch count that grew at run time as a planner underestimate |
 | `MEMOIZE_MISS` | a Memoize whose lookups mostly miss — cache too small for the key space (evictions) or values that barely repeat |
 | `SEQSCAN_BUFFERS` / `INDEX_BUFFERS` | many buffers per row (per loop) — possible bloat, verify before VACUUM FULL |
+| `INDEX_FULLREAD` | an index scanned with no key condition at all — ordered reading or a full traversal |
 | `NESTLOOP_DISCARD` | nested-loop join filter discards almost all pairings — index the join key |
 | `DISK_READ` | node time dominated by measured disk reads — cold cache / slow storage |
 | `TABLE_WRITTEN` | buffers written during a read |

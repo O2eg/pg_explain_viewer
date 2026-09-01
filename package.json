@@ -1,10 +1,10 @@
 {
   "name": "pg-explain-viewer",
   "version": "0.7.2",
-  "description": "PostgreSQL query plan parser and visualizer (text/JSON/YAML), zero dependencies",
+  "description": "PostgreSQL query plan parser and visualizer (text/JSON/YAML), zero runtime dependencies",
   "main": "src/pgplan.js",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "build": "python3 build.py"
   },
   "license": "MIT",
