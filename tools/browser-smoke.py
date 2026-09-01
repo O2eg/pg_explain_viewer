@@ -200,6 +200,26 @@ Execution Time: 100.4 ms"""
           layout["active"] != "Input data", layout)
     check("the host element really moved into the pane", layout["inputInPane"], layout)
 
+    # the findings tabs are outlined in the theme accent — assert the colour
+    # the browser computes, not just the class, and check the widget's own
+    # controls are not wearing the host page's button styles
+    tabs = page.evaluate("""() => {
+      const pv = document.querySelector('.pv');
+      const accent = getComputedStyle(pv).getPropertyValue('--pv-accent').trim();
+      const probe = document.createElement('span');
+      probe.style.color = accent; document.body.appendChild(probe);
+      const want = getComputedStyle(probe).color; probe.remove();
+      const of = sel => { const e = document.querySelector(sel); const s = getComputedStyle(e);
+        return { border: s.borderTopColor, radius: s.borderTopLeftRadius, pad: s.paddingLeft }; };
+      return { want, accentTab: of('.pv-tab-accent'), plainTab: of('.pv-tab:not(.pv-tab-accent)') };
+    }""")
+    check("Diagnostics/Recommendations tabs are outlined in the accent colour",
+          tabs["accentTab"]["border"] == tabs["want"], tabs)
+    check("other tabs keep the plain border",
+          tabs["plainTab"]["border"] != tabs["want"], tabs)
+    check("tabs keep the widget's own pill shape",
+          tabs["accentTab"]["radius"] == "999px" and tabs["plainTab"]["pad"] == "15px", tabs)
+
     # the widget resets bare <button>s; host controls must survive the move
     controls = page.evaluate("""() => {
       const pick = id => { const s = getComputedStyle(document.getElementById(id));

@@ -325,10 +325,6 @@ td.pv-nodecell {
 /* raw-input panes sit at the far end of the bar */
 .pv-tab-push { margin-left: auto; }
 
-/* the panes that carry findings rather than views of the plan */
-.pv-tab-accent { border-color: var(--pv-accent); }
-.pv-tab-accent:hover { border-color: var(--pv-accent); }
-
 .pv-tab {
   padding: 6px 15px;
   border: 1px solid var(--pv-border);
@@ -345,6 +341,11 @@ td.pv-nodecell {
   background: var(--pv-row-hover);
   border-color: var(--pv-border-strong);
 }
+
+/* the panes that carry findings rather than views of the plan. Same
+   specificity as .pv-tab, so these must come after it to win. */
+.pv-tab-accent,
+.pv-tab-accent:hover { border-color: var(--pv-accent); }
 
 .pv-tab.pv-tab-on {
   color: var(--pv-accent-contrast);

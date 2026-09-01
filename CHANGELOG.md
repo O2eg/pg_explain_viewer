@@ -4,6 +4,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.5.4] — 2026-09-01
+
+### Fixed
+
+- The **Diagnostics** and **Recommendations** tabs lost their accent
+  outline — and every tab lost its pill shape and padding. 0.5.3 gave the
+  page's control styles an ancestor selector (`.vw-wrap button`) so they
+  would survive the move into the widget pane, but the whole widget lives
+  inside `.vw-wrap` too, so that rule (0-1-1) also captured the widget's
+  own tabs and outranked `.pv-tab` / `.pv-tab-accent` (0-1-0). It went
+  unnoticed because the page and the widget share the pg_diag palette, so
+  the wrong border was the same colour. The page now names its own
+  controls by class (`.vw-input .vw-btn`) instead of by ancestry.
+- `.pv-tab-accent` also sat *before* `.pv-tab` in the stylesheet; at equal
+  specificity the later rule wins, so it is now placed after it.
+- browser-smoke asserts the colour the browser computes for those tabs and
+  the widget's own pill geometry, instead of only checking that a class is
+  present — which is what let this through.
+
 ## [0.5.3] — 2026-09-01
 
 ### Fixed

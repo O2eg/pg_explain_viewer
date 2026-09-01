@@ -82,11 +82,12 @@
     stroke: currentColor; fill: none; stroke-width: 1.8;
     stroke-linecap: round; stroke-linejoin: round;
   }
-  /* .vw-wrap qualifies every control: the input form is moved into the
-     widget's first tab after the first render, and the widget resets bare
-     buttons there (`.pv :where(button)`) — one class in the selector is
-     enough to keep these looking like themselves wherever they end up */
-  .vw-wrap select, .vw-wrap button {
+  /* The form is moved into the widget's first tab after the first render,
+     where the widget resets bare buttons (`.pv :where(button)`). These
+     styles must therefore name the page's own controls by class — an
+     ancestor selector like `.vw-wrap button` would also match the widget's
+     tabs and copy buttons, which live inside the page too. */
+  .vw-input .vw-btn {
     font: inherit;
     color: var(--vw-fg);
     background: var(--vw-button-bg);
@@ -96,18 +97,18 @@
     line-height: normal;
     margin: 0;
   }
-  .vw-wrap button { cursor: pointer; }
-  .vw-wrap button:hover, .vw-wrap select:hover {
+  .vw-input .vw-btn { cursor: pointer; }
+  .vw-input .vw-btn:hover {
     background: var(--vw-button-hover);
     border-color: var(--vw-border-strong);
   }
-  .vw-wrap button.primary {
+  .vw-input .vw-btn.primary {
     background: var(--vw-accent);
     color: var(--vw-accent-contrast);
     border-color: var(--vw-accent);
     font-weight: 600;
   }
-  .vw-wrap button.primary:hover { filter: brightness(1.06); }
+  .vw-input .vw-btn.primary:hover { filter: brightness(1.06); }
   .vw-input { margin-top: 14px; }
   .vw-input textarea {
     width: 100%;
@@ -208,7 +209,7 @@
     <div>
       <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
       <div class="vw-ident">
-        <span>version <span id="version">0.5.3</span></span>
+        <span>version <span id="version">0.5.4</span></span>
         <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
@@ -249,8 +250,8 @@
     <textarea id="sql" class="vw-sql" spellcheck="false"
       placeholder="Optional: the SQL query text — used when the plan carries no Query Text (overrides it otherwise). One statement, matched against the plan: what it adds — which FROM item a node came from, parameter vs literal, who wrote a cast — is dropped when the two do not match."></textarea>
     <div class="vw-bar">
-      <button class="primary" id="go">Visualize</button>
-      <button id="clear">Clear</button>
+      <button class="primary vw-btn" id="go">Visualize</button>
+      <button class="vw-btn" id="clear">Clear</button>
       <span class="vw-hint">Ctrl+Enter — visualize · click a row — expand node details · click a column header — jump to the hottest node · <code>sql</code> on a recommendation — show the query fragment it came from</span>
     </div>
     <div class="vw-error" id="error"></div>
