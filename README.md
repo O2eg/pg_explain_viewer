@@ -17,6 +17,7 @@ recommendations. No server, no history, no network.
 | --- | --- |
 | `src/pgplan.js` | Parser + analyzer. Input formats: **text / JSON / YAML**, auto_explain log entries (`duration: … ms  plan:` + `Query Text:`), csvlog CSV-quoting, psql frames (`QUERY PLAN`, `---`, `(N rows)`). Produces nodes with derived metrics, aggregated **stats**, a structural **domain** model, **advice** (see below) and the relations **schema**. UMD: browser globals (`window.PgPlan`) and node (`require`). |
 | `src/pgplan-expr.js` | Condition-expression parser: tokenizes the predicate texts EXPLAIN prints (Index Cond / Filter / Hash Cond / Sort Key / …), extracts column references and comparison segments. Powers the relations pane (columns, roles, join edges) and `suggestIndexes()` — CREATE INDEX generation for the advisor. Load it **before** `pgplan.js`; it is optional (without it the widget just has no relations pane / index DDL). |
+| `src/pgplan-sql.js` | Shallow scanner for the **SQL text that accompanies the plan** (never a SQL parser): FROM/JOIN items with source offsets, CTE definitions, `$N` parameters, casts written by the author, and the shapes a plan erases (`NOT IN (SELECT …)`). Also binds plan nodes to the fragment of the query they came from, and refuses a pair whose relations do not match. Load it **before** `pgplan.js`; optional (without it the query text is only displayed). |
 | `src/pgplan-render.js` | Renderer (`window.PgPlanRender`). Static styling via `pv-*` classes only; data-driven heat colors are computed at render time with hues taken from CSS theme variables. |
 | `vendor/highlight-11.11.1.min.js` | highlight.js — the same library and version the pg_diag report vendors. Optional peer for SQL highlighting (query pane, CREATE INDEX blocks): the renderer uses `window.hljs` when present, otherwise falls back to plain text. Token colors are themed via `--pv-hl-*`. |
 | `css/pgplan-theme.css` | **Theme**: every color and font as `--pv-*` custom properties on the `.pv` container. Palette, fonts and sizing follow the **pg_diag report theme** (purple/gold surfaces, system-ui + ui-monospace). Typography is a unified three-step scale reused everywhere: `--pv-fs-lg` 15.5px (headings), `--pv-fs` 14px (base), `--pv-fs-sm` 13px (secondary) — no other text sizes exist in the widget. Built-in light (default for the bare container) and dark (`data-pv-theme="dark"` on the container or any ancestor — pg_diag's default scheme) variants. A host application re-skins the widget by overriding the variables. |
@@ -33,6 +34,7 @@ recommendations. No server, no history, no network.
 <link rel="stylesheet" href="pgplan.css">
 <script src="highlight-11.11.1.min.js"></script> <!-- optional: SQL highlighting -->
 <script src="pgplan-expr.js"></script>           <!-- optional: relations + index DDL -->
+<script src="pgplan-sql.js"></script>            <!-- optional: what the SQL text adds -->
 <script src="pgplan.js"></script>
 <script src="pgplan-render.js"></script>
 
@@ -59,11 +61,15 @@ standalone pane renders (`renderTable(el, …)` etc.) call
 `PgPlanRender.destroy(el)` when the element is retired.
 
 `render()` builds a self-contained widget: summary chips (+ advice badges)
-and internal tabs — **plan** (table), **recommendations**,
-**diagnostics** (parser/analyzer notes and warnings as cards with
-severity icons and node links; the summary chip jumps there), **stats**,
-**diagram**, **relations**, **text**, **model**, **query**. Tabs without
-data are hidden automatically. All cross-links work inside the widget:
+and internal tabs, in reading order — **Plan** (table), **Stats**,
+**Diagram**, **Relations**, **Model**, **Diagnostics** (parser/analyzer
+notes and warnings as cards with severity icons and node links; the
+summary chip jumps there), **Recommendations**, and — pushed to the far
+end of the bar, because they are the raw input rather than a finding —
+**Plan text** and **SQL query**. Tabs without data are hidden
+automatically. The pane names used by `opts.tabs` are unchanged
+(`plan`, `stats`, `diagram`, `relations`, `domain`, `diagnostics`,
+`advice`, `text`, `query`). All cross-links work inside the widget:
 advice badges, column headers (jump to the hottest node), stats node
 lists, diagram nodes and relation cards navigate to the plan row with a
 pulse highlight.
@@ -96,7 +102,8 @@ PgPlanRender.renderText(el, plan);      // highlighted canonical plan text
 
 Per node (`plan.nodes[i]`, in plan-text order):
 
-- identity: `type/xtype`, `relation`, `index`, `alias`, `spec`
+- identity: `rawType` (the head line as printed) / `nodeType` (the operator,
+  with `Parallel`/`Partial`/`Finalize` stripped), `relation`, `index`, `alias`, `spec`
   (`CTE|InitPlan|SubPlan` section headers), `parent/children/depth`;
 - planner: `costStartup/costTotal/planRows/planWidth`, `costExcl`;
 - actuals: `timeStartup/timeTotal/rows/loops`, `never`;
@@ -134,10 +141,16 @@ findings below 2% / 1 ms are demoted into a collapsed "minor
 observations" section so they never distract from material bottlenecks.
 `plan.coaching` additionally suggests missing EXPLAIN options (ANALYZE /
 BUFFERS / TIMING) when they would answer a specific open question — with
-an explicit side-effect warning for DML statements.
+an explicit side-effect warning for DML statements; those suggestions are
+shown on the diagnostics pane alongside the model diagnostics.
 
-For the index-related codes (`SEQ_RRBF`, `IDX_RRBF`, `BMP_AND`,
-`LIM_SORT`, `HSH_ROWS`, `ANJ_ROWS`) the adviser also generates
+On a **truncated** plan the tree-dependent rules stay silent, but the
+node-local ones (spills, filters discarding rows, thrashing caches) still
+run off the lines that did arrive — and no finding claims a share of a
+total the plan cannot supply.
+
+For the index-related codes (`SEQSCAN_DISCARD`, `INDEX_DISCARD`, `BITMAP_AND`,
+`LIMIT_SORT`, `JOIN_FULLREAD`, `ANTIJOIN_FULLREAD`) the adviser also generates
 `CREATE INDEX CONCURRENTLY` candidates from the node's conditions
 (equality columns first, then one range column, then sort keys; short
 residual predicates become a `WHERE` clause; jsonb/array operators
@@ -151,24 +164,61 @@ write costs, or the rest of the workload. Codes and their badges:
 
 | Code | Meaning |
 | --- | --- |
-| `SEQ_RRBF` / `IDX_RRBF` | scan discards most rows by filter — missing/inefficient index |
-| `HSH_ROWS` / `ANJ_ROWS` | full read joined down to a few rows — a join-key index may help |
-| `LIM_SORT` / `LIM_OFFS` | LIMIT reads far more than it returns — index on sort keys / keyset pagination |
-| `CLN_SORT` / `CLN_GROUP` / `CLN_COPY` | redundant sort / regrouping / duplicated subtree |
-| `DSK_SORT` / `DSK_HASH` / `ANY_TEMP` / `BMP_LOSSY` | working set spilled past work_mem — scoped SET LOCAL experiment |
-| `SEQ_BUFF` / `IDX_BUFF` | many buffers per row (per loop) — possible bloat, verify before VACUUM FULL |
-| `NLJ_RRJF` | nested-loop join filter discards almost all pairings — index the join key |
-| `DSK_READ` | node time dominated by measured disk reads — cold cache / slow storage |
-| `TBL_WRTN` | buffers written during a read |
-| `ROW_RATIO` | estimate far off actual — ANALYZE, then extended statistics |
-| `BMP_AND` / `BMP_OR` | composite index / UNION instead of bitmap combination |
-| `CTE_ROWS` | CTE re-scanned many times over a large row set |
-| `GTH_WRKS` | fewer parallel workers launched than planned |
-| `ANY_SLOW` | node time unexplained by buffers and measured I/O — CPU/locks/host, plan cannot tell |
-| `EXT_EXECTIME` / `EXT_PLANTIME` | time outside the plan / planning dominates |
+| `SEQSCAN_DISCARD` / `INDEX_DISCARD` | scan discards most rows by filter — missing/inefficient index |
+| `JOIN_FULLREAD` / `ANTIJOIN_FULLREAD` | full read joined down to a few rows — a join-key index may help |
+| `LIMIT_SORT` / `LIMIT_OFFSET` | LIMIT reads far more than it returns — index on sort keys / keyset pagination |
+| `REDUNDANT_SORT` / `REDUNDANT_GROUP` / `REPEATED_WORK` | redundant sort / regrouping / duplicated subtree |
+| `DISK_SORT` / `DISK_HASH` / `TEMP_SPILL` / `BITMAP_LOSSY` | working set spilled past work_mem — with a concrete `SET LOCAL work_mem` value sized from the observed spill (or, past a sane budget, the advice to cut the row set instead). `DISK_HASH` reads `Batches: N > 1` and flags a batch count that grew at run time as a planner underestimate |
+| `MEMOIZE_MISS` | a Memoize whose lookups mostly miss — cache too small for the key space (evictions) or values that barely repeat |
+| `SEQSCAN_BUFFERS` / `INDEX_BUFFERS` | many buffers per row (per loop) — possible bloat, verify before VACUUM FULL |
+| `NESTLOOP_DISCARD` | nested-loop join filter discards almost all pairings — index the join key |
+| `DISK_READ` | node time dominated by measured disk reads — cold cache / slow storage |
+| `TABLE_WRITTEN` | buffers written during a read |
+| `ROW_ESTIMATE` | estimate far off actual — ANALYZE, then extended statistics |
+| `BITMAP_AND` / `BITMAP_OR` | composite index / UNION instead of bitmap combination |
+| `CTE_RESCAN` | CTE re-scanned many times over a large row set |
+| `GATHER_WORKERS` | fewer parallel workers launched than planned |
+| `UNEXPLAINED_TIME` | node time unexplained by buffers and measured I/O — CPU/locks/host, plan cannot tell. Stands down where another rule already names a cause; collapses to one plan-scoped entry when the plan has no `BUFFERS` at all |
+| `JIT_TIME` | JIT compilation takes a large share of execution — compare against `SET LOCAL jit = off`, then `jit_above_cost` |
+| `OUTSIDE_PLAN` / `PLANNING_TIME` | time outside the plan / planning is a large share of the latency |
+| `SQL_CAST` | the query casts a column in a predicate, so no plain index on it can be used (needs the query text) |
+| `SQL_NOTIN` | `NOT IN (SELECT …)` is evaluated as a subplan; `NOT EXISTS` would allow an anti-join (needs the query text) |
 
 Severity classes (`crit/warn/io/mem/idx/info/hint`) map to theme tokens
 `--pv-sev-*`.
+
+## What the SQL text adds
+
+The query is an optional second input (`PgPlan.parse(plan, {query})`, or the
+`Query Text:` auto_explain already carries). It is never trusted blindly:
+`pgplan-sql.js` matches the two sides **in both directions** — every relation
+the query names must be read by the plan, and every table the plan reads must
+be named by the query — schema-qualified when both sides carry a schema, with
+partitioned children recognised by the alias PostgreSQL derives from the
+parent (`orders o` → `orders_p2026_08 o_1`) rather than by a name prefix. The
+gate is **fail-closed**: a mismatch in either direction, several statements, or
+no relations at all is reported as `sql_mismatch` / `sql_multi_statement` with
+every SQL-derived finding switched off. What the query buys once it is bound (`plan.sql`):
+
+- **which fragment a node came from** — every scan node gets a `sqlSpan` into
+  the query text; the advice cards grow a `sql` button that opens the query
+  pane and highlights that FROM item (a CTE Scan points at the CTE
+  definition). An alias reused in several subqueries is marked ambiguous
+  rather than guessed at.
+- **parameter or literal** — `ROW_ESTIMATE` stops blaming statistics when the
+  node was planned against a parameter (a generic plan is estimated without
+  the values), and `PLANNING_TIME` tells "send it as a prepared statement"
+  apart from "it already is one, so look elsewhere".
+- **who wrote the cast** — a cast the planner injected while matching operator
+  types is dropped from index candidates (`btree (status)` instead of
+  `btree (((status)::text))`), while a cast written in the query raises
+  `SQL_CAST`: no plain index on that column can serve the predicate. Without
+  the query text the two are indistinguishable, so nothing is assumed.
+- **shapes the plan erases** — `NOT IN (SELECT …)` is visible in the text but
+  not in the tree, which is what `SQL_NOTIN` reports.
+
+`plan.parameters` separates external `$N` from InitPlan/SubPlan outputs and is
+available with or without the query text.
 
 ## Build & test
 
@@ -181,7 +231,7 @@ python3 build.py         # -> dist/pg-explain-viewer.html (self-contained)
 ## Embedding into pg_diag (outline)
 
 - inline both CSS files and the three JS modules
-  (`pgplan-expr.js`, `pgplan.js`, `pgplan-render.js`) into
+  (`pgplan-expr.js`, `pgplan-sql.js`, `pgplan.js`, `pgplan-render.js`) into
   `render/templates/report.html` — highlight.js is already vendored there,
   the widget picks up `window.hljs` automatically;
 - map the theme by overriding `--pv-*` with the report's own tokens

@@ -7,6 +7,71 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 3,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 0,
+  "relations": [
+   {
+    "ref": "simple_stock.stock_items",
+    "name": "stock_items",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 1,
+    "s": 76,
+    "e": 100,
+    "alias": null
+   },
+   {
+    "ref": "top_items",
+    "name": "top_items",
+    "schema": null,
+    "kind": "table",
+    "depth": 0,
+    "s": 217,
+    "e": 228,
+    "alias": "t"
+   },
+   {
+    "ref": "simple_stock.order_items_2",
+    "name": "order_items_2",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 0,
+    "s": 234,
+    "e": 263,
+    "alias": "oi"
+   }
+  ],
+  "ctes": [
+   {
+    "name": "top_items",
+    "s": 5,
+    "e": 138
+   }
+  ],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -60,6 +125,13 @@
    "nodes": [
     1
    ]
+  },
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
   }
  ],
  "domain": [
@@ -70,8 +142,8 @@
  ],
  "stats": [
   {
-   "type": "GroupAggregate",
-   "xtype": "GroupAggregate",
+   "rawType": "GroupAggregate",
+   "nodeType": "GroupAggregate",
    "relation": null,
    "index": null,
    "time": 12.927,
@@ -87,8 +159,8 @@
    "timePct": 53.19753086419753
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "stock_items",
    "index": "stock_items_order_2_idx",
    "time": 6.705,
@@ -106,8 +178,8 @@
    "timePct": 27.59259259259259
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 4.288,
@@ -123,8 +195,8 @@
    "timePct": 17.646090534979425
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "order_items_2",
    "index": "order_items_2_pkey",
    "time": 0.3,
@@ -142,8 +214,8 @@
    "timePct": 1.2345679012345678
   },
   {
-   "type": "WindowAgg",
-   "xtype": "WindowAgg",
+   "rawType": "WindowAgg",
+   "nodeType": "WindowAgg",
    "relation": null,
    "index": null,
    "time": 0.049,
@@ -159,8 +231,8 @@
    "timePct": 0.20164609053497942
   },
   {
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "index": null,
    "time": 0.014,
@@ -176,8 +248,8 @@
    "timePct": 0.05761316872427984
   },
   {
-   "type": "CTE Scan",
-   "xtype": "CTE Scan",
+   "rawType": "CTE Scan",
+   "nodeType": "CTE Scan",
    "relation": "top_items",
    "index": null,
    "time": 0.011,
@@ -193,8 +265,8 @@
    "timePct": 0.04526748971193415
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.006,
@@ -328,8 +400,8 @@
  },
  "advice": [
   {
-   "code": "IDX_COND",
-   "badge": "IC",
+   "code": "INDEX_FULLREAD",
+   "badge": "IF",
    "sev": "hint",
    "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
    "hyp": null,
@@ -347,7 +419,7 @@
    }
   },
   {
-   "code": "IDX_BUFF",
+   "code": "INDEX_BUFFERS",
    "badge": "IB",
    "sev": "io",
    "obs": "The scan reads many buffers per row it returns.",
@@ -369,8 +441,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "WindowAgg",
-   "xtype": "WindowAgg",
+   "rawType": "WindowAgg",
+   "nodeType": "WindowAgg",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -414,7 +486,7 @@
    "sortMethod": null,
    "timeIncl": 24.3,
    "timeExcl": 0.049,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -428,8 +500,8 @@
   },
   {
    "id": 1,
-   "type": "CTE top_items",
-   "xtype": "CTE",
+   "rawType": "CTE top_items",
+   "nodeType": "CTE",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -468,7 +540,7 @@
    "sortMethod": null,
    "timeIncl": 23.926,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -482,8 +554,8 @@
   },
   {
    "id": 2,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -524,7 +596,7 @@
    "sortMethod": null,
    "timeIncl": 23.926,
    "timeExcl": 0.006,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -538,8 +610,8 @@
   },
   {
    "id": 3,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -582,7 +654,7 @@
    "sortMethod": "top-N heapsort",
    "timeIncl": 23.92,
    "timeExcl": 4.288,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -599,8 +671,8 @@
   },
   {
    "id": 4,
-   "type": "GroupAggregate",
-   "xtype": "GroupAggregate",
+   "rawType": "GroupAggregate",
+   "nodeType": "GroupAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -642,7 +714,7 @@
    "sortMethod": null,
    "timeIncl": 19.632,
    "timeExcl": 12.927,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 42700,
    "rowsRemovedTotal": 0,
@@ -657,8 +729,8 @@
   },
   {
    "id": 5,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "stock_items",
    "relationRef": "stock_items",
    "index": "stock_items_order_2_idx",
@@ -698,7 +770,7 @@
    "sortMethod": null,
    "timeIncl": 6.705,
    "timeExcl": 6.705,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -711,15 +783,20 @@
    "ratioDir": 0,
    "rawHead": "Index Scan using stock_items_order_2_idx on stock_items  (cost=0.29..2115.31 rows=44535 width=10) (actual time=0.005..6.705 rows=44535.00 loops=1)",
    "costExcl": 2115.31,
+   "sqlSpan": {
+    "s": 76,
+    "e": 100,
+    "ref": "simple_stock.stock_items"
+   },
    "advice": [
-    "IDX_COND",
-    "IDX_BUFF"
+    "INDEX_FULLREAD",
+    "INDEX_BUFFERS"
    ]
   },
   {
    "id": 6,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -761,7 +838,7 @@
    "sortMethod": null,
    "timeIncl": 24.251,
    "timeExcl": 0.014,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -775,8 +852,8 @@
   },
   {
    "id": 7,
-   "type": "CTE Scan",
-   "xtype": "CTE Scan",
+   "rawType": "CTE Scan",
+   "nodeType": "CTE Scan",
    "relation": "top_items",
    "relationRef": "top_items",
    "index": null,
@@ -816,7 +893,7 @@
    "sortMethod": null,
    "timeIncl": 23.937,
    "timeExcl": 0.011,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -826,12 +903,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "CTE Scan on top_items t  (cost=0.00..2.00 rows=100 width=36) (actual time=23.916..23.937 rows=100.00 loops=1)",
-   "costExcl": 2
+   "costExcl": 2,
+   "sqlSpan": {
+    "s": 5,
+    "e": 138,
+    "ref": null
+   }
   },
   {
    "id": 8,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "order_items_2",
    "relationRef": "order_items_2",
    "index": "order_items_2_pkey",
@@ -877,7 +959,7 @@
    "sortMethod": null,
    "timeIncl": 0.3,
    "timeExcl": 0.3,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 100,
    "rowsRemovedTotal": 0,
@@ -889,7 +971,12 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Index Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..5.35 rows=1 width=17) (actual time=0.003..0.003 rows=1.00 loops=100)",
-   "costExcl": 5.35
+   "costExcl": 5.35,
+   "sqlSpan": {
+    "s": 234,
+    "e": 263,
+    "ref": "simple_stock.order_items_2"
+   }
   }
  ]
 }

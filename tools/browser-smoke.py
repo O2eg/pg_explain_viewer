@@ -81,7 +81,7 @@ with sync_playwright() as p:
     # ---- advice pane: schema v2 rendering & safe-output contract ----
     page.evaluate("""() => {
       for (const t of document.querySelectorAll('.pv-tab'))
-        if (t.textContent.startsWith('recommendations')) t.click();
+        if (t.textContent.startsWith('Recommendations')) t.click();
     }""")
     check("impact chips rendered", page.query_selector(".pv-impact") is not None)
     check("exact DDL keeps its copy button",
@@ -96,6 +96,57 @@ with sync_playwright() as p:
     # coaching block shows for under-instrumented plans (hostile plan has no BUFFERS)
     check("coaching block rendered", page.query_selector(".pv-coach") is not None)
 
+    # ---- the SQL field is user input rendered as HTML: it must not execute ----
+    page.evaluate("() => { window.__pwXss = 0; }")
+    page.fill("#src", """Seq Scan on t  (cost=0.00..1.00 rows=1 width=4) (actual time=0.01..0.02 rows=1 loops=1)
+Execution Time: 0.5 ms""")
+    page.fill("#sql", "SELECT * FROM t WHERE x = '<img src=x onerror=\"window.__pwXss=1\">'"
+                      " -- <script>window.__pwXss=1</script>")
+    page.click("#go")
+    page.wait_for_selector(".pv-summary")
+    page.evaluate("""() => {
+      for (const t of document.querySelectorAll('.pv-tab'))
+        if (t.textContent.trim() === 'SQL query') t.click();
+    }""")
+    page.wait_for_timeout(150)
+    check("hostile SQL text executes nothing", page.evaluate("() => window.__pwXss") == 0)
+    check("hostile SQL injects no elements",
+          page.evaluate("""() => !document.querySelector('.pv-query img, .pv-query script')"""))
+
+    # ---- SQL binding: the "sql" button highlights the FROM item ----
+    SQL_PLAN = """Hash Join  (cost=1.00..900.00 rows=1 width=8) (actual time=0.10..900.00 rows=1 loops=1)
+  Hash Cond: (o.customer_id = c.id)
+  ->  Seq Scan on orders o  (cost=0.00..500.00 rows=100 width=8) (actual time=0.01..800.00 rows=100 loops=1)
+        Filter: (status = 'x'::text)
+        Rows Removed by Filter: 100000
+  ->  Hash  (cost=1.00..1.00 rows=1 width=8) (actual time=0.05..0.05 rows=1 loops=1)
+        ->  Seq Scan on customers c  (cost=0.00..1.00 rows=1 width=8) (actual time=0.01..0.02 rows=1 loops=1)
+Execution Time: 900.5 ms"""
+    SQL_TEXT = "SELECT * FROM public.orders o JOIN customers c ON c.id = o.customer_id WHERE o.status = 'x'"
+    page.fill("#src", SQL_PLAN)
+    page.fill("#sql", SQL_TEXT)
+    page.click("#go")
+    page.wait_for_selector(".pv-summary")
+    page.evaluate("""() => {
+      for (const t of document.querySelectorAll('.pv-tab'))
+        if (t.textContent.startsWith('Recommendations')) t.click();
+    }""")
+    sql_btn = page.query_selector(".pv-card-sql")
+    check("advice card offers a link into the query text", sql_btn is not None)
+    if sql_btn:
+        sql_btn.click()
+        page.wait_for_timeout(150)
+        marked = page.evaluate("""() => {
+          const m = document.querySelector('.pv-sqlmark');
+          const onQueryTab = [...document.querySelectorAll('.pv-tab')]
+            .some(t => t.textContent.trim() === 'SQL query' && t.classList.contains('pv-tab-on'));
+          return { text: m ? m.textContent : null, onQueryTab };
+        }""")
+        check("clicking it opens the query tab", marked["onQueryTab"], marked)
+        check("and highlights the FROM item the node came from",
+              marked["text"] == "public.orders o", marked)
+    page.fill("#sql", "")
+
     # ---- minor-observations section: collapsed by default, toggles ----
     MINOR_PLAN = """Sort  (cost=0.00..100.00 rows=10 width=8) (actual time=0.20..100.00 rows=10 loops=1)
   Sort Key: t.a
@@ -108,7 +159,7 @@ Execution Time: 100.4 ms"""
     page.wait_for_selector(".pv-summary")
     page.evaluate("""() => {
       for (const t of document.querySelectorAll('.pv-tab'))
-        if (t.textContent.startsWith('recommendations')) t.click();
+        if (t.textContent.startsWith('Recommendations')) t.click();
     }""")
     mh = page.query_selector(".pv-minorhead")
     check("minor section present for demoted findings", mh is not None)

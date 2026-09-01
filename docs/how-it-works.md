@@ -102,11 +102,27 @@ Every advice entry separates:
   "minor observations" section.
 
 A big plan can trigger the same rule on dozens of nodes (an archive
-sweep found 20× `ANY_SLOW` and 40× `ROW_RATIO` in single plans). Only
+sweep found 20× `UNEXPLAINED_TIME` and 40× `ROW_ESTIMATE` in single plans). Only
 the three highest-impact entries per code are kept as individual cards;
 the rest collapse into one aggregate entry (`agg: N`) that carries the
 combined impact, all affected nodes (row badges still mark them), and
 any DDL candidates from the rolled-up entries.
+
+Three further rules keep the list readable and honest:
+
+- **the residual finding stands down.** `UNEXPLAINED_TIME` means "nothing here
+  explains this time". Where the same node already carries a measured
+  cause (a spill, a filter discarding rows, a thrashing cache), the
+  residual would only restate it and double-count the milliseconds in
+  the ranking, so it is dropped.
+- **without `BUFFERS` the question is not per node.** If the plan
+  carries no buffer counters at all, the CPU-vs-I/O split is unknowable
+  everywhere, and one plan-scoped entry lists the slow nodes instead of
+  one identical card per node.
+- **plan-scoped findings** (`scope: 'plan'` — planning time, JIT,
+  out-of-tree time, the buffer-less residual) name nodes as evidence but
+  are rendered under a "whole plan" header, never borrowing a node's
+  metrics.
 
 `CREATE INDEX` suggestions carry `confidence`:
 
@@ -126,11 +142,62 @@ workload.
 | code | meaning |
 | --- | --- |
 | `unknown_line` | input lines outside any plan node were ignored |
-| `truncated_input` | the plan is cut off (tail or missing ancestors); advice disabled |
+| `truncated_input` | the plan is cut off (tail or missing ancestors); only node-local advice is produced and no finding claims a share of the total |
 | `unsupported_field` | structured JSON/YAML fields with no text representation yet (e.g. Grouping Sets) |
 | `metric_clamped` | negative self time clamped to zero |
 | `metric_raised` | parent inclusive time raised to its children's sum (per-loop 1 µs rounding at high loop counts) |
 | `charge_inferred` / `charge_fallback` | CTE/InitPlan/SubPlan attribution was heuristic / not found |
 | `parallel_estimate` | wall-clock attribution under Gather is approximate |
-| `excl_overshoot` | self times add up to more than the root wall-clock (parallel rounding) — treat them as upper bounds |
+| `excl_overshoot` | self times add up to more than the root wall-clock — treat them as upper bounds; the message names the mechanism (parallel rounding, per-loop quantization, section attribution or truncation) |
 | `partial_worker_stats` | fewer `Worker N:` blocks than launched workers |
+| `totals_missing` | no `Planning Time` / `Execution Time` line: time spent outside the tree cannot be accounted for |
+| `never_executed` | branches pruned at run time: no timing, no recommendations for them |
+| `runtime_pruning` | `Subplans Removed`: the plan shows only the partitions that survived pruning |
+| `sql_mismatch` | the SQL text and the plan could not be matched — every SQL-derived finding is off |
+| `sql_multi_statement` | the SQL text holds several statements; a plan describes one of them |
+| `sql_unparsed` | the SQL text could not be scanned at all |
+
+The diagnostics pane also lists the EXPLAIN options whose absence limits
+the analysis (`plan.coaching`) — they answer the same question ("how far
+can these numbers be trusted?") from the input side.
+
+## The SQL text
+
+The query is optional input. When it is present (`{query}` or the `Query
+Text:` auto_explain prints), `pgplan-sql.js` scans it — a shallow scan, not a
+parse: FROM/JOIN items with source offsets, CTE definitions, `$N` parameters,
+casts written by the author, `NOT IN (SELECT …)`.
+
+**The pairing gate comes first, it is fail-closed, and it runs in both
+directions.** Every relation the query names must be read by the plan, and
+every table the plan reads must be named by the query (structural scans — CTE,
+Subquery, Function, Values, WorkTable — carry a name that comes from the
+query's own shape and are exempt). The comparison is schema-qualified whenever
+both sides carry a schema: JSON and YAML plans do, TEXT prints relations
+unqualified, and a schema only one side knows cannot decide anything.
+
+A partitioned or inherited child is recognised by the alias PostgreSQL derives
+from its parent — `orders o` becomes `orders_p2026_08 o_1` — not by a shared
+name prefix, which `orders_archive` and `orders_backup` would satisfy without
+being partitions of anything. The same alias then ties the child to the FROM
+item it belongs to.
+
+Anything less than a full match in either direction — a relation the plan
+never reads, a table the query never names, several statements in the input,
+no relations at all — leaves `plan.sql.bound` false with `sql_mismatch` or
+`sql_multi_statement`, and nothing downstream may use the query. A partial match is genuinely ambiguous (a view expanded, a join
+eliminated — or simply the wrong query), and from here the cases are
+indistinguishable, so the safe reading wins: a plan explained against somebody
+else's SQL is worse than a plan explained on its own.
+
+Once bound, the query is allowed to change exactly four things:
+
+| what | why the plan alone cannot say it |
+| --- | --- |
+| `node.sqlSpan` | the plan prints aliases (`t_1`, `av_4`, `"*SELECT* 1"`), not the text they came from. An alias only speaks for a node whose relation agrees with the FROM item it names |
+| `ROW_ESTIMATE` / `PLANNING_TIME` wording | a generic plan (estimated without parameter values) and a statement re-planned on every call look the same in the tree |
+| index candidates and `SQL_CAST` | `(col)::text` is either a planner-injected coercion (index the plain column) or an author's cast (no plain index can serve it). Attribution is per FROM item and per target type; an unqualified cast counts only when the statement reads one source |
+| `SQL_NOTIN` | `NOT IN (SELECT …)` and a `NOT EXISTS` the planner could not flatten both end up as a negated subplan |
+
+`plan.parameters` (external `$N` vs InitPlan/SubPlan outputs) is derived from
+the plan alone and stays available without any query text.

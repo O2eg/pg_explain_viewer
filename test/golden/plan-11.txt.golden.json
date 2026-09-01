@@ -7,6 +7,65 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 3,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "pagila.rental",
+    "name": "rental",
+    "schema": "pagila",
+    "kind": "table",
+    "depth": 0,
+    "s": 33,
+    "e": 48,
+    "alias": "r"
+   },
+   {
+    "ref": "pagila.inventory",
+    "name": "inventory",
+    "schema": "pagila",
+    "kind": "table",
+    "depth": 0,
+    "s": 54,
+    "e": 72,
+    "alias": "i"
+   },
+   {
+    "ref": "pagila.film",
+    "name": "film",
+    "schema": "pagila",
+    "kind": "table",
+    "depth": 0,
+    "s": 113,
+    "e": 126,
+    "alias": "f"
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,7 +110,15 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Join",
   "  ->  Scan Table inventory",
@@ -60,8 +127,8 @@
  ],
  "stats": [
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "rental",
    "index": null,
    "time": 0.073,
@@ -79,8 +146,8 @@
    "timePct": 42.441860465116285
   },
   {
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "index": null,
    "time": 0.039,
@@ -96,8 +163,8 @@
    "timePct": 22.674418604651166
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "inventory",
    "index": null,
    "time": 0.028,
@@ -115,8 +182,8 @@
    "timePct": 16.27906976744186
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "film",
    "index": "film_pkey",
    "time": 0.021,
@@ -134,8 +201,8 @@
    "timePct": 12.209302325581397
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 0.005,
@@ -151,8 +218,8 @@
    "timePct": 2.906976744186047
   },
   {
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "index": null,
    "time": 0.003,
@@ -168,8 +235,8 @@
    "timePct": 1.7441860465116283
   },
   {
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "index": null,
    "time": 0.002,
@@ -185,8 +252,8 @@
    "timePct": 1.1627906976744187
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.001,
@@ -346,8 +413,8 @@
  },
  "advice": [
   {
-   "code": "SEQ_RRBF",
-   "badge": "SR",
+   "code": "SEQSCAN_DISCARD",
+   "badge": "SD",
    "sev": "crit",
    "obs": "The sequential scan discards most of the rows it reads by filter.",
    "hyp": "An index on the filter conditions could replace the full-table read.",
@@ -355,7 +422,7 @@
    "nodes": [
     {
      "id": 6,
-     "ext": "rows=7, RRbF=1138, ratio=162.6"
+     "ext": "rows=7, removed by filter=1138, ratio=162.6"
     }
    ],
    "idxs": [
@@ -379,8 +446,8 @@
    }
   },
   {
-   "code": "HSH_ROWS",
-   "badge": "HR",
+   "code": "JOIN_FULLREAD",
+   "badge": "JF",
    "sev": "crit",
    "obs": "The whole table is read and hashed/merged, but the join keeps only a small fraction of its rows.",
    "hyp": "If the join key is selective, an indexed nested-loop lookup could avoid the full read. A missing index on the join (foreign-key) column is a common cause — but the plan does not show which indexes exist.",
@@ -419,8 +486,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -461,7 +528,7 @@
    "sortMethod": null,
    "timeIncl": 0.172,
    "timeExcl": 0.001,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -475,8 +542,8 @@
   },
   {
    "id": 1,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -519,7 +586,7 @@
    "sortMethod": "quicksort",
    "timeIncl": 0.171,
    "timeExcl": 0.005,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -536,8 +603,8 @@
   },
   {
    "id": 2,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -579,7 +646,7 @@
    "sortMethod": null,
    "timeIncl": 0.166,
    "timeExcl": 0.002,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -593,8 +660,8 @@
   },
   {
    "id": 3,
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -642,7 +709,7 @@
    "sortMethod": null,
    "timeIncl": 0.143,
    "timeExcl": 0.039,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -654,13 +721,13 @@
    "rawHead": "Hash Join  (cost=26.24..43.14 rows=7 width=16) (actual time=0.085..0.143 rows=7.00 loops=1)",
    "costExcl": 6.95,
    "advice": [
-    "HSH_ROWS"
+    "JOIN_FULLREAD"
    ]
   },
   {
    "id": 4,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "inventory",
    "relationRef": "inventory",
    "index": null,
@@ -699,7 +766,7 @@
    "sortMethod": null,
    "timeIncl": 0.028,
    "timeExcl": 0.028,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 604,
    "rowsRemovedTotal": 0,
@@ -712,14 +779,19 @@
    "ratioDir": 0,
    "rawHead": "Seq Scan on inventory i  (cost=0.00..10.04 rows=604 width=8) (actual time=0.003..0.028 rows=604.00 loops=1)",
    "costExcl": 10.04,
+   "sqlSpan": {
+    "s": 54,
+    "e": 72,
+    "ref": "pagila.inventory"
+   },
    "advice": [
-    "HSH_ROWS"
+    "JOIN_FULLREAD"
    ]
   },
   {
    "id": 5,
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -761,7 +833,7 @@
    "sortMethod": null,
    "timeIncl": 0.076,
    "timeExcl": 0.003,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -772,12 +844,14 @@
    "ratioDir": 0,
    "rawHead": "Hash  (cost=26.15..26.15 rows=7 width=16) (actual time=0.076..0.076 rows=7.00 loops=1)",
    "memUsageKb": 9,
+   "hashBuckets": 1024,
+   "hashBatches": 1,
    "costExcl": 0
   },
   {
    "id": 6,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "rental",
    "relationRef": "rental",
    "index": null,
@@ -825,7 +899,7 @@
    "sortMethod": null,
    "timeIncl": 0.073,
    "timeExcl": 0.073,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 1138,
@@ -838,14 +912,19 @@
    "ratioDir": 0,
    "rawHead": "Seq Scan on rental r  (cost=0.00..26.15 rows=7 width=16) (actual time=0.006..0.073 rows=7.00 loops=1)",
    "costExcl": 26.15,
+   "sqlSpan": {
+    "s": 33,
+    "e": 48,
+    "ref": "pagila.rental"
+   },
    "advice": [
-    "SEQ_RRBF"
+    "SEQSCAN_DISCARD"
    ]
   },
   {
    "id": 7,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "film",
    "relationRef": "film",
    "index": "film_pkey",
@@ -891,7 +970,7 @@
    "sortMethod": null,
    "timeIncl": 0.021,
    "timeExcl": 0.021,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 7,
    "rowsRemovedTotal": 0,
@@ -903,7 +982,12 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Index Scan using film_pkey on film f  (cost=0.15..0.23 rows=1 width=16) (actual time=0.003..0.003 rows=1.00 loops=7)",
-   "costExcl": 0.23
+   "costExcl": 0.23,
+   "sqlSpan": {
+    "s": 113,
+    "e": 126,
+    "ref": "pagila.film"
+   }
   }
  ]
 }

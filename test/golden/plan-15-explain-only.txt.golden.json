@@ -7,6 +7,19 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": null,
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [
+  {
+   "option": "ANALYZE, BUFFERS",
+   "reason": "the plan carries no runtime data — actual rows, loops, timing and I/O are unknown, so only planner estimates can be analyzed",
+   "warning": null
+  }
+ ],
  "columns": {
   "time": false,
   "cost": true,
@@ -53,8 +66,8 @@
  ],
  "stats": [
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 0,
@@ -70,8 +83,8 @@
    "timePct": null
   },
   {
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "index": null,
    "time": 0,
@@ -87,8 +100,8 @@
    "timePct": null
   },
   {
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "index": null,
    "time": 0,
@@ -104,8 +117,8 @@
    "timePct": null
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "orders",
    "index": null,
    "time": 0,
@@ -121,8 +134,8 @@
    "timePct": null
   },
   {
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "index": null,
    "time": 0,
@@ -138,8 +151,8 @@
    "timePct": null
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "customers",
    "index": null,
    "time": 0,
@@ -243,8 +256,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -283,7 +296,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -298,8 +311,8 @@
   },
   {
    "id": 1,
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -338,7 +351,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -353,8 +366,8 @@
   },
   {
    "id": 2,
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -399,7 +412,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -413,8 +426,8 @@
   },
   {
    "id": 3,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "orders",
    "relationRef": "orders",
    "index": null,
@@ -456,7 +469,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -470,8 +483,8 @@
   },
   {
    "id": 4,
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -508,7 +521,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -522,8 +535,8 @@
   },
   {
    "id": 5,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "customers",
    "relationRef": "customers",
    "index": null,
@@ -558,7 +571,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,

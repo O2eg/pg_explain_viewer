@@ -208,8 +208,8 @@ when a plan cannot prove it.
 - [x] Rule tests (`test/advice.test.js`): full 4-case matrix
       (positive/negative/low-impact/missing-evidence) for the actionable
       rules, positive+negative pairs for the observational rest; found
-      and fixed: `Hash Anti Join` was classified as HSH_ROWS, never
-      ANJ_ROWS. *(v0.3.5)*
+      and fixed: `Hash Anti Join` was classified as JOIN_FULLREAD, never
+      ANTIJOIN_FULLREAD. *(v0.3.5)*
 
 ### 2.4 Project & module infrastructure (M)
 
@@ -418,8 +418,9 @@ rewrites, re-shaping.
 - [x] hostile-input XSS fixture (`test/hostile/xss-plan.txt`) + headless
   assertions (`tools/browser-smoke.py`) (§2.2);
 - [x] rule tests: full 4-case matrix for the actionable rules
-  (SEQ_RRBF, IDX_RRBF, HSH_ROWS, ANJ_ROWS, LIM_SORT, BMP_AND, DSK_*,
-  ANY_TEMP); positive+negative pairs for the observational rest
+  (SEQSCAN_DISCARD, INDEX_DISCARD, JOIN_FULLREAD, ANTIJOIN_FULLREAD,
+  LIMIT_SORT, BITMAP_AND, DISK_SORT, DISK_HASH, TEMP_SPILL);
+  positive+negative pairs for the observational rest
   (`test/advice.test.js`).
 
 ### Batch 3 — publication infrastructure → **v0.4 public preview** (M) — code/docs done, v0.4.0; git init/push pending owner
@@ -434,7 +435,7 @@ rewrites, re-shaping.
   (§2.4);
 - README + "how self time works" / model contract docs (§2.4).
 
-### Batch 4 — stable core → **v0.5** (M)
+### Batch 4 — stable core → **v0.6** (M)
 
 - structured metadata surfaced where it already exists in the model:
   Settings, WAL, memory/disk, JIT, triggers, Serialization (§3.3);
@@ -445,7 +446,7 @@ rewrites, re-shaping.
   corpus from Batch 1 shows the text pipeline materially loses data;
   otherwise this item is closed as "not needed" (§2.1).
 
-### Batch 5 — daily-use UI → **v0.6** (L)
+### Batch 5 — daily-use UI → **v0.7** (L)
 
 All items reuse the existing table/stats renderers rather than new
 components:
@@ -462,7 +463,7 @@ components:
   branch aggregation and CSS containment before any virtualization
   (§3.1).
 
-### Batch 6 — advisor UX & polish → **v0.7** (M)
+### Batch 6 — advisor UX & polish → **v0.8** (M)
 
 - impact ranking, per-rule "why it fired" transparency, the small
   advisor options object (§3.2);
@@ -470,6 +471,28 @@ components:
 - advanced accessibility, `prefers-color-scheme`, buffers toggles with
   `blockSize` (§3.3, §4);
 - model/domain pane decision by feedback; internal debts (§4).
+
+### Batch 7 — what the SQL text adds (M) — done, released in v0.5.0
+
+Out of sequence on purpose: the query was already an accepted input that
+nothing consumed beyond display, and four existing rules were making
+claims the query could settle.
+
+- `src/pgplan-sql.js`: shallow SQL scanner (lexer with comments,
+  dollar-quoting and quoted identifiers; FROM/JOIN sweep with source
+  offsets; CTEs; `$N`; author-written casts; `NOT IN (SELECT …)`);
+- the pairing gate (`plan.sql.bound`, `sql_mismatch`) — a mismatched pair
+  disables every SQL-derived finding instead of being used silently;
+- node → query fragment binding (`node.sqlSpan`) and the `sql` button on
+  advice cards that highlights it in the query pane;
+- generic-plan awareness for `ROW_ESTIMATE` and `PLANNING_TIME`
+  (`plan.parameters` separates external `$N` from InitPlan outputs);
+- planner-injected casts dropped from index candidates, author-written
+  ones reported as `SQL_CAST`;
+- `SQL_NOTIN` for `NOT IN (SELECT …)` evaluated as a subplan.
+
+Explicitly **not** done, and not planned: a SQL parser, a SQL linter, any
+rewriting of the user's query.
 
 ### Deliberately re-sequenced vs. a naive reading
 

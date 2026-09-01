@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the self-contained single-file viewer: dist/pg-explain-viewer.html.
 
-Inlines css/pgplan-theme.css, css/pgplan.css, src/pgplan.js,
+Inlines css/pgplan-theme.css, css/pgplan.css, src/pgplan-expr.js,
+src/pgplan-sql.js, src/pgplan.js,
 src/pgplan-render.js and every plan from test/plans/ into pg-explain-viewer.html.
 No external resources remain — the result works from file:// offline.
 """
@@ -36,6 +37,7 @@ def main() -> None:
     inline_css("<!--PV:CSS-MAIN-->", "css/pgplan.css")
     inline_js("<!--PV:JS-HLJS-->", "vendor/highlight-11.11.1.min.js")
     inline_js("<!--PV:JS-EXPR-->", "src/pgplan-expr.js")
+    inline_js("<!--PV:JS-SQL-->", "src/pgplan-sql.js")
     inline_js("<!--PV:JS-CORE-->", "src/pgplan.js")
     inline_js("<!--PV:JS-RENDER-->", "src/pgplan-render.js")
 

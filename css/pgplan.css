@@ -317,6 +317,19 @@ td.pv-nodecell {
   flex-wrap: wrap;
 }
 
+/* rolled-up family entry: "+N similar" next to the badge */
+.pv-adv-agg {
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+  border: 1px solid var(--pv-border);
+  border-radius: 999px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* raw-input panes sit at the far end of the bar */
+.pv-tab-push { margin-left: auto; }
+
 .pv-tab {
   padding: 6px 15px;
   border: 1px solid var(--pv-border);
@@ -422,6 +435,39 @@ td.pv-adv { white-space: nowrap; }
 }
 
 .pv-card-title { white-space: pre-wrap; word-break: break-word; }
+
+/* SQL binding: the fragment of the query a node came from */
+.pv-sqlmark {
+  background: var(--pv-accent);
+  color: var(--pv-accent-contrast);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.pv-card-sql {
+  font-size: var(--pv-fs-sm);
+  font-family: var(--pv-font-mono);
+  color: var(--pv-fg-muted);
+  border: 1px solid var(--pv-border);
+  border-radius: 4px;
+  padding: 0 6px;
+  background: none;
+  cursor: pointer;
+}
+.pv-card-sql:hover { color: var(--pv-fg); border-color: var(--pv-border-strong); }
+.pv-sqlnote {
+  margin-top: 8px;
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+}
+
+/* plan-scoped findings: no node to head the card, so name the scope */
+.pv-card-head-plan { margin-bottom: 6px; }
+.pv-card-scope {
+  font-size: var(--pv-fs-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pv-fg-muted);
+}
 
 .pv-card-metrics {
   display: flex;

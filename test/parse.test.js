@@ -19,7 +19,7 @@ for (const f of fixtureFiles()) {
     }
     for (const node of plan.nodes) {
       if (node.timeExcl != null) assert.ok(node.timeExcl >= 0, `node ${node.id} excl<0`);
-      assert.ok(node.spec || node.type, `node ${node.id} has no type`);
+      assert.ok(node.spec || node.rawType, `node ${node.id} has no type`);
     }
     // sum of exclusive time must not exceed root inclusive time
     // (small slack for clamped CTE/parallel rounding)
@@ -35,9 +35,9 @@ for (const f of fixtureFiles()) {
 /* ---------------- advisor spot checks ---------------- */
 
 const expectAdvice = {
-  'plan-05.txt': ['GTH_WRKS', 'SEQ_RRBF'],
-  'plan-07.txt': ['LIM_SORT', 'DSK_SORT'],
-  'plan-11.txt': ['HSH_ROWS'],
+  'plan-05.txt': ['GATHER_WORKERS', 'SEQSCAN_DISCARD'],
+  'plan-07.txt': ['LIMIT_SORT', 'DISK_SORT'],
+  'plan-11.txt': ['JOIN_FULLREAD'],
 };
 for (const [f, codes] of Object.entries(expectAdvice)) {
   test('advice: ' + f, () => {
@@ -49,7 +49,7 @@ for (const [f, codes] of Object.entries(expectAdvice)) {
 const expectIdx = {
   // jsonb expression index for the filtered parallel seq scan
   'plan-05.txt': /USING btree \(\(doc ->> 'kind'::text\)\)/,
-  // sort-key index from LIM_SORT
+  // sort-key index from LIMIT_SORT
   'plan-07.txt': /USING btree \(amount, id\)/,
   // FK index on the join key
   'plan-14.txt': /ON inventory USING btree \(film_id\)/,
@@ -200,7 +200,7 @@ test('JSON Workers blocks parse identically', () => {
 
 /* ---------------- truncation & diagnostics (batch 1) ---------------- */
 
-test('truncated tail: detected, advice disabled', () => {
+test('truncated tail: detected, only node-local advice survives', () => {
   const p = PgPlan.parse('Seq Scan on t  (cost=0.00..1.00 rows=1 width=4)'
     + ' (actual time=0.01..0.02 rows=500 loops=1)\n'
     + '  Filter: (a > 1)\n'
@@ -208,7 +208,30 @@ test('truncated tail: detected, advice disabled', () => {
     + '  ->  Sort  (cost=0.00..118', { tolerant: true });
   assert.equal(p.truncated, true);
   assert.ok(p.diagnostics.some(d => d.code === 'truncated_input' && d.severity === 'warn'));
-  assert.deepEqual(p.advice, []);
+  // the scan's own lines still say something actionable...
+  const seq = p.advice.find(a => a.code === 'SEQSCAN_DISCARD');
+  assert.ok(seq, 'node-local finding lost: ' + p.advice.map(a => a.code));
+  // ...but nothing may claim a share of a total the plan cannot supply
+  for (const a of p.advice) {
+    assert.equal(a.impact.pct, null, a.code + ' claims a percentage on a truncated plan');
+    assert.ok(a.impact.level !== 'high', a.code + ' claims high impact on a truncated plan');
+  }
+});
+
+test('truncated plan: tree-dependent rules stay silent', () => {
+  // a Limit/Sort/Scan chain is a parent-child pattern: with the tree cut
+  // off, the relation it is built on is not knowable
+  const p = PgPlan.parse('Limit  (cost=0.00..1.00 rows=10 width=4)'
+    + ' (actual time=0.01..50.00 rows=10 loops=1)\n'
+    + '  ->  Sort  (cost=0.00..900.00 rows=100000 width=4)'
+    + ' (actual time=0.01..49.00 rows=100000 loops=1)\n'
+    + '        Sort Key: t.a\n'
+    + '        Sort Method: external merge  Disk: 5000kB\n'
+    + '        ->  Seq Scan on t  (cost=0.00..600.00', { tolerant: true });
+  assert.equal(p.truncated, true);
+  const got = p.advice.map(a => a.code);
+  assert.ok(got.includes('DISK_SORT'), 'node-local spill finding lost: ' + got);
+  assert.ok(!got.includes('LIMIT_SORT'), 'tree-dependent rule fired on a cut tree: ' + got);
 });
 
 test('plan starting mid-tree (arrow root) is flagged truncated', () => {
@@ -441,8 +464,8 @@ test('CTE with several scans is charged to the scan that absorbs its time', () =
   ->  CTE Scan on heavy heavy_1  (cost=0.00..0.04 rows=2 width=8) (actual time=91.00..95.00 rows=1.00 loops=1)
 Execution Time: 100.4 ms`);
   const cte = p.nodes.find(n => n.spec === 'CTE');
-  const cheap = p.nodes.find(n => n.xtype === 'CTE Scan' && !/heavy_1/.test(n.rawHead));
-  const payer = p.nodes.find(n => n.xtype === 'CTE Scan' && /heavy_1/.test(n.rawHead));
+  const cheap = p.nodes.find(n => n.nodeType === 'CTE Scan' && !/heavy_1/.test(n.rawHead));
+  const payer = p.nodes.find(n => n.nodeType === 'CTE Scan' && /heavy_1/.test(n.rawHead));
   assert.ok(cte && cheap && payer);
   assert.equal(cte.chargedTo, payer.id, 'CTE must be charged to the covering scan');
   assert.ok(Math.abs(payer.timeExcl - 5) < 0.02, 'payer self = incl - CTE: ' + payer.timeExcl);
@@ -465,7 +488,7 @@ test('bare InitPlan header (no "returns $N") is charged by time fit', () => {
           ->  CTE Scan on data  (cost=0.00..5.00 rows=100 width=8) (actual time=0.10..6.20 rows=100.00 loops=1)
   ->  Seq Scan on big  (cost=0.00..8.00 rows=20 width=8) (actual time=6.60..9.90 rows=20.00 loops=1)
         Filter: (v > $0)`);
-  const init = p.nodes.find(n => n.spec && /^InitPlan/.test(n.type));
+  const init = p.nodes.find(n => n.spec && /^InitPlan/.test(n.rawType));
   const big = p.nodes.find(n => n.relation === 'big');
   const cteBody = p.nodes.find(n => n.relation === 'src');
   assert.ok(init && big && cteBody);
@@ -515,5 +538,128 @@ test('plan pasted without its head node is flagged truncated', () => {
   assert.equal(p.truncated, true);
   const d = p.diagnostics.find(x => x.code === 'truncated_input');
   assert.ok(d && /head node is missing/.test(d.message), JSON.stringify(p.diagnostics));
-  assert.deepEqual(p.advice, [], 'advice must be disabled on a headless plan');
+  // the surviving scan still carries its own evidence, but tree-dependent
+  // rules and any share-of-total claim are off
+  assert.ok(!p.advice.some(a => a.impact.pct != null),
+    'a headless plan cannot support percentages');
+  assert.ok(!p.advice.some(a => a.code === 'JOIN_FULLREAD' || a.code === 'REPEATED_WORK'),
+    'tree-dependent rules must stay silent on a headless plan');
+});
+
+/* ---------------- hash / memoize / JIT metadata (v0.4.4) ---------------- */
+
+const MEMO_JSON = JSON.stringify([{
+  Plan: {
+    'Node Type': 'Nested Loop', 'Actual Startup Time': 0.1, 'Actual Total Time': 900,
+    'Actual Rows': 1, 'Actual Loops': 1, 'Plan Rows': 1, 'Plan Width': 8, 'Startup Cost': 0, 'Total Cost': 900,
+    Plans: [
+      {
+        'Node Type': 'Memoize', 'Actual Startup Time': 0.01, 'Actual Total Time': 10,
+        'Actual Rows': 1, 'Actual Loops': 10000, 'Plan Rows': 1, 'Plan Width': 8, 'Startup Cost': 0, 'Total Cost': 10,
+        'Cache Key': 't.a', 'Cache Mode': 'logical',
+        'Cache Hits': 100, 'Cache Misses': 9900, 'Cache Evictions': 9800,
+        'Cache Overflows': 0, 'Peak Memory Usage': 4195,
+        Plans: [{
+          'Node Type': 'Index Scan', 'Relation Name': 'u', 'Index Name': 'u_pkey',
+          'Actual Startup Time': 0.01, 'Actual Total Time': 5,
+          'Actual Rows': 1, 'Actual Loops': 9900, 'Plan Rows': 1, 'Plan Width': 8, 'Startup Cost': 0, 'Total Cost': 5,
+        }],
+      },
+      {
+        'Node Type': 'Hash', 'Actual Startup Time': 50, 'Actual Total Time': 50,
+        'Actual Rows': 100000, 'Actual Loops': 1, 'Plan Rows': 100, 'Plan Width': 8, 'Startup Cost': 0, 'Total Cost': 50,
+        'Hash Buckets': 16384, 'Original Hash Buckets': 1024,
+        'Hash Batches': 512, 'Original Hash Batches': 1, 'Peak Memory Usage': 2304,
+        Plans: [{
+          'Node Type': 'Seq Scan', 'Relation Name': 't',
+          'Actual Startup Time': 0.01, 'Actual Total Time': 20,
+          'Actual Rows': 100000, 'Actual Loops': 1, 'Plan Rows': 100, 'Plan Width': 8, 'Startup Cost': 0, 'Total Cost': 20,
+        }],
+      },
+    ],
+  },
+  JIT: {
+    Functions: 71,
+    Options: { Inlining: false, Optimization: false, Expressions: true, Deforming: true },
+    Timing: { Generation: 1.128, Inlining: 0, Optimization: 0.457, Emission: 11.892, Total: 13.477 },
+  },
+  'Planning Time': 1.0,
+  'Execution Time': 82.0,
+}]);
+
+test('JSON hash/memoize/JIT metadata survives the text pipeline', () => {
+  const p = PgPlan.parse(MEMO_JSON);
+  const memo = p.nodes.find(n => n.nodeType === 'Memoize');
+  const hash = p.nodes.find(n => n.nodeType === 'Hash');
+  assert.deepEqual(memo.cache, { hits: 100, misses: 9900, evictions: 9800, overflows: 0 });
+  assert.equal(memo.memUsageKb, 4195);
+  assert.equal(hash.hashBatches, 512);
+  assert.equal(hash.hashBatchesOrig, 1);
+  assert.equal(hash.hashBuckets, 16384);
+  assert.equal(hash.hashBucketsOrig, 1024);
+  assert.equal(p.jit.functions, 71);
+  assert.equal(p.jit.total, 13.477);
+  assert.equal(p.jit.options.deforming, true);
+});
+
+test('the same metadata parses identically from the emitted text', () => {
+  const p1 = PgPlan.parse(MEMO_JSON);
+  const p2 = PgPlan.parse(p1.text);
+  const pick = p => ({
+    cache: p.nodes.find(n => n.nodeType === 'Memoize').cache,
+    batches: p.nodes.find(n => n.nodeType === 'Hash').hashBatches,
+    buckets: p.nodes.find(n => n.nodeType === 'Hash').hashBuckets,
+    jit: p.jit,
+  });
+  assert.deepEqual(pick(p2), pick(p1));
+});
+
+test('Subplans Removed is recorded and diagnosed', () => {
+  const p = PgPlan.parse(`Append  (cost=0.57..100.00 rows=100 width=8) (actual time=0.02..50.00 rows=100 loops=1)
+  Subplans Removed: 4
+  ->  Index Scan using p1_ix on part_1  (cost=0.57..90.00 rows=100 width=8) (actual time=0.02..40.00 rows=100 loops=1)
+Execution Time: 50.5 ms`);
+  assert.equal(p.nodes[0].subplansRemoved, 4);
+  const d = p.diagnostics.find(x => x.code === 'runtime_pruning');
+  assert.ok(d && /4 partition subplan/.test(d.message), JSON.stringify(p.diagnostics));
+});
+
+test('a truncated plan claims no percentage, aggregate entries included', () => {
+  // the rolled-up "N more nodes" entry used to re-divide its time by the root
+  // time, handing a truncated plan the very numbers it cannot know
+  const lines = ['Append  (cost=0.00..900.00 rows=1000 width=8) (actual time=0.10..100.00 rows=60 loops=1)'];
+  for (let i = 0; i < 6; i++) {
+    lines.push(`  ->  Seq Scan on t${i}  (cost=0.00..100.00 rows=10 width=8) (actual time=0.01..10.00 rows=10 loops=1)`);
+    lines.push('        Filter: (a = 1)');
+    lines.push('        Rows Removed by Filter: 100000');
+  }
+  lines.push('  ->  Sort  (cost=0.00..118');
+  const p = PgPlan.parse(lines.join('\n'), { tolerant: true });
+  assert.equal(p.truncated, true);
+  const agg = p.advice.find(a => a.agg);
+  assert.ok(agg, 'the family was not collapsed: ' + p.advice.length + ' entries');
+  for (const a of p.advice) {
+    assert.equal(a.impact.pct, null, a.code + (a.agg ? ' (aggregate)' : '') + ' claims a percentage');
+    assert.notEqual(a.impact.level, 'high');
+  }
+});
+
+test('INDEX_FULLREAD stays silent on a truncated plan', () => {
+  // "no Index Cond line" and "the line did not arrive" look the same
+  const p = PgPlan.parse('Index Scan using t_ix on t  (cost=0.29..8.30 rows=1 width=8)'
+    + ' (actual time=0.02..900.00 rows=5000 loops=1)\n  ->  Sort  (cost=0.00..118',
+  { tolerant: true });
+  assert.equal(p.truncated, true);
+  assert.ok(!p.advice.some(a => a.code === 'INDEX_FULLREAD'), p.advice.map(a => a.code).join(' '));
+});
+
+test('never_executed names the causes instead of asserting pruning', () => {
+  const p = PgPlan.parse(`Nested Loop  (cost=0.00..900.00 rows=1 width=8) (actual time=0.10..1.00 rows=0 loops=1)
+  ->  Seq Scan on t  (cost=0.00..100.00 rows=1 width=8) (actual time=0.01..0.02 rows=0 loops=1)
+  ->  Index Scan using u_pkey on u  (cost=0.10..0.20 rows=1 width=8) (never executed)
+Execution Time: 1.5 ms`);
+  const d = p.diagnostics.find(x => x.code === 'never_executed');
+  assert.ok(d, 'diagnostic missing');
+  assert.match(d.message, /outer side returned no rows/);
+  assert.match(d.message, /LIMIT/);
 });

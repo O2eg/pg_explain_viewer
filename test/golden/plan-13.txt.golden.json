@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 1,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "queue_skip_locked.tasks",
+    "name": "tasks",
+    "schema": "queue_skip_locked",
+    "kind": "table",
+    "depth": 0,
+    "s": 14,
+    "e": 37,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,14 +90,22 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Scan Table tasks"
  ],
  "stats": [
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "tasks",
    "index": null,
    "time": 0.272,
@@ -76,8 +123,8 @@
    "timePct": 98.55072463768116
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 0.003,
@@ -93,8 +140,8 @@
    "timePct": 1.0869565217391304
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.001,
@@ -147,8 +194,8 @@
  },
  "advice": [
   {
-   "code": "SEQ_RRBF",
-   "badge": "SR",
+   "code": "SEQSCAN_DISCARD",
+   "badge": "SD",
    "sev": "crit",
    "obs": "The sequential scan discards most of the rows it reads by filter.",
    "hyp": "An index on the filter conditions could replace the full-table read.",
@@ -156,7 +203,7 @@
    "nodes": [
     {
      "id": 2,
-     "ext": "rows=0, RRbF=4500"
+     "ext": "rows=0, removed by filter=4500"
     }
    ],
    "idxs": [
@@ -184,8 +231,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -226,7 +273,7 @@
    "sortMethod": null,
    "timeIncl": 0.276,
    "timeExcl": 0.001,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -240,8 +287,8 @@
   },
   {
    "id": 1,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -284,7 +331,7 @@
    "sortMethod": "quicksort",
    "timeIncl": 0.275,
    "timeExcl": 0.003,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -301,8 +348,8 @@
   },
   {
    "id": 2,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "tasks",
    "relationRef": "tasks",
    "index": null,
@@ -350,7 +397,7 @@
    "sortMethod": null,
    "timeIncl": 0.272,
    "timeExcl": 0.272,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 4500,
@@ -363,8 +410,13 @@
    "ratioDir": -1,
    "rawHead": "Seq Scan on tasks  (cost=0.00..140.00 rows=1 width=60) (actual time=0.272..0.272 rows=0 loops=1)",
    "costExcl": 140,
+   "sqlSpan": {
+    "s": 14,
+    "e": 37,
+    "ref": "queue_skip_locked.tasks"
+   },
    "advice": [
-    "SEQ_RRBF"
+    "SEQSCAN_DISCARD"
    ]
   }
  ]

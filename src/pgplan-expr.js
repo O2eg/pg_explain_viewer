@@ -381,9 +381,24 @@
     return s.slice(last).trim() === '';
   }
 
-  const exprForIndex = (s) => {
+  // `written` (optional) names the columns the query text itself casts. A
+  // cast on any other column was injected by the planner while matching
+  // operator types (varchar -> text), and an index on the plain column serves
+  // the predicate — proposing an expression index there only duplicates it.
+  // Without the query text the two cases are indistinguishable in the plan,
+  // so the cast is kept.
+  const exprForIndex = (s, written) => {
     const noCast = s.replace(/::[\w ]+(\[\])?/g, '');
     if (/^[\w$]+$/.test(noCast) || /^"[^"]+"$/.test(noCast)) return noCast; // plain column
+    if (written) {
+      // "(col)::type" — keep the expression only when the query wrote exactly
+      // this cast for this relation; anything else the planner injected while
+      // matching operator types, and the plain column is what to index
+      const m = /^\(?\s*([\w$]+|"[^"]+")\s*\)?::([\w ]+)$/.exec(s);
+      if (m && !written.has(unq(m[1]).toLowerCase() + '::' + m[2].trim().toLowerCase())) {
+        return m[1];
+      }
+    }
     return isPlainCol(s) || /^[a-z_][\w$]*\(.*\)$/i.test(s) ? s : '(' + s + ')';
   };
 
@@ -417,7 +432,7 @@
           const clean = cleanExpr(stripOrder(part), relNames);
           const p = parse(clean);
           if (p.cols.length && p.cols.every(c => c.rel === null || relNames.has(c.rel))) {
-            order.push(exprForIndex(clean));
+            order.push(exprForIndex(clean, spec.writtenCasts));
             sawNonIndexKey = true;
           } else {
             exact = false;
@@ -445,7 +460,7 @@
           if (cond.key !== 'Index Cond') sawNonIndexKey = true;
           continue;
         }
-        const expr = exprForIndex(cleanExpr(side.text, relNames));
+        const expr = exprForIndex(cleanExpr(side.text, relNames), spec.writtenCasts);
         const entry = { expr, op: seg.op, key: cond.key };
         if (cond.key !== 'Index Cond') sawNonIndexKey = true;
         if (seg.op === '=' || seg.op === 'IS NULL') eq.push(entry);
@@ -498,15 +513,30 @@
       };
     };
 
-    // btree: eq cols, then one range col, then order-by tail
-    const btreeOps = [...eqU, ...(rangeU.length ? [rangeU[0]] : [])];
+    // btree: eq cols, then one range col, then order-by tail. A range that
+    // an existing Index Cond already serves makes a poor lead column, so a
+    // range coming from a Filter goes first — that is the predicate the scan
+    // is currently paying for.
+    const rangeRank = rangeU.map((e, i) => [e.key === 'Index Cond' ? 1 : 0, i, e])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]);
+    const btreeOps = [...eqU, ...(rangeRank.length ? [rangeRank[0]] : [])];
     const btreeCols = btreeOps.map(e =>
       e.pattern ? e.expr + ' text_pattern_ops' : e.expr);
     btreeCols.push(...orderU);
+    // further range predicates cannot act as search keys, but as trailing
+    // columns they still let the filter be checked inside the index instead
+    // of fetching the row first — the exact complaint INDEX_DISCARD makes
+    const rangeTail = rangeRank.slice(1, 3).map(e => e.expr);
+    for (const c of rangeTail) if (!btreeCols.includes(c)) btreeCols.push(c);
     if (btreeCols.length) {
-      // extra range/pattern segments can't be index columns — keep as WHERE? no: drop, mark inexact
       if (rangeU.length > 1) exact = false;
-      out.push(mkDef('btree', btreeCols, btreeOps, whereU));
+      // a candidate made only of columns the scan's own Index Cond already
+      // uses would recreate the index that is right there in the plan
+      const condOnly = new Set(
+        [...eqU, ...rangeU].filter(e => e.key === 'Index Cond').map(e => e.expr));
+      const redundant = spec.usesIndex && !orderU.length
+        && btreeCols.every(c => condOnly.has(c));
+      if (!redundant) out.push(mkDef('btree', btreeCols, btreeOps, whereU));
     }
     if (gin.length) {
       const ginU = uniq(gin);
@@ -539,9 +569,9 @@
 
     const relFor = n => {
       // Bitmap Index Scan: relation lives on the ancestor Bitmap Heap Scan
-      if (n.xtype === 'Bitmap Index Scan') {
+      if (n.nodeType === 'Bitmap Index Scan') {
         for (let p = n.parent; p != null; p = nodes[p].parent) {
-          if (nodes[p].xtype === 'Bitmap Heap Scan') return nodes[p];
+          if (nodes[p].nodeType === 'Bitmap Heap Scan') return nodes[p];
         }
         return null;
       }
@@ -567,8 +597,8 @@
       if (!rel) {
         rel = {
           name, schema: schemaName, aliases: new Set(), nodes: [],
-          indexes: new Map(), cols: new Map(), virtual: /Scan/.test(holder.xtype)
-            && !/Seq Scan|Index|Bitmap|Tid|Sample/.test(holder.xtype) ? holder.xtype : null,
+          indexes: new Map(), cols: new Map(), virtual: /Scan/.test(holder.nodeType)
+            && !/Seq Scan|Index|Bitmap|Tid|Sample/.test(holder.nodeType) ? holder.nodeType : null,
         };
         rels.set(key, rel);
       }

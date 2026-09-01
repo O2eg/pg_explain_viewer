@@ -7,6 +7,13 @@
  "inProgress": true,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": null,
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": false,
   "cost": true,
@@ -45,7 +52,15 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Insert temp_pe_calc_t_charges_mr",
   "  ->  Subquery *SELECT*",
@@ -60,8 +75,8 @@
  ],
  "stats": [
   {
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "index": "fd_charge_details_d2_o_n_period_idx",
    "time": 0,
@@ -77,8 +92,8 @@
    "timePct": null
   },
   {
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "index": "fd_charge_details_d2_o_f_registr_pts_idx",
    "time": 0,
@@ -94,8 +109,8 @@
    "timePct": null
   },
   {
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "index": "temp_pe_ed_pts_f_sale_items_idx",
    "time": 0,
@@ -111,8 +126,8 @@
    "timePct": null
   },
   {
-   "type": "Bitmap Heap Scan",
-   "xtype": "Bitmap Heap Scan",
+   "rawType": "Bitmap Heap Scan",
+   "nodeType": "Bitmap Heap Scan",
    "relation": "temp_pe_ed_pts",
    "index": null,
    "time": 0,
@@ -128,8 +143,8 @@
    "timePct": null
   },
   {
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "index": null,
    "time": 0,
@@ -149,8 +164,8 @@
    "timePct": null
   },
   {
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "index": null,
    "time": 0,
@@ -166,8 +181,8 @@
    "timePct": null
   },
   {
-   "type": "Bitmap Heap Scan",
-   "xtype": "Bitmap Heap Scan",
+   "rawType": "Bitmap Heap Scan",
+   "nodeType": "Bitmap Heap Scan",
    "relation": "fd_charge_details_d2_o",
    "index": null,
    "time": 0,
@@ -183,8 +198,8 @@
    "timePct": null
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "fd_finances_ex",
    "index": "pk_fd_finances_ex_pe",
    "time": 0,
@@ -200,8 +215,8 @@
    "timePct": null
   },
   {
-   "type": "Insert",
-   "xtype": "Insert",
+   "rawType": "Insert",
+   "nodeType": "Insert",
    "relation": "temp_pe_calc_t_charges_mr",
    "index": null,
    "time": 0,
@@ -217,8 +232,8 @@
    "timePct": null
   },
   {
-   "type": "Subquery Scan",
-   "xtype": "Subquery Scan",
+   "rawType": "Subquery Scan",
+   "nodeType": "Subquery Scan",
    "relation": "*SELECT*",
    "index": null,
    "time": 0,
@@ -234,8 +249,8 @@
    "timePct": null
   },
   {
-   "type": "Unique",
-   "xtype": "Unique",
+   "rawType": "Unique",
+   "nodeType": "Unique",
    "relation": null,
    "index": null,
    "time": 0,
@@ -251,8 +266,8 @@
    "timePct": null
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 0,
@@ -268,8 +283,8 @@
    "timePct": null
   },
   {
-   "type": "Nested Loop Left Join",
-   "xtype": "Nested Loop Left Join",
+   "rawType": "Nested Loop Left Join",
+   "nodeType": "Nested Loop Left Join",
    "relation": null,
    "index": null,
    "time": 0,
@@ -285,8 +300,8 @@
    "timePct": null
   },
   {
-   "type": "BitmapAnd",
-   "xtype": "BitmapAnd",
+   "rawType": "BitmapAnd",
+   "nodeType": "BitmapAnd",
    "relation": null,
    "index": null,
    "time": 0,
@@ -302,8 +317,8 @@
    "timePct": null
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "temp_pe_calc_t_charges_cons",
    "index": "temp_pe_calc_t_charges_cons_f_registr_pts_idx",
    "time": 0,
@@ -319,8 +334,8 @@
    "timePct": null
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "temp_pe_calc_t_charges_recalc",
    "index": "temp_pe_calc_t_charges_recalc_pkey",
    "time": 0,
@@ -336,8 +351,8 @@
    "timePct": null
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "sd_conn_points_sub",
    "index": "pk_sd_conn_points_sub",
    "time": 0,
@@ -353,8 +368,8 @@
    "timePct": null
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "fd_charge_details_ex",
    "index": "pk_fd_charge_details_ex",
    "time": 0,
@@ -1154,8 +1169,8 @@
  },
  "advice": [
   {
-   "code": "IDX_RRBF",
-   "badge": "IR",
+   "code": "INDEX_DISCARD",
+   "badge": "ID",
    "sev": "crit",
    "obs": "Most rows fetched through the index are then discarded by the filter.",
    "hyp": "An index covering the filter conditions would avoid fetching rows only to discard them.",
@@ -1163,7 +1178,7 @@
    "nodes": [
     {
      "id": 13,
-     "ext": "rows=2736, RRbF=84816, ratio=31.0"
+     "ext": "rows=2736, removed by filter=84816, ratio=31.0"
     }
    ],
    "idxs": [
@@ -1202,7 +1217,7 @@
    }
   },
   {
-   "code": "BMP_AND",
+   "code": "BITMAP_AND",
    "badge": "BA",
    "sev": "idx",
    "obs": "Several bitmap index scans on the same table are intersected (BitmapAnd) to satisfy these conditions.",
@@ -1211,7 +1226,7 @@
    "nodes": [
     {
      "id": 13,
-     "ext": "rows=87552 (2736 + RRbF=84816)"
+     "ext": "rows=87552 (2736 kept + 84816 removed by filter)"
     },
     {
      "id": 14,
@@ -1248,8 +1263,8 @@
    }
   },
   {
-   "code": "IDX_RRBF",
-   "badge": "IR",
+   "code": "INDEX_DISCARD",
+   "badge": "ID",
    "sev": "crit",
    "obs": "Most rows fetched through the index are then discarded by the filter.",
    "hyp": "An index covering the filter conditions would avoid fetching rows only to discard them.",
@@ -1257,41 +1272,23 @@
    "nodes": [
     {
      "id": 18,
-     "ext": "rows=0, RRbF=2616"
+     "ext": "rows=0, removed by filter=2616"
     }
    ],
    "idxs": [
     {
      "rel": "temp_pe_calc_t_charges_cons",
-     "name": "\"~temp_pe_calc_t_charges_cons-824aa82a\"",
+     "name": "\"~temp_pe_calc_t_charges_cons-aa3fca54\"",
      "type": "btree",
      "cols": [
       "f_registr_pts",
-      "d_date1"
+      "d_date1",
+      "d_date0"
      ],
      "where": [],
-     "def": "CREATE INDEX CONCURRENTLY \"~temp_pe_calc_t_charges_cons-824aa82a\"\n  ON temp_pe_calc_t_charges_cons USING btree (f_registr_pts, d_date1);",
+     "def": "CREATE INDEX CONCURRENTLY \"~temp_pe_calc_t_charges_cons-aa3fca54\"\n  ON temp_pe_calc_t_charges_cons USING btree (f_registr_pts, d_date1, d_date0);",
      "comment": "f_registr_pts (=), d_date1 (<)",
      "confidence": "partial"
-    }
-   ],
-   "impact": {
-    "ms": null,
-    "pct": null,
-    "level": "unknown"
-   }
-  },
-  {
-   "code": "ROW_RATIO",
-   "badge": "RR",
-   "sev": "info",
-   "obs": "The planner’s row estimate differs strongly from the actual count.",
-   "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
-   "next": "Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).",
-   "nodes": [
-    {
-     "id": 18,
-     "ext": "rows-act=0, rows-est=47088"
     }
    ],
    "impact": {
@@ -1304,8 +1301,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Insert",
-   "xtype": "Insert",
+   "rawType": "Insert",
+   "nodeType": "Insert",
    "relation": "temp_pe_calc_t_charges_mr",
    "relationRef": "temp_pe_calc_t_charges_mr",
    "index": null,
@@ -1342,7 +1339,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1360,8 +1357,8 @@
   },
   {
    "id": 1,
-   "type": "Subquery Scan",
-   "xtype": "Subquery Scan",
+   "rawType": "Subquery Scan",
+   "nodeType": "Subquery Scan",
    "relation": "*SELECT*",
    "relationRef": "\"*SELECT*\"",
    "index": null,
@@ -1398,7 +1395,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1416,8 +1413,8 @@
   },
   {
    "id": 2,
-   "type": "Unique",
-   "xtype": "Unique",
+   "rawType": "Unique",
+   "nodeType": "Unique",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1454,7 +1451,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1472,8 +1469,8 @@
   },
   {
    "id": 3,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1512,7 +1509,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1531,8 +1528,8 @@
   },
   {
    "id": 4,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1577,7 +1574,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1595,8 +1592,8 @@
   },
   {
    "id": 5,
-   "type": "Nested Loop Left Join",
-   "xtype": "Nested Loop Left Join",
+   "rawType": "Nested Loop Left Join",
+   "nodeType": "Nested Loop Left Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1634,7 +1631,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1652,8 +1649,8 @@
   },
   {
    "id": 6,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1698,7 +1695,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1716,8 +1713,8 @@
   },
   {
    "id": 7,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1755,7 +1752,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1773,8 +1770,8 @@
   },
   {
    "id": 8,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1812,7 +1809,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2617,
    "rowsRemovedTotal": 0,
@@ -1830,8 +1827,8 @@
   },
   {
    "id": 9,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1869,7 +1866,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2617,
    "rowsRemovedTotal": 0,
@@ -1887,8 +1884,8 @@
   },
   {
    "id": 10,
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -1928,7 +1925,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2737,
    "rowsRemovedTotal": 0,
@@ -1944,12 +1941,13 @@
    "partialStats": true,
    "groupKey": "rpi.f_registr_pts",
    "memUsageKb": 937,
+   "hashBatches": 1,
    "costExcl": 0.05
   },
   {
    "id": 11,
-   "type": "Bitmap Heap Scan",
-   "xtype": "Bitmap Heap Scan",
+   "rawType": "Bitmap Heap Scan",
+   "nodeType": "Bitmap Heap Scan",
    "relation": "temp_pe_ed_pts",
    "relationRef": "temp_pe_ed_pts",
    "index": null,
@@ -1999,7 +1997,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 11239,
    "rowsRemovedTotal": 0,
@@ -2018,8 +2016,8 @@
   },
   {
    "id": 12,
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "relationRef": null,
    "index": "temp_pe_ed_pts_f_sale_items_idx",
@@ -2061,7 +2059,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 57010,
    "rowsRemovedTotal": 0,
@@ -2079,8 +2077,8 @@
   },
   {
    "id": 13,
-   "type": "Bitmap Heap Scan",
-   "xtype": "Bitmap Heap Scan",
+   "rawType": "Bitmap Heap Scan",
+   "nodeType": "Bitmap Heap Scan",
    "relation": "fd_charge_details_d2_o",
    "relationRef": "fd_charge_details_d2_o",
    "index": null,
@@ -2133,7 +2131,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2736,
    "rowsRemovedTotal": 84816,
@@ -2146,14 +2144,14 @@
    "heapBlocksExact": 33724,
    "costExcl": 3.37,
    "advice": [
-    "IDX_RRBF",
-    "BMP_AND"
+    "INDEX_DISCARD",
+    "BITMAP_AND"
    ]
   },
   {
    "id": 14,
-   "type": "BitmapAnd",
-   "xtype": "BitmapAnd",
+   "rawType": "BitmapAnd",
+   "nodeType": "BitmapAnd",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -2191,7 +2189,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -2203,13 +2201,13 @@
    "rawHead": "BitmapAnd  (cost=168.66..168.66 rows=3 width=0) (actual rows=0 loops=2736)",
    "costExcl": 5.92,
    "advice": [
-    "BMP_AND"
+    "BITMAP_AND"
    ]
   },
   {
    "id": 15,
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "relationRef": null,
    "index": "fd_charge_details_d2_o_f_registr_pts_idx",
@@ -2251,7 +2249,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 506160,
    "rowsRemovedTotal": 0,
@@ -2266,13 +2264,13 @@
    "currentLoop": 2737,
    "costExcl": 4.76,
    "advice": [
-    "BMP_AND"
+    "BITMAP_AND"
    ]
   },
   {
    "id": 16,
-   "type": "Bitmap Index Scan",
-   "xtype": "Bitmap Index Scan",
+   "rawType": "Bitmap Index Scan",
+   "nodeType": "Bitmap Index Scan",
    "relation": null,
    "relationRef": null,
    "index": "fd_charge_details_d2_o_n_period_idx",
@@ -2314,7 +2312,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 39496458240,
    "rowsRemovedTotal": 0,
@@ -2326,13 +2324,13 @@
    "rawHead": "Bitmap Index Scan on fd_charge_details_d2_o_n_period_idx  (cost=0.00..157.98 rows=761714 width=0) (actual rows=14435840 loops=2736)",
    "costExcl": 157.98,
    "advice": [
-    "BMP_AND"
+    "BITMAP_AND"
    ]
   },
   {
    "id": 17,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "fd_finances_ex",
    "relationRef": "fd_finances_ex",
    "index": "pk_fd_finances_ex_pe",
@@ -2379,7 +2377,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2616,
    "rowsRemovedTotal": 0,
@@ -2396,8 +2394,8 @@
   },
   {
    "id": 18,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "temp_pe_calc_t_charges_cons",
    "relationRef": "temp_pe_calc_t_charges_cons",
    "index": "temp_pe_calc_t_charges_cons_f_registr_pts_idx",
@@ -2447,7 +2445,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 2616,
@@ -2462,14 +2460,13 @@
    "currentLoop": 2617,
    "costExcl": 3.93,
    "advice": [
-    "IDX_RRBF",
-    "ROW_RATIO"
+    "INDEX_DISCARD"
    ]
   },
   {
    "id": 19,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "temp_pe_calc_t_charges_recalc",
    "relationRef": "temp_pe_calc_t_charges_recalc",
    "index": "temp_pe_calc_t_charges_recalc_pkey",
@@ -2516,7 +2513,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -2534,8 +2531,8 @@
   },
   {
    "id": 20,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "sd_conn_points_sub",
    "relationRef": "sd_conn_points_sub",
    "index": "pk_sd_conn_points_sub",
@@ -2577,7 +2574,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -2595,8 +2592,8 @@
   },
   {
    "id": 21,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "fd_charge_details_ex",
    "relationRef": "fd_charge_details_ex",
    "index": "pk_fd_charge_details_ex",
@@ -2643,7 +2640,7 @@
    "sortMethod": null,
    "timeIncl": null,
    "timeExcl": null,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,

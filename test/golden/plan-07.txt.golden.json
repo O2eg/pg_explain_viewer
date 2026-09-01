@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 1,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 0,
+  "relations": [
+   {
+    "ref": "simple_stock.stock_items",
+    "name": "stock_items",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 0,
+    "s": 14,
+    "e": 38,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -57,14 +96,22 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Scan Table stock_items"
  ],
  "stats": [
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 31.826,
@@ -84,8 +131,8 @@
    "timePct": 91.2494982510465
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "index": null,
    "time": 1.793,
@@ -103,8 +150,8 @@
    "timePct": 5.140776420666322
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 1.259,
@@ -138,7 +185,7 @@
  },
  "advice": [
   {
-   "code": "LIM_SORT",
+   "code": "LIMIT_SORT",
    "badge": "LS",
    "sev": "hint",
    "obs": "LIMIT returns only a small fraction of the rows that are fetched and sorted below it.",
@@ -180,16 +227,16 @@
    }
   },
   {
-   "code": "DSK_SORT",
+   "code": "DISK_SORT",
    "badge": "DS",
    "sev": "mem",
    "obs": "The sort did not fit into work_mem and spilled to disk.",
    "hyp": "An index providing the required order would avoid the sort entirely; more memory would keep it off disk.",
-   "next": "Test with more memory scoped to one session: BEGIN; SET LOCAL work_mem = '<observed spill + headroom>'; ... COMMIT; a global work_mem increase multiplies memory use across every concurrent backend.",
+   "next": "Test it in one session first: BEGIN; SET LOCAL work_mem = '8MB'; <query> COMMIT; — work_mem is granted per sort/hash node per backend, so a global increase multiplies memory use across every concurrent query.",
    "nodes": [
     {
      "id": 1,
-     "ext": "external merge Disk: 3320kB"
+     "ext": "external merge, disk 3.2 MB"
     }
    ],
    "impact": {
@@ -202,8 +249,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -247,7 +294,7 @@
    "sortMethod": null,
    "timeIncl": 34.878,
    "timeExcl": 1.259,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 5,
    "rowsRemovedTotal": 0,
@@ -259,13 +306,13 @@
    "rawHead": "Limit  (cost=6227.97..6227.99 rows=5 width=65) (actual time=34.876..34.878 rows=5.00 loops=1)",
    "costExcl": 0,
    "advice": [
-    "LIM_SORT"
+    "LIMIT_SORT"
    ]
   },
   {
    "id": 1,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -311,7 +358,7 @@
    "sortMethod": "external merge",
    "timeIncl": 33.619,
    "timeExcl": 31.826,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44005,
    "rowsRemovedTotal": 0,
@@ -330,14 +377,14 @@
    "sortSizeKb": 3320,
    "costExcl": 5149.96,
    "advice": [
-    "LIM_SORT",
-    "DSK_SORT"
+    "LIMIT_SORT",
+    "DISK_SORT"
    ]
   },
   {
    "id": 2,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "relationRef": "stock_items",
    "index": null,
@@ -376,7 +423,7 @@
    "sortMethod": null,
    "timeIncl": 1.793,
    "timeExcl": 1.793,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -389,8 +436,13 @@
    "ratioDir": 0,
    "rawHead": "Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=65) (actual time=0.004..1.793 rows=44535.00 loops=1)",
    "costExcl": 1079.35,
+   "sqlSpan": {
+    "s": 14,
+    "e": 38,
+    "ref": "simple_stock.stock_items"
+   },
    "advice": [
-    "LIM_SORT"
+    "LIMIT_SORT"
    ]
   }
  ]

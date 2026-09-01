@@ -7,6 +7,55 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 2,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "lab.orders",
+    "name": "orders",
+    "schema": "lab",
+    "kind": "table",
+    "depth": 0,
+    "s": 46,
+    "e": 58,
+    "alias": "o"
+   },
+   {
+    "ref": "lab.customers",
+    "name": "customers",
+    "schema": "lab",
+    "kind": "table",
+    "depth": 0,
+    "s": 64,
+    "e": 79,
+    "alias": "c"
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,7 +100,15 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Join",
   "  ->  Scan Table orders",
@@ -59,8 +116,8 @@
  ],
  "stats": [
   {
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "index": null,
    "time": 3.022,
@@ -76,8 +133,8 @@
    "timePct": 41.89076795120599
   },
   {
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "index": null,
    "time": 2.324,
@@ -93,8 +150,8 @@
    "timePct": 32.21513723315775
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "orders",
    "index": null,
    "time": 1.511,
@@ -112,8 +169,8 @@
    "timePct": 20.945383975602994
   },
   {
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "index": null,
    "time": 0.198,
@@ -129,8 +186,8 @@
    "timePct": 2.7446631549764353
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "customers",
    "index": null,
    "time": 0.135,
@@ -148,8 +205,8 @@
    "timePct": 1.8713612420293877
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 0.024,
@@ -264,8 +321,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -308,7 +365,7 @@
    "sortMethod": "quicksort",
    "timeIncl": 7.214,
    "timeExcl": 0.024,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 4,
    "rowsRemovedTotal": 0,
@@ -327,8 +384,8 @@
   },
   {
    "id": 1,
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -371,7 +428,7 @@
    "sortMethod": null,
    "timeIncl": 7.19,
    "timeExcl": 3.022,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 4,
    "rowsRemovedTotal": 0,
@@ -383,12 +440,13 @@
    "rawHead": "HashAggregate  (cost=686.61..686.66 rows=4 width=45) (actual time=7.187..7.190 rows=4.00 loops=1)",
    "groupKey": "c.region",
    "memUsageKb": 32,
+   "hashBatches": 1,
    "costExcl": 150.05
   },
   {
    "id": 2,
-   "type": "Hash Join",
-   "xtype": "Hash Join",
+   "rawType": "Hash Join",
+   "nodeType": "Hash Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -436,7 +494,7 @@
    "sortMethod": null,
    "timeIncl": 4.168,
    "timeExcl": 2.324,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 20000,
    "rowsRemovedTotal": 0,
@@ -450,8 +508,8 @@
   },
   {
    "id": 3,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "orders",
    "relationRef": "orders",
    "index": null,
@@ -496,7 +554,7 @@
    "sortMethod": null,
    "timeIncl": 1.511,
    "timeExcl": 1.511,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 20000,
    "rowsRemovedTotal": 0,
@@ -508,12 +566,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on orders o  (cost=0.00..417.00 rows=20000 width=14) (actual time=0.009..1.511 rows=20000.00 loops=1)",
-   "costExcl": 417
+   "costExcl": 417,
+   "sqlSpan": {
+    "s": 46,
+    "e": 58,
+    "ref": "lab.orders"
+   }
   },
   {
    "id": 4,
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -555,7 +618,7 @@
    "sortMethod": null,
    "timeIncl": 0.333,
    "timeExcl": 0.198,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2000,
    "rowsRemovedTotal": 0,
@@ -566,12 +629,14 @@
    "ratioDir": 0,
    "rawHead": "Hash  (cost=42.00..42.00 rows=2000 width=13) (actual time=0.333..0.333 rows=2000.00 loops=1)",
    "memUsageKb": 110,
+   "hashBuckets": 2048,
+   "hashBatches": 1,
    "costExcl": 0
   },
   {
    "id": 5,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "customers",
    "relationRef": "customers",
    "index": null,
@@ -610,7 +675,7 @@
    "sortMethod": null,
    "timeIncl": 0.135,
    "timeExcl": 0.135,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 2000,
    "rowsRemovedTotal": 0,
@@ -622,7 +687,12 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on customers c  (cost=0.00..42.00 rows=2000 width=13) (actual time=0.008..0.135 rows=2000.00 loops=1)",
-   "costExcl": 42
+   "costExcl": 42,
+   "sqlSpan": {
+    "s": 64,
+    "e": 79,
+    "ref": "lab.customers"
+   }
   }
  ]
 }

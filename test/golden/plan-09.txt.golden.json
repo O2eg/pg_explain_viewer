@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 1,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "queue_skip_locked.tasks",
+    "name": "tasks",
+    "schema": "queue_skip_locked",
+    "kind": "table",
+    "depth": 0,
+    "s": 15,
+    "e": 38,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,14 +90,22 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Scan Table tasks"
  ],
  "stats": [
   {
-   "type": "LockRows",
-   "xtype": "LockRows",
+   "rawType": "LockRows",
+   "nodeType": "LockRows",
    "relation": null,
    "index": null,
    "time": 0.022,
@@ -76,8 +123,8 @@
    "timePct": 68.75
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "tasks",
    "index": "tasks_pending_idx",
    "time": 0.009,
@@ -95,8 +142,8 @@
    "timePct": 28.125
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.001,
@@ -148,8 +195,8 @@
  },
  "advice": [
   {
-   "code": "IDX_COND",
-   "badge": "IC",
+   "code": "INDEX_FULLREAD",
+   "badge": "IF",
    "sev": "hint",
    "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
    "hyp": null,
@@ -167,8 +214,8 @@
    }
   },
   {
-   "code": "ROW_RATIO",
-   "badge": "RR",
+   "code": "ROW_ESTIMATE",
+   "badge": "RE",
    "sev": "info",
    "obs": "The planner’s row estimate differs strongly from the actual count.",
    "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
@@ -189,8 +236,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -232,7 +279,7 @@
    "sortMethod": null,
    "timeIncl": 0.032,
    "timeExcl": 0.001,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 10,
    "rowsRemovedTotal": 0,
@@ -246,8 +293,8 @@
   },
   {
    "id": 1,
-   "type": "LockRows",
-   "xtype": "LockRows",
+   "rawType": "LockRows",
+   "nodeType": "LockRows",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -289,7 +336,7 @@
    "sortMethod": null,
    "timeIncl": 0.031,
    "timeExcl": 0.022,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 10,
    "rowsRemovedTotal": 0,
@@ -305,8 +352,8 @@
   },
   {
    "id": 2,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "tasks",
    "relationRef": "tasks",
    "index": "tasks_pending_idx",
@@ -352,7 +399,7 @@
    "sortMethod": null,
    "timeIncl": 0.009,
    "timeExcl": 0.009,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 10,
    "rowsRemovedTotal": 0,
@@ -365,9 +412,14 @@
    "ratioDir": -1,
    "rawHead": "Index Scan using tasks_pending_idx on tasks  (cost=0.28..292.40 rows=3815 width=18) (actual time=0.006..0.009 rows=10.00 loops=1)",
    "costExcl": 292.4,
+   "sqlSpan": {
+    "s": 15,
+    "e": 38,
+    "ref": "queue_skip_locked.tasks"
+   },
    "advice": [
-    "IDX_COND",
-    "ROW_RATIO"
+    "INDEX_FULLREAD",
+    "ROW_ESTIMATE"
    ]
   }
  ]

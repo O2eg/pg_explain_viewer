@@ -4,6 +4,245 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.5.0] — 2026-09-01
+
+The first release since 0.4.3. It bundles the four development entries
+below (0.4.4 – 0.4.7), which were never published on their own, and takes
+a minor bump for one reason: **`advice[].code` values changed**. Anything
+matching on them — a report generator, a dashboard, an integration — has
+to be updated. The mapping table is in the 0.4.6 entry.
+
+In short, since 0.4.3:
+
+- the advisor learned what a query plan cannot say on its own — JIT time,
+  hash-batch spills, a Memoize that does not pay for itself, planning
+  time as a share of latency — and stopped repeating itself where a
+  measured cause already exists (0.4.4);
+- an optional SQL query is no longer decoration: `src/pgplan-sql.js`
+  binds it to the plan behind a fail-closed gate and uses it for node →
+  query navigation, generic-plan wording and cast provenance (0.4.5);
+- the rule codes, evidence lines and model fields were renamed to say
+  what they mean (0.4.6);
+- the SQL pairing gate was hardened in both directions after review
+  (0.4.7).
+
+## [0.4.7] — 2026-09-01
+
+### Fixed
+
+- **The pairing gate now runs in both directions.** It only checked that
+  every relation the query names is read by the plan, so a plan reading
+  *more* than the query names passed. Combined with an alias match that
+  outranked the actual relation, a query over `orders o` bound to a plan
+  reading `orders z JOIN payments o`, and `orders`'s cast was attributed
+  to `payments` — producing a false `SQL_CAST` and a copyable
+  `CREATE INDEX … ON payments`. A table the plan reads and the query never
+  names is now `sql_mismatch` / `reason: 'plan-only'`, and an alias may
+  only speak for a node whose relation agrees with the FROM item it names.
+  Structural scans (CTE, Subquery, Function, Values, WorkTable) are exempt
+  from the reverse check: their "relation" comes from the query's shape.
+- **Partitioned children are recognised by the alias PostgreSQL derives**
+  from the parent (`orders o` → `orders_p2026_08 o_1`) instead of by a
+  shared name prefix under an `Append`. The prefix rule read a plain
+  `UNION ALL` over `orders_archive_2024` and `orders_backup` as partitions
+  of `orders`, attaching that query's casts to both and emitting DDL for
+  each. The alias is the server's own construction, so it also ties a
+  child to exactly one FROM item — and it keeps working for a single
+  surviving partition, which PostgreSQL prints without an `Append` at all.
+
+## [0.4.6] — 2026-09-01
+
+Naming pass. The rule codes were inherited from the ported advisor and
+squeezed into eight characters (`DSK_SORT`, `SEQ_RRBF`, `GTH_WRKS`); the
+constraint was never ours. Nothing about the analysis changed — the same
+214-plan corpus produces the same 882 findings, one-for-one.
+
+### Changed
+
+- **Rule codes renamed** (`advice[].code`; two-letter badges are derived
+  and stay unique):
+
+  | was | is | was | is |
+  | --- | --- | --- | --- |
+  | `DSK_SORT` | `DISK_SORT` | `CLN_SORT` | `REDUNDANT_SORT` |
+  | `DSK_HASH` | `DISK_HASH` | `CLN_GROUP` | `REDUNDANT_GROUP` |
+  | `DSK_READ` | `DISK_READ` | `CLN_COPY` | `REPEATED_WORK` |
+  | `IDX_RRBF` | `INDEX_DISCARD` | `GTH_WRKS` | `GATHER_WORKERS` |
+  | `SEQ_RRBF` | `SEQSCAN_DISCARD` | `CTE_ROWS` | `CTE_RESCAN` |
+  | `NLJ_RRJF` | `NESTLOOP_DISCARD` | `ROW_RATIO` | `ROW_ESTIMATE` |
+  | `IDX_COND` | `INDEX_FULLREAD` | `MEM_CACHE` | `MEMOIZE_MISS` |
+  | `IDX_BUFF` | `INDEX_BUFFERS` | `JIT_COST` | `JIT_TIME` |
+  | `SEQ_BUFF` | `SEQSCAN_BUFFERS` | `EXT_EXECTIME` | `OUTSIDE_PLAN` |
+  | `TBL_WRTN` | `TABLE_WRITTEN` | `EXT_PLANTIME` | `PLANNING_TIME` |
+  | `ANY_TEMP` | `TEMP_SPILL` | `HSH_ROWS` | `JOIN_FULLREAD` |
+  | `ANY_SLOW` | `UNEXPLAINED_TIME` | `ANJ_ROWS` | `ANTIJOIN_FULLREAD` |
+  | `BMP_AND` / `BMP_OR` / `BMP_LOSSY` | `BITMAP_*` | `LIM_SORT` / `LIM_OFFS` | `LIMIT_SORT` / `LIMIT_OFFSET` |
+
+  `SQL_CAST` and `SQL_NOTIN` keep their names. Three of the renames fix an
+  outright wrong name rather than an abbreviation: `IDX_COND` fired on the
+  *absence* of an index condition, `HSH_ROWS` also covers merge joins, and
+  `CLN_COPY` is about repeated *execution*, not a copy.
+
+- **Evidence lines spell things out**: `RRbF=900000` is now
+  `removed by filter=900000`, `bufmem=`/`bufdsk=` are `buffers in
+  memory=`/`from disk=`, and the plan table's `RRbF` column header reads
+  `rows removed`. A rolled-up family entry now carries a `+N similar`
+  chip, so an aggregate card is no longer indistinguishable from a
+  single-node one.
+
+- **Model fields**: `node.type` → `node.rawType` (the head line as
+  printed) and `node.xtype` → `node.nodeType` (the operator) — the old
+  pair gave the shorter name to the derived value; `node.prlTime` →
+  `node.parallelTime`. `plan.stats[].type` follows as `rawType`.
+
+### Fixed
+
+- A rolled-up family entry was built without a `badge`, which surfaced as
+  `undefined #N` in the summary badges and an empty pill on the card.
+
+## [0.4.5] — 2026-09-01
+
+The SQL text stopped being decoration. It was already an accepted input
+(the `#sql` field, or the `Query Text:` auto_explain prints) but nothing
+read it beyond syntax highlighting, while four existing rules were making
+claims only the query could settle.
+
+### Added
+
+- `src/pgplan-sql.js` — a shallow scanner for the accompanying query
+  (never a SQL parser): a lexer that survives nested block comments,
+  dollar-quoted bodies, `E''`/`U&''` strings and quoted identifiers; a
+  FROM/JOIN sweep that records every source with its offsets; CTE
+  definitions; `$N` parameters; casts written by the author; and
+  `NOT IN (SELECT …)`.
+- **The pairing gate**, fail-closed. Before anything is derived from the
+  query, every relation it names must be found in the plan — compared
+  schema-qualified whenever both sides carry a schema (JSON/YAML plans
+  do; TEXT prints relations unqualified). A partition counts as its
+  parent only when the plan reads it through an `Append`; the naming
+  convention alone is not evidence. A partial match, several statements
+  in the input, or no relations at all leave `plan.sql.bound` false with
+  `sql_mismatch` / `sql_multi_statement`, and every SQL-derived finding
+  stays off — a plan explained against somebody else's query is worse
+  than a plan explained alone.
+- **Node → query fragment binding.** Scan nodes get a `sqlSpan`; advice
+  cards grow a `sql` button that opens the query pane and highlights the
+  FROM item the node came from (a CTE Scan points at the CTE definition).
+  An alias reused in several subqueries is marked ambiguous, not guessed.
+- `SQL_CAST` — the query casts a column in a predicate, so no plain index
+  on it can serve the comparison. Provenance is per FROM item *and* per
+  target type: two tables joined on columns that share a name never
+  inherit each other's casts, and an unqualified `id::numeric` counts
+  only when the statement reads a single source.
+- `SQL_NOTIN` — `NOT IN (SELECT …)` evaluated as a per-row subplan.
+  `NOT EXISTS` is offered as a rewrite, never as an equivalence: `NOT IN`
+  is three-valued on *both* sides, so the rewrite changes the result
+  unless the compared column and the subquery column are both NOT NULL.
+- `plan.parameters` separates external `$N` from InitPlan/SubPlan outputs
+  (both print as `$N`); available with or without the query text.
+- Diagnostics `sql_mismatch`, `sql_multi_statement`, `sql_unparsed`.
+
+### Changed
+
+- Tab bar reworked: labels are capitalized and ordered by how a plan is
+  read — **Plan, Stats, Diagram, Relations, Model, Diagnostics,
+  Recommendations** — while **Plan text** and **SQL query** are pushed to
+  the far end of the row, since they are the raw input rather than
+  something the widget concluded. Pane names (`opts.tabs`) are unchanged.
+- Index candidates no longer carry a cast the planner injected while
+  matching operator types: with the query text, `btree (status, type,
+  lifetime_created_at)` instead of `btree (((status)::text),
+  ((type)::text), lifetime_created_at)`. A cast written in the query is
+  kept — and reported. Without the query text the two are
+  indistinguishable in the plan, so nothing is assumed.
+- `ROW_ESTIMATE` stops blaming statistics on a node planned against a
+  parameter: a generic plan is estimated without the values, so the miss
+  is expected, and the first step is a custom plan rather than ANALYZE.
+- `PLANNING_TIME` tells "send it as a prepared statement" apart from "it
+  already is one, so the reuse or the plan cache is the question" — while
+  saying plainly that the plan cannot show whether the client prepares
+  and reuses the statement. A query with no literals and no parameters
+  is no longer labelled "sent with literals".
+
+### Fixed
+
+- `FOR UPDATE SKIP LOCKED` no longer reads as a relation called `skip`
+  (found on a real fixture, where it also cost the pair its binding).
+
+## [0.4.4] — 2026-09-01
+
+Recommendations and diagnostics round, driven by ten deliberately diverse
+plans picked out of a 214-plan public archive (parallel, recursive CTE,
+window + incremental sort, parallel DML with a 2.8 GB temp spill, JIT,
+partition pruning, a truncated 14-minute plan). Measured over the whole
+corpus, the noise codes shrank (`UNEXPLAINED_TIME` 297 → 125 cards, `ROW_ESTIMATE`
+175 → 47) while actionable findings grew.
+
+### Added
+
+- `JIT_TIME` — JIT compilation as a share of execution. The corpus holds
+  a query that spent **98.9% of 20 s compiling**, previously invisible:
+  the JIT tail block is now parsed into `plan.jit`
+  (functions, options, per-phase timing).
+- `MEMOIZE_MISS` — a Memoize whose lookups mostly miss, told apart by cause:
+  entries evicted as fast as they are created (cache too small) versus a
+  low hit rate with no evictions (values that barely repeat). `Hits /
+  Misses / Evictions / Overflows` are now parsed (text and JSON). Both
+  halves have to be bad for it to fire: a cache answering 90% of its
+  lookups is working, however many entries it recycles.
+- `DISK_HASH` reworked: it now fires on `Batches: N > 1` — the actual hash
+  spill signal — instead of a "Disk Usage" line PostgreSQL does not print
+  for hash joins, so hash spills were silently missed. A batch count that
+  grew at run time is reported as a planner underestimate. `Buckets` /
+  `Batches` (and their `originally` values) are parsed. A concrete
+  `work_mem` is offered only when `Disk Usage` was actually reported;
+  otherwise the advice says the working set is *on the order of*
+  batches × peak-memory-per-batch, and points at
+  `work_mem × hash_mem_multiplier` as the real budget.
+- `PLANNING_TIME` now judges planning against the whole latency (≥ 10% and
+  ≥ 20 ms) instead of only firing when planning exceeded execution; it
+  was silent on a plan spending 2.8 s planning a 4.6 s query.
+- Diagnostics: `totals_missing` (no Planning/Execution Time line),
+  `never_executed` (nothing reached the node — an empty outer side, a
+  false one-time filter, a LIMIT that stopped execution, or run-time
+  pruning), `runtime_pruning` (`Subplans Removed`). The diagnostics pane now also lists the missing
+  EXPLAIN options from `plan.coaching`.
+
+### Changed
+
+- Spill advice is concrete: sizes are printed in human units and
+  `next` carries a `SET LOCAL work_mem = '<value>'` computed from the
+  observed spill — or, when that value would be unreasonable (a 4.5 GB
+  sort), says so and points at reducing the row set instead.
+- `UNEXPLAINED_TIME` is treated as a residual finding: it stands down on nodes
+  where another rule already names a cause, and on plans without any
+  `BUFFERS` it collapses into a single plan-scoped entry listing the slow
+  nodes (it used to produce up to 26 identical cards per plan).
+- `ROW_ESTIMATE` compares per-loop numbers, matching the ratio it reports.
+  Scaling the estimate by the loop count turned ordinary parameterized
+  probes ("planner floor of 1 row, nothing found, 800 loops") into
+  dozens of fake findings.
+- Truncated plans keep their node-local recommendations instead of losing
+  all advice; tree-dependent rules stay silent and no entry claims a
+  share of the total — the rolled-up aggregate entry included, and
+  `INDEX_FULLREAD` stays out because it fires on the *absence* of a line that a
+  cut plan cannot vouch for. A cut 14-minute plan now yields a lossy bitmap, an
+  index scan discarding 951k rows, a sort spill and a 436k-loop CTE.
+- `excl_overshoot` names the mechanism that produced it (parallel
+  rounding, per-loop quantization, section attribution, truncation)
+  instead of always blaming parallelism.
+- Plan-scoped findings render under a "whole plan" header instead of
+  borrowing the first evidence node's title and metrics.
+
+### Fixed
+
+- Index suggestions no longer recreate the index the scan already uses:
+  a candidate built only from the node's own `Index Cond` columns is
+  suppressed, and range predicates that cannot be search keys are
+  appended as trailing columns so the discarded filter is covered.
+  (Archive case: a scan on `(inn, year)` discarding 2.9M rows by a filter
+  on a third column was told to create `(inn, year)`.)
+
 ## [0.4.3] — 2026-09-01
 
 Validation round against the 30 largest public plans available (96–449

@@ -7,6 +7,65 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 3,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 0,
+  "relations": [
+   {
+    "ref": "simple_stock.stock_items",
+    "name": "stock_items",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 0,
+    "s": 26,
+    "e": 52,
+    "alias": "s"
+   },
+   {
+    "ref": "simple_stock.stock_items",
+    "name": "stock_items",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 1,
+    "s": 95,
+    "e": 119,
+    "alias": null
+   },
+   {
+    "ref": "simple_stock.order_items_2",
+    "name": "order_items_2",
+    "schema": "simple_stock",
+    "kind": "table",
+    "depth": 1,
+    "s": 147,
+    "e": 176,
+    "alias": "oi"
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -60,6 +119,13 @@
    "nodes": [
     1
    ]
+  },
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
   }
  ],
  "domain": [
@@ -70,8 +136,8 @@
  ],
  "stats": [
   {
-   "type": "Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "index": null,
    "time": 3.455,
@@ -87,8 +153,8 @@
    "timePct": 63.604565537555224
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "index": null,
    "time": 1.897,
@@ -106,8 +172,8 @@
    "timePct": 34.92268041237113
   },
   {
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "stock_items",
    "index": "stock_items_order_2_idx",
    "time": 0.037,
@@ -125,8 +191,8 @@
    "timePct": 0.6811487481590573
   },
   {
-   "type": "Index Only Scan",
-   "xtype": "Index Only Scan",
+   "rawType": "Index Only Scan",
+   "nodeType": "Index Only Scan",
    "relation": "order_items_2",
    "index": "order_items_2_pkey",
    "time": 0.021,
@@ -144,8 +210,8 @@
    "timePct": 0.3865979381443299
   },
   {
-   "type": "Merge Join",
-   "xtype": "Merge Join",
+   "rawType": "Merge Join",
+   "nodeType": "Merge Join",
    "relation": null,
    "index": null,
    "time": 0.017,
@@ -161,8 +227,8 @@
    "timePct": 0.312960235640648
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.005,
@@ -272,8 +338,8 @@
  },
  "advice": [
   {
-   "code": "IDX_COND",
-   "badge": "IC",
+   "code": "INDEX_FULLREAD",
+   "badge": "IF",
    "sev": "hint",
    "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
    "hyp": null,
@@ -281,7 +347,7 @@
    "nodes": [
     {
      "id": 5,
-     "ext": "rows=125 (50 + RRbF=75)"
+     "ext": "rows=125 (50 kept + 75 removed by filter)"
     }
    ],
    "impact": {
@@ -291,8 +357,8 @@
    }
   },
   {
-   "code": "ROW_RATIO",
-   "badge": "RR",
+   "code": "ROW_ESTIMATE",
+   "badge": "RE",
    "sev": "info",
    "obs": "The planner’s row estimate differs strongly from the actual count.",
    "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
@@ -310,8 +376,8 @@
    }
   },
   {
-   "code": "IDX_COND",
-   "badge": "IC",
+   "code": "INDEX_FULLREAD",
+   "badge": "IF",
    "sev": "hint",
    "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
    "hyp": null,
@@ -329,8 +395,8 @@
    }
   },
   {
-   "code": "ROW_RATIO",
-   "badge": "RR",
+   "code": "ROW_ESTIMATE",
+   "badge": "RE",
    "sev": "info",
    "obs": "The planner’s row estimate differs strongly from the actual count.",
    "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
@@ -351,8 +417,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -394,7 +460,7 @@
    "sortMethod": null,
    "timeIncl": 5.432,
    "timeExcl": 0.005,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 50,
    "rowsRemovedTotal": 0,
@@ -408,8 +474,8 @@
   },
   {
    "id": 1,
-   "type": "InitPlan 1",
-   "xtype": "InitPlan",
+   "rawType": "InitPlan 1",
+   "nodeType": "InitPlan",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -448,7 +514,7 @@
    "sortMethod": null,
    "timeIncl": 5.352,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -462,8 +528,8 @@
   },
   {
    "id": 2,
-   "type": "Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -504,7 +570,7 @@
    "sortMethod": null,
    "timeIncl": 5.352,
    "timeExcl": 3.455,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -518,8 +584,8 @@
   },
   {
    "id": 3,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "relationRef": "stock_items",
    "index": null,
@@ -558,7 +624,7 @@
    "sortMethod": null,
    "timeIncl": 1.897,
    "timeExcl": 1.897,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -570,12 +636,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=6) (actual time=0.007..1.897 rows=44535.00 loops=1)",
-   "costExcl": 1079.35
+   "costExcl": 1079.35,
+   "sqlSpan": {
+    "s": 26,
+    "e": 52,
+    "ref": "simple_stock.stock_items"
+   }
   },
   {
    "id": 4,
-   "type": "Merge Join",
-   "xtype": "Merge Join",
+   "rawType": "Merge Join",
+   "nodeType": "Merge Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -623,7 +694,7 @@
    "sortMethod": null,
    "timeIncl": 5.427,
    "timeExcl": 0.017,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 50,
    "rowsRemovedTotal": 0,
@@ -637,8 +708,8 @@
   },
   {
    "id": 5,
-   "type": "Index Scan",
-   "xtype": "Index Scan",
+   "rawType": "Index Scan",
+   "nodeType": "Index Scan",
    "relation": "stock_items",
    "relationRef": "stock_items",
    "index": "stock_items_order_2_idx",
@@ -687,7 +758,7 @@
    "sortMethod": null,
    "timeIncl": 5.389,
    "timeExcl": 0.037,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 50,
    "rowsRemovedTotal": 75,
@@ -700,15 +771,20 @@
    "ratioDir": -1,
    "rawHead": "Index Scan using stock_items_order_2_idx on stock_items s  (cost=0.29..2226.65 rows=14845 width=53) (actual time=5.360..5.389 rows=50.00 loops=1)",
    "costExcl": 2226.65,
+   "sqlSpan": {
+    "s": 26,
+    "e": 52,
+    "ref": "simple_stock.stock_items"
+   },
    "advice": [
-    "IDX_COND",
-    "ROW_RATIO"
+    "INDEX_FULLREAD",
+    "ROW_ESTIMATE"
    ]
   },
   {
    "id": 6,
-   "type": "Index Only Scan",
-   "xtype": "Index Only Scan",
+   "rawType": "Index Only Scan",
+   "nodeType": "Index Only Scan",
    "relation": "order_items_2",
    "relationRef": "order_items_2",
    "index": "order_items_2_pkey",
@@ -749,7 +825,7 @@
    "sortMethod": null,
    "timeIncl": 0.021,
    "timeExcl": 0.021,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 128,
    "rowsRemovedTotal": 0,
@@ -762,9 +838,14 @@
    "ratioDir": -1,
    "rawHead": "Index Only Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..1185.36 rows=50000 width=8) (actual time=0.015..0.021 rows=128.00 loops=1)",
    "costExcl": 1185.36,
+   "sqlSpan": {
+    "s": 147,
+    "e": 176,
+    "ref": "simple_stock.order_items_2"
+   },
    "advice": [
-    "IDX_COND",
-    "ROW_RATIO"
+    "INDEX_FULLREAD",
+    "ROW_ESTIMATE"
    ]
   }
  ]

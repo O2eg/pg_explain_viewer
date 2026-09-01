@@ -151,6 +151,10 @@
   }
   .vw-bar { display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
   .vw-hint { color: var(--vw-muted); font-size: 14px; }
+  .vw-hint code {
+    font-family: var(--pv-font-mono, ui-monospace, monospace);
+    border: 1px solid var(--vw-border); border-radius: 4px; padding: 0 4px;
+  }
   .vw-error {
     margin-top: 12px;
     padding: 10px 14px;
@@ -190,11 +194,11 @@
     <textarea id="src" spellcheck="false"
       placeholder="Paste an EXPLAIN ANALYZE plan here — text, JSON or YAML format; auto_explain log entries (&quot;duration: … ms  plan:&quot; with Query Text) are understood too."></textarea>
     <textarea id="sql" class="vw-sql" spellcheck="false"
-      placeholder="Optional: the SQL query text — used when the plan itself carries no Query Text (overrides it otherwise)."></textarea>
+      placeholder="Optional: the SQL query text — used when the plan carries no Query Text (overrides it otherwise). One statement, matched against the plan: what it adds — which FROM item a node came from, parameter vs literal, who wrote a cast — is dropped when the two do not match."></textarea>
     <div class="vw-bar">
       <button class="primary" id="go">Visualize</button>
       <button id="clear">Clear</button>
-      <span class="vw-hint">Ctrl+Enter — visualize · click a row — expand node details · click a column header — jump to the hottest node</span>
+      <span class="vw-hint">Ctrl+Enter — visualize · click a row — expand node details · click a column header — jump to the hottest node · <code>sql</code> on a recommendation — show the query fragment it came from</span>
     </div>
     <div class="vw-error" id="error"></div>
   </div>
@@ -204,6 +208,7 @@
 
 <script src="vendor/highlight-11.11.1.min.js"></script><!--PV:JS-HLJS-->
 <script src="src/pgplan-expr.js"></script><!--PV:JS-EXPR-->
+<script src="src/pgplan-sql.js"></script><!--PV:JS-SQL-->
 <script src="src/pgplan.js"></script><!--PV:JS-CORE-->
 <script src="src/pgplan-render.js"></script><!--PV:JS-RENDER-->
 <script>

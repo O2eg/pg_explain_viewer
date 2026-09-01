@@ -22,7 +22,7 @@ const DML_SHAPES = new Set(['merge', 'triggers', 'wal']);
 function skeleton(plan, withEstimates, dropGroupKey) {
   return plan.nodes.map(n => {
     const s = {
-      spec: n.spec, type: n.type, relation: n.relation, index: n.index,
+      spec: n.spec, rawType: n.rawType, relation: n.relation, index: n.index,
       alias: n.alias, parent: n.parent, children: n.children.length,
       planWidth: n.planWidth,
       never: n.never,

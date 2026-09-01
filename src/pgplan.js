@@ -39,11 +39,12 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./pgplan-expr.js'));
+    module.exports = factory(require('./pgplan-expr.js'), require('./pgplan-sql.js'));
   } else {
-    root.PgPlan = factory(root.PgPlanExpr); // pgplan-expr.js is optional in the browser
+    // both peers are optional in the browser
+    root.PgPlan = factory(root.PgPlanExpr, root.PgPlanSql);
   }
-}(typeof self !== 'undefined' ? self : this, function (Expr) {
+}(typeof self !== 'undefined' ? self : this, function (Expr, Sql) {
   'use strict';
 
   const BUFFER_COLS = [
@@ -212,6 +213,7 @@
     'WAL Records', 'WAL FPI', 'WAL Bytes',
     'Sort Method', 'Sort Space Used', 'Sort Space Type',
     'Hash Buckets', 'Original Hash Buckets', 'Hash Batches', 'Original Hash Batches',
+    'Cache Hits', 'Cache Misses', 'Cache Evictions', 'Cache Overflows',
     'Peak Memory Usage', 'Exact Heap Blocks', 'Lossy Heap Blocks',
     'Shared Hit Blocks', 'Shared Read Blocks', 'Shared Dirtied Blocks', 'Shared Written Blocks',
     'Local Hit Blocks', 'Local Read Blocks', 'Local Dirtied Blocks', 'Local Written Blocks',
@@ -330,6 +332,14 @@
       if (node['Original Hash Batches']) l += ' (originally ' + node['Original Hash Batches'] + ')';
       l += '  Memory Usage: ' + node['Peak Memory Usage'] + 'kB';
       out.push(l);
+      delete node['Peak Memory Usage'];
+    }
+    if (node['Cache Hits'] !== undefined) {
+      out.push(attr + 'Hits: ' + node['Cache Hits']
+        + '  Misses: ' + (node['Cache Misses'] || 0)
+        + '  Evictions: ' + (node['Cache Evictions'] || 0)
+        + '  Overflows: ' + (node['Cache Overflows'] || 0)
+        + '  Memory Usage: ' + (node['Peak Memory Usage'] || 0) + 'kB');
       delete node['Peak Memory Usage'];
     }
     for (const [key, val] of Object.entries(node)) {
@@ -527,25 +537,25 @@
     // printed in the plan (quotes intact) — required for safe generated DDL,
     // where "a.b" (one dotted name) and a.b (schema.rel) must stay distinct
     if ((m = RE_HEAD_BIS.exec(head))) {
-      node.type = m[1]; node.index = unquote(m[2]);
+      node.rawType = m[1]; node.index = unquote(m[2]);
     } else if ((m = RE_HEAD_INDEX.exec(head))) {
-      node.type = m[1]; node.index = unquote(m[2]);
+      node.rawType = m[1]; node.index = unquote(m[2]);
       node.relation = unquote(m[3]); node.relationRef = m[3];
       node.alias = m[4] ? unquote(m[4]) : null;
     } else if ((m = RE_HEAD_CUSTOM.exec(head))) {
-      node.type = m[1] + ' (' + m[2] + ')';
+      node.rawType = m[1] + ' (' + m[2] + ')';
       node.relation = m[3] ? unquote(m[3]) : null;
       node.relationRef = m[3] || null;
     } else if ((m = RE_HEAD_DML.exec(head))) {
-      node.type = m[1]; node.relation = unquote(m[2]); node.relationRef = m[2];
+      node.rawType = m[1]; node.relation = unquote(m[2]); node.relationRef = m[2];
       node.alias = m[3] ? unquote(m[3]) : null;
     } else if ((m = RE_HEAD_FUNC.exec(head)) || (m = RE_HEAD_SCAN.exec(head))) {
-      node.type = m[1]; node.relation = unquote(m[2]); node.relationRef = m[2];
+      node.rawType = m[1]; node.relation = unquote(m[2]); node.relationRef = m[2];
       node.alias = m[3] ? unquote(m[3]) : null;
     } else {
-      node.type = head;
+      node.rawType = head;
     }
-    node.xtype = node.type.replace(/^(Parallel|Partial|Finalize|Async)\s+/, '');
+    node.nodeType = node.rawType.replace(/^(Parallel|Partial|Finalize|Async)\s+/, '');
   }
 
   // Buffers: shared hit=1 read=2, local hit=3, temp read=4 written=5
@@ -608,6 +618,7 @@
       case 'Workers Planned': node.workersPlanned = Number(val); return;
       case 'Workers Launched': node.workersLaunched = Number(val); return;
       case 'Heap Fetches': node.heapFetches = Number(val); return;
+      case 'Subplans Removed': node.subplansRemoved = Number(val); return;
       case 'Sort Method': parseSortMethod(val, node); return;
       case 'Heap Blocks': {
         const ex = /exact=(\d+)/.exec(val);
@@ -616,12 +627,39 @@
         if (lo) node.heapBlocksLossy = Number(lo[1]);
         return;
       }
-      case 'Buckets':   // "1024  Batches: 1  Memory Usage: 32kB"
+      case 'Buckets':   // "1024 (originally 512)  Batches: 1  Memory Usage: 32kB"
       case 'Batches': { // "1  Memory Usage: 32kB  Disk Usage: 40kB"
         const du = /Disk Usage: (\d+)kB/.exec(val);
         if (du) node.diskUsageKb = Number(du[1]);
         const mu = /Memory Usage: (\d+)kB/.exec(val);
         if (mu) node.memUsageKb = Number(mu[1]);
+        // Batches > 1 is how a hash join reports that the hash side did not
+        // fit into work_mem: it was partitioned to temp files. "(originally
+        // N)" means the planner's size estimate was corrected at run time.
+        const lead = /^(\d+)(?:\s*\(originally (\d+)\))?/.exec(val);
+        if (key === 'Buckets' && lead) {
+          node.hashBuckets = Number(lead[1]);
+          if (lead[2]) node.hashBucketsOrig = Number(lead[2]);
+        }
+        const ba = key === 'Batches' ? lead
+          : /Batches: (\d+)(?:\s*\(originally (\d+)\))?/.exec(val);
+        if (ba) {
+          node.hashBatches = Number(ba[1]);
+          if (ba[2]) node.hashBatchesOrig = Number(ba[2]);
+        }
+        return;
+      }
+      // Memoize: "Hits: 5  Misses: 2  Evictions: 0  Overflows: 0  Memory Usage: 1kB"
+      case 'Hits': {
+        const num = re => { const m = re.exec(val); return m ? Number(m[1]) : 0; };
+        node.cache = {
+          hits: num(/^(\d+)/),
+          misses: num(/Misses: (\d+)/),
+          evictions: num(/Evictions: (\d+)/),
+          overflows: num(/Overflows: (\d+)/),
+        };
+        const mu2 = /Memory Usage: (\d+)kB/.exec(val);
+        if (mu2) node.memUsageKb = Number(mu2[1]);
         return;
       }
       case 'Sort Key': node.sortKey = val; return;
@@ -680,7 +718,7 @@
   function makeNode(id) {
     return {
       id,
-      type: '', xtype: '',
+      rawType: '', nodeType: '',
       relation: null, relationRef: null, index: null, alias: null,
       spec: null,          // 'CTE' | 'InitPlan' | 'SubPlan' for section headers
       specName: null,
@@ -700,7 +738,7 @@
       workersPlanned: null, workersLaunched: null,
       heapFetches: null, sortMethod: null,
       // derived (analyze)
-      timeIncl: null, timeExcl: null, prlTime: null,
+      timeIncl: null, timeExcl: null, parallelTime: null,
       gatherWorkers: null,
       rowsTotal: 0, rowsRemovedTotal: 0,
       bufExcl: {}, ioReadExcl: 0, ioWriteExcl: 0,
@@ -804,7 +842,7 @@
           // the plan's own root can never carry an arrow: ancestors were cut
           truncated = true;
           addDiag('truncated_input', 'warn',
-            'Plan starts with a child arrow: ancestor node(s) are missing; recommendations are disabled', body);
+            'Plan starts with a child arrow: ancestor node(s) are missing; only node-local recommendations are produced', body);
         }
         const node = makeNode(nodes.length);
         node.indent = indent;
@@ -834,8 +872,8 @@
         node.spec = sm[1];
         node.specName = content.slice(sm[1].length).trim() || null;
         node.rawHead = content;
-        node.type = content;
-        node.xtype = sm[1];
+        node.rawType = content;
+        node.nodeType = sm[1];
         node.head = content;
         attachNode(node);
         nodes.push(node);
@@ -950,7 +988,7 @@
       if (bal !== 0) {
         truncated = true;
         addDiag('truncated_input', 'warn',
-          'Input ends mid-line: the plan tail is likely cut off; recommendations are disabled',
+          'Input ends mid-line: the plan tail is likely cut off; only node-local recommendations are produced',
           last.trim());
       }
     }
@@ -973,16 +1011,16 @@
       const cut = [];
       for (const n of nodes) {
         if (n.spec) continue;
-        const isJoin = /^Nested Loop\b/.test(n.xtype)
-          || /^(?:Merge|Hash)(?: \w+)* Join\b/.test(n.xtype);
-        if ((isJoin && kids[n.id] < 2) || (oneInput.has(n.xtype) && kids[n.id] < 1)) {
+        const isJoin = /^Nested Loop\b/.test(n.nodeType)
+          || /^(?:Merge|Hash)(?: \w+)* Join\b/.test(n.nodeType);
+        if ((isJoin && kids[n.id] < 2) || (oneInput.has(n.nodeType) && kids[n.id] < 1)) {
           cut.push(n.head);
         }
       }
       if (cut.length) {
         truncated = true;
         addDiag('truncated_input', 'warn',
-          'Plan nodes are missing their children: the plan tail is likely cut off; recommendations are disabled',
+          'Plan nodes are missing their children: the plan tail is likely cut off; only node-local recommendations are produced',
           cut.slice(0, 3));
       }
     }
@@ -1011,7 +1049,7 @@
     function walkGather(id, workers) {
       const n = nodes[id];
       let w = workers;
-      if (/^Gather( Merge)?$/.test(n.type) && n.workersLaunched != null) {
+      if (/^Gather( Merge)?$/.test(n.rawType) && n.workersLaunched != null) {
         w = n.workersLaunched + 1;
       } else if (workers) {
         n.gatherWorkers = workers;
@@ -1026,7 +1064,7 @@
         const w = n.gatherWorkers || 1;
         const effLoops = w > 1 ? Math.ceil(n.loops / w) : n.loops;
         n.timeIncl = round3(n.timeTotal * effLoops);
-        if (w > 1) n.prlTime = round3(n.timeTotal * n.loops);
+        if (w > 1) n.parallelTime = round3(n.timeTotal * n.loops);
       }
       n.rowsTotal = n.rows != null && n.loops ? Math.round(n.rows * n.loops) : 0;
       n.rowsRemovedTotal = n.rowsRemoved && n.loops ? Math.round(n.rowsRemoved * n.loops) : 0;
@@ -1110,7 +1148,7 @@
         // it (lazy execution happens inside the scan that demands rows
         // first) — document order is only a tie-break, not evidence.
         const scans = nodes.filter(n =>
-          (n.xtype === 'CTE Scan' || n.xtype === 'WorkTable Scan')
+          (n.nodeType === 'CTE Scan' || n.nodeType === 'WorkTable Scan')
           && n.relation === name && n.loops && !isDescendantOf(n.id, spec.id));
         let target = null;
         if (scans.length === 1) {
@@ -1134,7 +1172,7 @@
 
       // marker tokens referencing this InitPlan / SubPlan
       const markers = [];
-      const specHead = spec.type; // full header, e.g. "InitPlan 1 (returns $0)"
+      const specHead = spec.rawType; // full header, e.g. "InitPlan 1 (returns $0)"
       const nm = /(InitPlan|SubPlan)\s*(\d*)/.exec(specHead);
       if (nm) markers.push('(' + nm[1] + (nm[2] ? ' ' + nm[2] : '') + ')');
       for (const p of specHead.matchAll(/\$\d+/g)) markers.push(p[0]);
@@ -1326,7 +1364,7 @@
         continue;
       }
       const r = act > est ? act / est : est / act;
-      if (r < 1.05) continue; // близко к точному попаданию
+      if (r < 1.05) continue; // close enough to call it a hit
       n.ratio = r;
       n.ratioDir = act > est ? 1 : -1;
     }
@@ -1381,6 +1419,43 @@
       }
     }
 
+    // JIT tail block: compilation is charged to execution time but belongs to
+    // no plan node, so it stays invisible in the tree — structure it here.
+    //   Functions: 109
+    //   Options: Inlining true, Optimization true, ...
+    //   Timing: Generation 11.723 ms, ..., Total 2851.190 ms
+    plan.jit = null;
+    for (const e of plan.ext) {
+      if (e.key !== 'JIT') continue;
+      const jit = { functions: null, options: {}, timing: {}, total: null };
+      for (const l of e.lines) {
+        const fm = /^\s*Functions:\s*(\d+)/.exec(l);
+        if (fm) { jit.functions = Number(fm[1]); continue; }
+        const om = /^\s*Options:\s*(.*)$/.exec(l);
+        if (om) {
+          for (const part of om[1].split(',')) {
+            const p = /^\s*([A-Za-z][A-Za-z ]*?)\s+(true|false)\s*$/.exec(part);
+            if (p) jit.options[p[1].trim().toLowerCase()] = p[2] === 'true';
+          }
+          continue;
+        }
+        const tm = /^\s*Timing:\s*(.*)$/.exec(l);
+        if (tm) {
+          for (const part of tm[1].split(',')) {
+            const p = /^\s*([A-Za-z][A-Za-z ]*?)\s+([\d.]+)\s*ms\s*$/.exec(part);
+            if (p) jit.timing[p[1].trim().toLowerCase()] = Number(p[2]);
+          }
+        }
+      }
+      if (jit.timing.total != null) jit.total = jit.timing.total;
+      else {
+        const parts = Object.values(jit.timing);
+        if (parts.length) jit.total = round3(parts.reduce((s, v) => s + v, 0));
+      }
+      plan.jit = jit;
+      break;
+    }
+
     // the ceil(loops/workers) wall-clock model rounds up per node, so on
     // parallel plans sibling self times can add up to more than the root —
     // say so instead of letting the numbers quietly disagree
@@ -1391,11 +1466,79 @@
         if (!n.spec && n.timeExcl != null) { sumExcl += n.timeExcl; hasExcl = true; }
       }
       if (hasExcl && sumExcl > totals.time * 1.02 + 0.1) {
+        // name the mechanism that actually produced the overshoot instead of
+        // blaming parallelism on plans that have none
+        const seen = c => diagnostics.some(d => d.code === c);
+        const parallel = nodes.some(n => n.gatherWorkers > 0 || n.workersLaunched > 0);
+        const cause = plan.truncated
+          ? 'the plan is cut off: nodes whose children are missing carry the whole subtree '
+            + 'time as their own'
+          : parallel
+          ? 'the ceil(loops / workers) wall-clock model rounds up on every parallel node'
+          : seen('metric_raised')
+            ? 'per-loop times are printed with 1 µs resolution, and at high loop counts the '
+              + 'rounding adds up to whole seconds'
+            : seen('charge_fallback') || seen('charge_inferred')
+              ? 'the executing node of some CTE/InitPlan/SubPlan sections could not be identified, '
+                + 'so their time is counted where the section is written'
+              : 'rounding and attribution artifacts accumulate across the tree';
         addDiag('excl_overshoot', 'warn',
           'Sum of node self times exceeds the root wall-clock time by '
           + Math.round((sumExcl / totals.time - 1) * 100)
-          + '%: parallel wall-clock attribution is approximate here — treat per-node self times as upper bounds');
+          + '%: ' + cause + ' — treat per-node self times as upper bounds');
       }
+    }
+
+    // -- what qualifies the reading of this plan, beyond model artifacts
+    if (nodes.length && !plan.truncated) {
+      const hasRuntime = nodes.some(n => n.loops != null || n.never);
+      if (hasRuntime && executionTime == null && planningTime == null) {
+        addDiag('totals_missing', 'info',
+          'The plan carries no Planning Time / Execution Time line: time spent outside the '
+          + 'tree (planning, JIT, result transfer, triggers) cannot be accounted for');
+      }
+      const neverIds = nodes.filter(n => n.never && !n.spec).map(n => n.id);
+      if (neverIds.length) {
+        addDiag('never_executed', 'info',
+          neverIds.length + ' node(s) were never executed: nothing reached them — an outer side '
+          + 'returned no rows, a one-time filter was false, a LIMIT stopped execution, or a '
+          + 'partition was pruned at run time. They carry no timing and no recommendations',
+          neverIds);
+      }
+      let pruned = 0;
+      for (const n of nodes) if (n.subplansRemoved > 0) pruned += n.subplansRemoved;
+      if (pruned) {
+        addDiag('runtime_pruning', 'info',
+          pruned + ' partition subplan(s) were removed at run time: the plan shows only the '
+          + 'partitions that survived pruning, not the ones the query could have touched');
+      }
+    }
+
+    // -- external parameters vs InitPlan/SubPlan outputs. Both print as "$N",
+    // but only an external one means the plan was built without knowing the
+    // value, which changes what a bad row estimate means.
+    {
+      const internal = new Set();
+      for (const n of nodes) {
+        if (!n.spec) continue;
+        for (const m of String(n.rawType || '').matchAll(/\$(\d+)/g)) internal.add(m[1]);
+      }
+      const external = new Set();
+      for (const n of nodes) {
+        if (n.spec) continue;
+        for (const f of n.filters) {
+          // a "$1" inside a string literal is data, not a parameter
+          const bare = String(f.val || '').replace(/'(?:[^']|'')*'/g, "''");
+          for (const m of bare.matchAll(/\$(\d+)/g)) {
+            if (!internal.has(m[1])) external.add(m[1]);
+          }
+        }
+      }
+      const asc = (a, b) => Number(a) - Number(b);
+      plan.parameters = {
+        external: [...external].sort(asc).map(x => '$' + x),
+        internal: [...internal].sort(asc).map(x => '$' + x),
+      };
     }
 
     plan.max = max;
@@ -1429,11 +1572,11 @@
     let totalTime = 0;
     for (const n of plan.nodes) {
       if (n.spec || n.loops === 0 || n.never) continue;
-      const key = n.type + '\u0000' + (n.relation || '') + '\u0000' + (n.index || '');
+      const key = n.rawType + '\u0000' + (n.relation || '') + '\u0000' + (n.index || '');
       let g = groups.get(key);
       if (!g) {
         g = {
-          type: n.type, xtype: n.xtype, relation: n.relation, index: n.index,
+          rawType: n.rawType, nodeType: n.nodeType, relation: n.relation, index: n.index,
           time: 0, ioRead: 0, ioWrite: 0, rows: 0, rowsRemoved: 0, loops: 0,
           buf: {}, ids: [],
         };
@@ -1478,10 +1621,10 @@
       for (const c of n.children) childEntries.push(...collect(c));
 
       if (!n.spec) {
-        if (/^(Insert|Update|Delete|Merge)$/.test(n.xtype)) {
-          return [{ label: n.xtype + (n.relation ? ' ' + n.relation : ''), children: childEntries }];
+        if (/^(Insert|Update|Delete|Merge)$/.test(n.nodeType)) {
+          return [{ label: n.nodeType + (n.relation ? ' ' + n.relation : ''), children: childEntries }];
         }
-        if (/Join$|^Nested Loop/.test(n.xtype)) {
+        if (/Join$|^Nested Loop/.test(n.nodeType)) {
           // merge nested joins into one
           const merged = [];
           for (const e of childEntries) {
@@ -1490,9 +1633,9 @@
           }
           return [{ label: 'Join', children: merged }];
         }
-        if (n.relation != null && /Scan/.test(n.xtype) && n.xtype !== 'Bitmap Index Scan') {
-          const kind = (SCAN_KIND.find(([re]) => re.test(n.xtype)) || [null, 'Table'])[1];
-          if (n.xtype.startsWith('Subquery Scan')) {
+        if (n.relation != null && /Scan/.test(n.nodeType) && n.nodeType !== 'Bitmap Index Scan') {
+          const kind = (SCAN_KIND.find(([re]) => re.test(n.nodeType)) || [null, 'Table'])[1];
+          if (n.nodeType.startsWith('Subquery Scan')) {
             return [{ label: 'Subquery ' + n.relation, children: childEntries }];
           }
           return [{ label: 'Scan ' + kind + ' ' + n.relation, children: [] }];
@@ -1527,98 +1670,187 @@
   const SET_LOCAL_NOTE = 'Test with more memory scoped to one session: '
     + "BEGIN; SET LOCAL work_mem = '<observed spill + headroom>'; ... COMMIT; "
     + 'a global work_mem increase multiplies memory use across every concurrent backend.';
+
+  // PostgreSQL prints spill sizes in kB; show them the way a human reads them
+  const trimZero = v => v.toFixed(1).replace(/\.0$/, '');
+  const fmtKb = kb => {
+    if (kb == null) return null;
+    if (kb >= 1024 * 1024) return trimZero(kb / 1048576) + ' GB';
+    if (kb >= 1024) return trimZero(kb / 1024) + ' MB';
+    return kb + ' kB';
+  };
+  // A spill of N kB needs somewhat more than N of work_mem: the in-memory
+  // representation carries per-tuple overhead the spill file does not.
+  const MEM_LADDER = [4, 8, 16, 32, 64, 128, 256, 512, 1024];   // MB
+  const workMemFor = kb => {
+    const needMb = kb * 1.4 / 1024;
+    for (const m of MEM_LADDER) if (m >= needMb) return m === 1024 ? '1GB' : m + 'MB';
+    return null;                     // past any sane per-node, per-backend budget
+  };
+  // concrete, size-aware replacement for SET_LOCAL_NOTE
+  const memNote = kb => {
+    if (!kb) return SET_LOCAL_NOTE;
+    const w = workMemFor(kb);
+    if (w) {
+      return 'Test it in one session first: BEGIN; SET LOCAL work_mem = \'' + w + "'; <query> COMMIT; "
+        + '— work_mem is granted per sort/hash node per backend, so a global increase '
+        + 'multiplies memory use across every concurrent query.';
+    }
+    return 'The spill is ' + fmtKb(kb) + ': sizing work_mem for it is not realistic. '
+      + 'Reduce the row set before this node (filter or pre-aggregate earlier), or give the '
+      + 'planner an ordered/indexed path that removes the sort or hash altogether.';
+  };
   const ADVICE_META = {
-    BMP_AND:  { sev: 'idx',
+    BITMAP_AND:  { sev: 'idx',
       obs: 'Several bitmap index scans on the same table are intersected (BitmapAnd) to satisfy these conditions.',
       hyp: 'One composite index covering all the conditions could serve this scan directly.' },
-    BMP_OR:   { sev: 'idx',
+    BITMAP_OR:   { sev: 'idx',
       obs: 'Several bitmap index scans are combined with OR.',
       hyp: 'If this node is material, rewriting as a UNION ALL of per-condition queries sometimes uses the indexes more efficiently.' },
-    BMP_LOSSY:{ sev: 'mem',
+    BITMAP_LOSSY:{ sev: 'mem',
       obs: 'The bitmap did not fit into work_mem and became lossy: whole heap pages are re-checked row by row.',
       next: SET_LOCAL_NOTE },
-    DSK_SORT: { sev: 'mem',
+    DISK_SORT: { sev: 'mem',
       obs: 'The sort did not fit into work_mem and spilled to disk.',
       hyp: 'An index providing the required order would avoid the sort entirely; more memory would keep it off disk.',
       next: SET_LOCAL_NOTE },
-    DSK_HASH: { sev: 'mem',
-      obs: 'The hash table did not fit into work_mem and spilled to disk.',
+    DISK_HASH: { sev: 'mem',
+      obs: 'The hash table did not fit into work_mem: it was split into batches written to temp files.',
+      hyp: 'Every extra batch means the probe side is written out and read back once more.',
       next: SET_LOCAL_NOTE },
-    LIM_SORT: { sev: 'hint',
+    MEMOIZE_MISS:{ sev: 'mem',
+      obs: 'The Memoize cache is not paying for itself: most lookups miss.',
+      hyp: 'Either the cache is too small for the key space (entries are evicted before they are reused), '
+        + 'or the parameter values barely repeat, so caching only adds overhead.',
+      next: 'Check the Cache Key cardinality against the loop count; if evictions dominate, more work_mem '
+        + '(hash_mem_multiplier) can help — if hits stay near zero, the plan is better off without the Memoize.' },
+    SQL_NOTIN: { sev: 'warn',
+      obs: 'The query uses NOT IN (SELECT ...), and the plan evaluates it as a subplan per row '
+        + 'instead of as an anti-join.',
+      hyp: 'NOT IN can never become an anti-join, because NULL makes it three-valued on both '
+        + 'sides: one NULL in the subquery makes the predicate never true, and a NULL on the '
+        + 'left is dropped as well. PostgreSQL therefore keeps a (hashed) subplan.',
+      next: 'NOT EXISTS would let the planner use an anti-join, but it is not a drop-in '
+        + 'replacement — it keeps rows that NOT IN discards. Rewrite only after establishing '
+        + 'that both the compared column and the subquery column are NOT NULL, or carry the '
+        + 'difference explicitly in the predicate.' },
+    SQL_CAST: { sev: 'idx',
+      obs: 'The query casts a column in this predicate, so the comparison happens on the cast '
+        + 'value rather than on the column itself.',
+      hyp: 'A plain index on the column cannot serve that comparison — PostgreSQL would need an '
+        + 'index on exactly this expression. Casting the other side (the parameter or the '
+        + 'literal) instead keeps the column indexable.',
+      next: 'Check the column type against what it is compared with: if they already match, the '
+        + 'cast can go. If the cast is unavoidable, an expression index on the written '
+        + 'expression is the alternative.' },
+    JIT_TIME: { sev: 'warn',
+      obs: 'A large share of the execution time went into JIT compilation rather than into the plan itself.',
+      hyp: 'The planner’s cost estimate crossed jit_above_cost, but the query does not run long enough '
+        + 'for compiled code to earn the compilation back.',
+      next: 'Compare against SET LOCAL jit = off; if compilation keeps dominating, raise jit_above_cost / '
+        + 'jit_optimize_above_cost (optimization and inlining are usually the expensive parts).' },
+    LIMIT_SORT: { sev: 'hint',
       obs: 'LIMIT returns only a small fraction of the rows that are fetched and sorted below it.',
       hyp: 'An index on the sort keys would deliver rows already ordered, letting the scan stop early.' },
-    LIM_OFFS: { sev: 'hint',
+    LIMIT_OFFSET: { sev: 'hint',
       obs: 'LIMIT/OFFSET discards most of the rows read below it.',
       hyp: 'Keyset pagination (WHERE key > last-seen ORDER BY key) avoids re-reading the skipped rows.' },
-    IDX_RRBF: { sev: 'crit',
+    INDEX_DISCARD: { sev: 'crit',
       obs: 'Most rows fetched through the index are then discarded by the filter.',
       hyp: 'An index covering the filter conditions would avoid fetching rows only to discard them.' },
-    SEQ_RRBF: { sev: 'crit',
+    SEQSCAN_DISCARD: { sev: 'crit',
       obs: 'The sequential scan discards most of the rows it reads by filter.',
       hyp: 'An index on the filter conditions could replace the full-table read.' },
-    CTE_ROWS: { sev: 'warn',
+    CTE_RESCAN: { sev: 'warn',
       obs: 'The CTE result is re-scanned many times over a large row set.',
       hyp: 'Restructuring the join, or materializing a keyed lookup, could avoid the repeated scans.' },
-    IDX_COND: { sev: 'hint',
+    INDEX_FULLREAD: { sev: 'hint',
       obs: 'The index is used without any key condition — only for ordered reading or a full traversal.' },
-    ROW_RATIO:{ sev: 'info',
+    ROW_ESTIMATE:{ sev: 'info',
       obs: 'The planner’s row estimate differs strongly from the actual count.',
       hyp: 'Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).',
       next: 'Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).' },
-    SEQ_BUFF: { sev: 'io',
+    SEQSCAN_BUFFERS: { sev: 'io',
       obs: 'The scan reads many buffers per row it returns.',
       hyp: 'This can indicate table bloat — but wide rows or low selectivity produce the same picture; the plan alone cannot tell.',
       next: 'Verify bloat first (pgstattuple, dead tuples in pg_stat_user_tables). VACUUM FULL / pg_repack are heavy, locking operations — only after confirmation.' },
-    IDX_BUFF: { sev: 'io',
+    INDEX_BUFFERS: { sev: 'io',
       obs: 'The scan reads many buffers per row it returns.',
       hyp: 'Possible causes: table or index bloat, or the scan entering the middle of the index — the plan alone cannot tell.',
       next: 'Verify bloat first (pgstattuple, dead tuples in pg_stat_user_tables) before any VACUUM FULL / pg_repack.' },
-    TBL_WRTN: { sev: 'io',
+    TABLE_WRITTEN: { sev: 'io',
       obs: 'Reading this table also wrote shared buffers.',
       hyp: 'Typical causes: hint-bit writes after bulk changes, or checkpoint backlog flushing through this backend.' },
-    ANY_TEMP: { sev: 'mem',
+    TEMP_SPILL: { sev: 'mem',
       obs: 'The node wrote temp buffers: its working set did not fit into work_mem.',
       next: SET_LOCAL_NOTE },
-    DSK_READ: { sev: 'io',
+    DISK_READ: { sev: 'io',
       obs: 'Node self time is dominated by disk reads, as reported by the plan’s own I/O Timings.',
       hyp: 'Cold cache or slow storage: the average time per read is far above a warm-cache access.',
       next: 'Re-run to compare against a warm cache; if it stays slow, look at storage latency and the shared_buffers hit ratio for this relation.' },
-    ANY_SLOW: { sev: 'warn',
+    UNEXPLAINED_TIME: { sev: 'warn',
       obs: 'Node self time is far larger than its buffer traffic and measured I/O can explain.',
       hyp: 'The plan alone cannot tell why: CPU-heavy expressions, lock waits, or a saturated host all look like this.',
       next: 'Correlate with pg_stat_activity / wait events while the query runs.' },
-    NLJ_RRJF: { sev: 'crit',
+    NESTLOOP_DISCARD: { sev: 'crit',
       obs: 'The nested-loop join filter discards almost every row pairing it examines: the inner side is scanned in full for the outer rows.',
       hyp: 'An index on the join key would let the loop probe matching rows directly — or let the planner switch to a hash join.' },
-    CLN_COPY: { sev: 'info',
+    REPEATED_WORK: { sev: 'info',
       obs: 'An identical subtree is executed more than once.',
       hyp: 'Reusing one result (CTE, temp table, or computing the values together) may save the repeated work.' },
-    GTH_WRKS: { sev: 'info',
+    GATHER_WORKERS: { sev: 'info',
       obs: 'Fewer parallel workers were launched than the planner asked for.',
       hyp: 'The worker pool (max_parallel_workers / max_worker_processes) may have been exhausted at that moment.' },
-    CLN_SORT: { sev: 'crit',
+    REDUNDANT_SORT: { sev: 'crit',
       obs: 'Redundant nested sort: the inner sort’s order is discarded by the outer sort.' },
-    CLN_GROUP:{ sev: 'crit',
+    REDUNDANT_GROUP:{ sev: 'crit',
       obs: 'The same grouping keys are aggregated twice in a row.' },
-    HSH_ROWS: { sev: 'crit',
+    JOIN_FULLREAD: { sev: 'crit',
       obs: 'The whole table is read and hashed/merged, but the join keeps only a small fraction of its rows.',
       hyp: 'If the join key is selective, an indexed nested-loop lookup could avoid the full read. A missing index on the join (foreign-key) column is a common cause — but the plan does not show which indexes exist.' },
-    ANJ_ROWS: { sev: 'crit',
+    ANTIJOIN_FULLREAD: { sev: 'crit',
       obs: 'The anti-join reads the whole table to reject a small fraction of rows.',
       hyp: 'If the join key is selective, an index on it could avoid the full read — the plan does not show which indexes exist.' },
-    EXT_EXECTIME: { sev: 'mem',
+    OUTSIDE_PLAN: { sev: 'mem',
       obs: 'A large share of the total execution time is spent outside the plan tree.',
       hyp: 'Typical causes: result-set transfer to the client, triggers, or serialization.' },
-    EXT_PLANTIME: { sev: 'mem',
-      obs: 'Planning took longer than executing.',
-      next: 'Consider prepared statements or plan caching for frequently run queries.' },
+    PLANNING_TIME: { sev: 'warn',
+      obs: 'Planning takes a large share of the total latency: the query is cheap to run but expensive to plan.',
+      hyp: 'Typical causes: many joined relations or partitions, a large number of indexes to consider, '
+        + 'or replanning the same statement on every call.',
+      next: 'Reuse the plan (prepared statements; plan_cache_mode = force_generic_plan for stable shapes). '
+        + 'If the table is partitioned, check how many partitions survive pruning at plan time.' },
   };
+
+  // rules that name a measured cause for a node's time; UNEXPLAINED_TIME is the
+  // residual finding and must stand down where one of these already fired
+  const CAUSE_CODES = new Set([
+    'DISK_SORT', 'DISK_HASH', 'TEMP_SPILL', 'BITMAP_LOSSY', 'DISK_READ', 'MEMOIZE_MISS',
+    'SEQSCAN_DISCARD', 'INDEX_DISCARD', 'NESTLOOP_DISCARD', 'SEQSCAN_BUFFERS', 'INDEX_BUFFERS',
+    'JOIN_FULLREAD', 'ANTIJOIN_FULLREAD', 'CTE_RESCAN', 'LIMIT_OFFSET', 'BITMAP_AND',
+  ]);
+
+  // findings that need nothing but the node's own lines: still trustworthy
+  // when the plan tree arrived incomplete
+  const LOCAL_CODES = new Set([
+    'DISK_SORT', 'DISK_HASH', 'TEMP_SPILL', 'BITMAP_LOSSY', 'MEMOIZE_MISS',
+    'SEQSCAN_DISCARD', 'INDEX_DISCARD', 'ROW_ESTIMATE', 'SEQSCAN_BUFFERS', 'INDEX_BUFFERS',
+    'TABLE_WRITTEN', 'DISK_READ', 'GATHER_WORKERS', 'CTE_RESCAN', 'SQL_CAST',
+    // INDEX_FULLREAD is deliberately absent: it fires on the *absence* of an
+    // "Index Cond:" line, which a cut-off plan cannot distinguish from a
+    // line that simply did not arrive
+  ]);
 
   const badgeOf = code => code.replace(/(?:^|_)(.)[^_]*/g, '$1');
 
   function buildAdvice(plan) {
-    // an incomplete tree breaks the row/time relations the rules depend on
-    if (plan.truncated) { plan.advice = []; return; }
+    // An incomplete tree breaks every relation between a node and its
+    // children — parent/child rules, duplicate-subtree detection and the
+    // self-time arithmetic all become guesses. Node-local findings (a spill,
+    // a filter throwing rows away, a thrashing cache) are still readable off
+    // the lines that did arrive, and on a cut multi-minute plan they are the
+    // only thing the user has. They are emitted without a share-of-total.
+    const localOnly = !!plan.truncated;
     const nodes = plan.nodes;
     let advice = [];
     const real = n => n && !n.spec;
@@ -1630,7 +1862,8 @@
     const hasIndexCond = n => n.filters.some(f => f.key === 'Index Cond');
     const rowsX = n => {
       const rr = n.rowsTotal, rf = n.rowsRemovedTotal;
-      return rr && rf ? `rows=${rr + rf} (${rr} + RRbF=${rf})` : rf ? `RRbF=${rf}` : `rows=${rr}`;
+      return rr && rf ? `rows=${rr + rf} (${rr} kept + ${rf} removed by filter)`
+        : rf ? `removed by filter=${rf}` : `rows=${rr}`;
     };
     const ratioX = (x, y) => {
       if (!x || !y) return '';
@@ -1638,14 +1871,18 @@
       return ', ratio=' + (r >= 1000 ? (r / 1000).toFixed(1) + 'K' : r.toFixed(1));
     };
     // impactMs (optional) overrides the default per-node time attribution —
-    // e.g. TBL_WRTN is about the write cost, not the node's whole self time
-    const add = (code, heads, idxSpec, impactMs) => {
+    // e.g. TABLE_WRITTEN is about the write cost, not the node's whole self time
+    // `over` replaces the static wording where the observed numbers allow a
+    // sharper statement (a concrete work_mem value, a measured cause)
+    const add = (code, heads, idxSpec, impactMs, over) => {
+      if (localOnly && !LOCAL_CODES.has(code)) return;
       const meta = ADVICE_META[code];
       const entry = {
         code, badge: badgeOf(code), sev: meta.sev,
         obs: meta.obs, hyp: meta.hyp || null, next: meta.next || null,
         nodes: heads.map(h => ({ id: h.n.id, ext: h.ext || null })),
       };
+      if (over) Object.assign(entry, over);
       if (impactMs != null) entry.impactMs = impactMs;
       if (idxSpec && Expr) {
         try {
@@ -1657,22 +1894,53 @@
       for (const h of heads) (h.n.advice ??= []).push(entry);
     };
     // index-suggestion input from a scan node's own conditions
+    const sqlCtx = plan.sql && plan.sql.bound ? plan.sql : null;
+    // Casts the query wrote for *this* relation, as "col::type". Attribution
+    // is per FROM item and includes the type: two tables joined on columns
+    // that share a name must not inherit each other's casts.
+    const writtenCastsOf = n => (sqlCtx && n.sqlCasts ? new Set(n.sqlCasts) : null);
     const scanSpec = (n, extra) => ({
       relation: n.relationRef || n.relation,
       alias: n.alias,
+      // the plan names the index this scan already uses: never propose one
+      // that only repeats its key columns
+      usesIndex: !!n.index,
+      // an empty set still means "the query is known and wrote no cast here"
+      writtenCasts: sqlCtx ? (writtenCastsOf(n) || new Set()) : null,
       conds: [
         ...n.filters.map(f => ({ key: f.key, text: f.val })),
         ...(extra || []),
       ],
     });
 
-    // subtree signatures for CLN_COPY
+    // subtree signatures for REPEATED_WORK
     const sigHash = new Map();
     const sigDone = new Set();
+    // whether the plan carries buffer counters at all — decides if the
+    // "unexplained time" finding can be made per node or only for the plan
+    const hasBufData = nodes.some(n => Object.keys(n.buf).length > 0);
+    const slowNoBuf = [];
+    // nodes whose predicate was planned against a parameter rather than a
+    // value: their row estimate is an average, not a wrong statistic
+    const paramNodes = new Set();
+    {
+      const ext = new Set((plan.parameters && plan.parameters.external) || []);
+      if (ext.size) {
+        for (const n of nodes) {
+          if (n.spec) continue;
+          for (const f of n.filters) {
+            const bare = String(f.val || '').replace(/'(?:[^']|'')*'/g, "''");
+            for (const m of bare.matchAll(/\$\d+/g)) {
+              if (ext.has(m[0])) { paramNodes.add(n.id); break; }
+            }
+          }
+        }
+      }
+    }
 
     for (const n of nodes) {
       if (n.spec || n.loops === 0 || n.never) continue;
-      const x = n.xtype;
+      const x = n.nodeType;
       const bufHit = n.bufExcl['shared-hit'] || 0;
       const bufRead = n.bufExcl['shared-read'] || 0;
       const isScan = /^(Seq Scan|Index|Bitmap)/.test(x);
@@ -1680,16 +1948,16 @@
       // BitmapAnd / BitmapOr under a Bitmap Heap Scan
       if (x === 'BitmapAnd' || x === 'BitmapOr') {
         const prnt = n.parent != null ? nodes[n.parent] : null;
-        if (prnt && prnt.xtype === 'Bitmap Heap Scan') {
+        if (prnt && prnt.nodeType === 'Bitmap Heap Scan') {
           const kids = realChildren(n);
-          if (kids.length && kids.every(k => k.xtype === 'Bitmap Index Scan')) {
+          if (kids.length && kids.every(k => k.nodeType === 'Bitmap Index Scan')) {
             const spec = x === 'BitmapAnd' ? {
               relation: prnt.relationRef || prnt.relation,
               alias: prnt.alias,
               // the goal is one composite index covering all the parts
               conds: kids.flatMap(k => k.filters.map(f => ({ key: 'Filter', text: f.val }))),
             } : null;
-            add(x === 'BitmapAnd' ? 'BMP_AND' : 'BMP_OR',
+            add(x === 'BitmapAnd' ? 'BITMAP_AND' : 'BITMAP_OR',
               [{ n: prnt, ext: rowsX(prnt) }, { n }, ...kids.map(k => ({ n: k, ext: rowsX(k) }))],
               spec);
           }
@@ -1697,48 +1965,100 @@
       }
       // lossy bitmap
       if (x === 'Bitmap Heap Scan' && n.heapBlocksLossy > 0) {
-        add('BMP_LOSSY', [{ n, ext: `lossy=${n.heapBlocksLossy}` }]);
+        add('BITMAP_LOSSY', [{ n, ext: `lossy=${n.heapBlocksLossy}` }]);
       }
       // sort / hash spilled to disk
       if (/Sort$/.test(x) && n.sortSpace === 'Disk') {
-        add('DSK_SORT', [{ n, ext: `${n.sortMethod} Disk: ${n.sortSizeKb}kB` }]);
+        add('DISK_SORT', [{ n, ext: `${n.sortMethod}, disk ${fmtKb(n.sortSizeKb)}` }],
+          null, null, { next: memNote(n.sortSizeKb) });
       }
-      if (x === 'Hash' && n.diskUsageKb > 0) {
-        add('DSK_HASH', [{ n, ext: `Disk Usage: ${n.diskUsageKb}kB` }]);
+      // Batches > 1 is the spill signal for a hash table; PostgreSQL prints a
+      // "Disk Usage" figure only for some node kinds, so it cannot be required
+      if (x === 'Hash' && (n.hashBatches > 1 || n.diskUsageKb > 0)) {
+        const grew = n.hashBatchesOrig != null && n.hashBatches > n.hashBatchesOrig;
+        const parts = [];
+        if (n.hashBatches > 1) {
+          parts.push(`batches=${n.hashBatches}`
+            + (n.hashBatchesOrig != null ? ` (originally ${n.hashBatchesOrig})` : ''));
+        }
+        if (n.memUsageKb) parts.push(`peak memory ${fmtKb(n.memUsageKb)} per batch`);
+        if (n.diskUsageKb) parts.push(`disk ${fmtKb(n.diskUsageKb)}`);
+        add('DISK_HASH', [{ n, ext: parts.join(', ') }], null, null, {
+          hyp: grew
+            ? 'The batch count grew at run time (originally ' + n.hashBatchesOrig + '): the planner '
+              + 'underestimated the hash side, so the build had to re-partition mid-flight.'
+            : ADVICE_META.DISK_HASH.hyp,
+          // Only "Disk Usage" is a measurement. The peak memory of one batch
+          // times the batch count is an order of magnitude, and presenting it
+          // as a volume would turn a guess into a figure.
+          next: n.diskUsageKb > 0
+            ? memNote(n.diskUsageKb)
+              + ' A hash may use work_mem × hash_mem_multiplier (2.0 by default), so check the '
+              + 'multiplier before raising work_mem itself.'
+            : 'EXPLAIN does not report how much a hash wrote out — only the peak memory of one '
+              + 'batch and the number of batches, so the working set is on the order of '
+              + (n.hashBatches > 1 ? n.hashBatches + '× ' : '') + 'what this node was given. '
+              + 'The budget for a hash is work_mem × hash_mem_multiplier (2.0 by default): '
+              + 'raise them in one session (BEGIN; SET LOCAL …) and re-read the batch count, '
+              + 'which drops to 1 once the hash fits.',
+        });
+      }
+      // Memoize that caches nothing useful
+      if (x === 'Memoize' && n.cache) {
+        const look = n.cache.hits + n.cache.misses;
+        const hitPct = look ? n.cache.hits / look * 100 : 0;
+        // evictions alone say nothing: a cache that answers 90% of its lookups
+        // is working even while it recycles entries. Both halves must be bad.
+        const thrash = n.cache.evictions > n.cache.misses * 0.5;
+        if (look >= 1000 && hitPct < 50 && (thrash || hitPct < 20)) {
+          add('MEMOIZE_MISS', [{
+            n,
+            ext: `${look} lookups, ${hitPct.toFixed(1)}% hit`
+              + `, evictions=${n.cache.evictions}`
+              + (n.memUsageKb ? `, memory ${fmtKb(n.memUsageKb)}` : ''),
+          }], null, null, thrash ? {
+            hyp: 'Entries are evicted about as fast as they are created ('
+              + n.cache.evictions + ' evictions for ' + n.cache.misses + ' misses): the cache holds '
+              + (n.memUsageKb ? fmtKb(n.memUsageKb) : 'less') + ' but the key space is far larger.',
+          } : {
+            hyp: 'Nothing is evicted, yet the hit rate stays low: the parameter values barely repeat, '
+              + 'so the Memoize only adds bookkeeping to every loop.',
+          });
+        }
       }
       // Limit over Sort over scan / Limit over scan
       if (x === 'Limit') {
         const chain = [n];
         let ch = firstRealChild(n);
-        if (ch && /^Gather/.test(ch.xtype)) { chain.push(ch); ch = firstRealChild(ch); }
-        if (ch && /Sort$/.test(ch.xtype)) {
+        if (ch && /^Gather/.test(ch.nodeType)) { chain.push(ch); ch = firstRealChild(ch); }
+        if (ch && /Sort$/.test(ch.nodeType)) {
           const sort = ch;
           chain.push(ch); ch = firstRealChild(ch);
           let ok = false;
-          if (ch && (ch.xtype === 'Seq Scan' || ch.xtype.startsWith('Index'))) {
+          if (ch && (ch.nodeType === 'Seq Scan' || ch.nodeType.startsWith('Index'))) {
             chain.push(ch); ok = true;
-          } else if (ch && ch.xtype === 'Bitmap Heap Scan') {
+          } else if (ch && ch.nodeType === 'Bitmap Heap Scan') {
             chain.push(ch);
             const bis = firstRealChild(ch);
-            if (bis && bis.xtype === 'Bitmap Index Scan') { chain.push(bis); ok = true; }
+            if (bis && bis.nodeType === 'Bitmap Index Scan') { chain.push(bis); ok = true; }
           }
           if (ok) {
             const scan = chain[chain.length - 1];
             if (n.rowsTotal * 2 < scan.rowsTotal) {
-              const holder = scan.xtype === 'Bitmap Index Scan'
+              const holder = scan.nodeType === 'Bitmap Index Scan'
                 ? chain[chain.length - 2] : scan;
               const spec = sort.sortKey && holder.relation
                 ? scanSpec(holder, [{ key: 'order-by', text: sort.sortKey }])
                 : null;
-              add('LIM_SORT', chain.map(c => ({
+              add('LIMIT_SORT', chain.map(c => ({
                 n: c, ext: c === sort ? (c.sortKey || null) : rowsX(c),
               })), spec);
             }
           }
-        } else if (ch && (ch.xtype === 'Seq Scan' || ch.xtype.startsWith('Index'))) {
+        } else if (ch && (ch.nodeType === 'Seq Scan' || ch.nodeType.startsWith('Index'))) {
           chain.push(ch);
           if (n.rowsTotal * 4 < ch.rowsTotal) {
-            add('LIM_OFFS', chain.map(c => ({ n: c, ext: rowsX(c) })));
+            add('LIMIT_OFFSET', chain.map(c => ({ n: c, ext: rowsX(c) })));
           }
         }
       }
@@ -1746,28 +2066,83 @@
       if (/^(Bitmap Heap|Index)/.test(x)) {
         const rf = n.rowsRemovedTotal, rr = n.rowsTotal;
         if ((rf >= 100 && rr * 2 <= rf) || (rf >= 1000 && rr <= rf) || (rf >= 10000 && rr <= rf * 2)) {
-          add('IDX_RRBF', [{ n, ext: `rows=${rr}, RRbF=${rf}` + ratioX(rr, rf) }], scanSpec(n));
+          add('INDEX_DISCARD', [{
+            n, ext: `rows=${rr}, removed by filter=${rf}` + ratioX(rr, rf),
+          }], scanSpec(n));
         }
       }
       if (x === 'Seq Scan' && n.rowsRemoved >= 50) {
         const rf = n.rowsRemovedTotal, rr = n.rowsTotal;
         if (rf >= 100 && rr * 4 <= rf) {
-          add('SEQ_RRBF', [{ n, ext: `rows=${rr}, RRbF=${rf}` + ratioX(rr, rf) }], scanSpec(n));
+          add('SEQSCAN_DISCARD', [{
+            n, ext: `rows=${rr}, removed by filter=${rf}` + ratioX(rr, rf),
+          }], scanSpec(n));
+        }
+      }
+      // NOT IN (SELECT ...) evaluated as a subplan. The plan shows a negated
+      // subplan, the query text says it came from NOT IN rather than from a
+      // NOT EXISTS the planner could not flatten.
+      if (sqlCtx && sqlCtx.forms.notIn.length
+          && n.filters.some(f => /NOT \((?:hashed )?SubPlan/i.test(String(f.val || '')))) {
+        add('SQL_NOTIN', [{
+          n,
+          ext: `${rowsX(n)}, ${sqlCtx.forms.notIn.length} NOT IN (SELECT ...) in the query`,
+        }]);
+      }
+      // a cast the query itself wrote: the plan shows the cast but cannot say
+      // who put it there, so this needs the query text. Both the column and
+      // the target type must match what the query wrote for this relation.
+      const nodeCasts = writtenCastsOf(n);
+      if (nodeCasts && nodeCasts.size && isScan) {
+        const cast = new Map();
+        for (const f of n.filters) {
+          if (!/Cond$|Filter$/.test(f.key)) continue;
+          const bare = String(f.val || '').replace(/'(?:[^']|'')*'/g, "''");
+          for (const m of bare.matchAll(/(?:^|[^\w."])\(?([A-Za-z_][\w$]*)\)?::([a-z][\w ]*)/g)) {
+            const col = m[1].toLowerCase();
+            const type = m[2].trim().toLowerCase();
+            if (nodeCasts.has(col + '::' + type) && !cast.has(col)) cast.set(col, type);
+          }
+        }
+        if (cast.size) {
+          add('SQL_CAST', [{
+            n,
+            ext: [...cast].map(([c, t]) => `${c} is cast to ${t} in the query`).join(', '),
+          }]);
         }
       }
       // CTE re-scanned many times
       if (x === 'CTE Scan' && n.loops > 10 && (n.rowsTotal + n.rowsRemovedTotal) > 10000) {
-        add('CTE_ROWS', [{ n, ext: `loops=${n.loops}, ${rowsX(n)}` }]);
+        add('CTE_RESCAN', [{ n, ext: `loops=${n.loops}, ${rowsX(n)}` }]);
       }
       // index scan without condition
       if (/^(Bitmap Index|Index)/.test(x) && !hasIndexCond(n)) {
-        add('IDX_COND', [{ n, ext: rowsX(n) }]);
+        add('INDEX_FULLREAD', [{ n, ext: rowsX(n) }]);
       }
-      // stale statistics
+      // stale statistics. n.ratio compares the per-loop numbers, so the
+      // magnitude test has to use per-loop numbers too: a parameterized probe
+      // repeated 800 times with "rows=1 estimated, 0 actual" is normal — the
+      // planner's estimate floor is one row and it cannot do better per
+      // iteration. Scaling by loops turned that into a fleet of fake findings.
       if (/^(Seq Scan|Bitmap Index|Index)/.test(x) && n.ratio != null) {
-        const rr = n.rowsTotal, rp = (n.planRows || 0) * (n.loops || 1);
-        if (Math.max(rr, rp) > 100 && (n.ratio === Infinity || n.ratio > 100)) {
-          add('ROW_RATIO', [{ n, ext: `rows-act=${rr}, rows-est=${rp}` + ratioX(rp, rr) }]);
+        const loops = n.loops || 1;
+        const actL = n.rows || 0, estL = n.planRows || 0;
+        if (Math.max(actL, estL) > 100 && (n.ratio === Infinity || n.ratio > 100)) {
+          const perLoop = loops > 1 ? `/loop over ${loops} loops` : '';
+          // a generic plan is estimated without the parameter values, so the
+          // miss says nothing about the statistics being stale
+          const generic = paramNodes.has(n.id) ? {
+            hyp: 'This node was planned against a parameter, not a value: the estimate is an '
+              + 'average over all possible parameters (a generic plan), so a large miss here '
+              + 'is expected rather than evidence of stale statistics.',
+            next: 'Compare against a custom plan first — run the statement with literal values '
+              + '(or SET LOCAL plan_cache_mode = force_custom_plan); only then look at ANALYZE '
+              + 'and extended statistics.',
+          } : null;
+          add('ROW_ESTIMATE', [{
+            n, ext: `rows-act=${actL}${perLoop}, rows-est=${estL}` + ratioX(estL, actL)
+              + (generic ? ', planned from a parameter' : ''),
+          }], null, null, generic);
         }
       }
       // bloat: few rows per read buffer. Buffers are normalized per loop —
@@ -1777,24 +2152,29 @@
         const br = bufHit + bufRead;
         const brPerLoop = br / (n.loops || 1);
         if (brPerLoop >= 64 && (n.rowsTotal + n.rowsRemovedTotal) < br * 8) {
-          add(x === 'Seq Scan' ? 'SEQ_BUFF' : 'IDX_BUFF',
+          add(x === 'Seq Scan' ? 'SEQSCAN_BUFFERS' : 'INDEX_BUFFERS',
             [{ n, ext: `buffers=${br}, ${rowsX(n)}` + ratioX(n.rowsTotal + n.rowsRemovedTotal, br) }]);
         }
         if ((n.bufExcl['shared-written'] || 0) > 0) {
           // impact = the measured write cost, not the node's whole self time
-          add('TBL_WRTN', [{ n, ext: `shared written=${n.bufExcl['shared-written']}` }],
+          add('TABLE_WRITTEN', [{ n, ext: `shared written=${n.bufExcl['shared-written']}` }],
             null, n.ioWriteExcl || 0);
         }
       }
       // parallel workers shortfall
       if (/^Gather/.test(x) && n.workersLaunched != null && n.workersPlanned != null
           && n.workersLaunched < n.workersPlanned) {
-        add('GTH_WRKS', [{ n, ext: `launched=${n.workersLaunched} < planned=${n.workersPlanned}` }]);
+        add('GATHER_WORKERS', [{ n, ext: `launched=${n.workersLaunched} < planned=${n.workersPlanned}` }]);
       }
       // temp spill (not already reported as lossy/disk sort/hash)
       if ((n.bufExcl['temp-written'] || 0) > 0
-          && !(n.heapBlocksLossy > 0 || n.sortSpace === 'Disk' || n.diskUsageKb > 0)) {
-        add('ANY_TEMP', [{ n, ext: `temp written=${n.bufExcl['temp-written']}` }]);
+          && !(n.heapBlocksLossy > 0 || n.sortSpace === 'Disk' || n.diskUsageKb > 0
+               || n.hashBatches > 1)) {
+        // temp counters are 8 kB blocks — spell the volume out in bytes
+        const kb = n.bufExcl['temp-written'] * 8;
+        add('TEMP_SPILL', [{
+          n, ext: `temp written=${n.bufExcl['temp-written']} blocks (${fmtKb(kb)})`,
+        }], null, null, { next: memNote(kb) });
       }
       // slow node: first check whether the plan's own I/O Timings explain
       // the time (then it is an I/O problem, not a mystery), only the
@@ -1803,7 +2183,7 @@
         const ioKnown = round3((n.ioReadExcl || 0) + (n.ioWriteExcl || 0));
         if (ioKnown >= n.timeExcl * 0.7 && n.ioReadExcl > 50) {
           const reads = bufRead + (n.bufExcl['local-read'] || 0) + (n.bufExcl['temp-read'] || 0);
-          add('DSK_READ', [{
+          add('DISK_READ', [{
             n,
             ext: `io read=${n.ioReadExcl}ms of time=${n.timeExcl}ms`
               + (reads > 0 ? `, ${reads} read(s), ~${(n.ioReadExcl / reads).toFixed(1)} ms/read` : ''),
@@ -1821,11 +2201,16 @@
           // no I/O at all (CPU-bound expressions) is exactly this finding
           if (unexplained > 100 && (bm / 8192 + bd / 1024) < unexplained / 1000) {
             const ext = [`time=${n.timeExcl}ms`];
-            if (ioKnown) ext.push(`io=${ioKnown}ms`);
-            if (bm) ext.push(`bufmem=${bm}`);
-            if (bd) ext.push(`bufdsk=${bd}`);
-            if (!bm && !bd) ext.push('no buffer data');
-            add('ANY_SLOW', [{ n, ext: ext.join(', ') }]);
+            if (ioKnown) ext.push(`io=${ioKnown}ms accounted, ${round3(unexplained)}ms unexplained`);
+            if (bm) ext.push(`buffers in memory=${bm}`);
+            if (bd) ext.push(`from disk=${bd}`);
+            if (!bm && !bd && !ioKnown) ext.push('no buffer data for this node');
+            // Without BUFFERS the "CPU or I/O?" question cannot be answered
+            // per node at all. Firing on every slow node then produces one
+            // identical card per node and buries the findings that do say
+            // something — collect them into a single plan-level entry below.
+            if (hasBufData) add('UNEXPLAINED_TIME', [{ n, ext: ext.join(', ') }]);
+            else slowNoBuf.push(n);
           }
         }
       }
@@ -1834,7 +2219,7 @@
           && (n.loops || 1) === 1 && n.rowsTotal >= 100 && n.parent != null) {
         let p = nodes[n.parent];
         let chain0 = [n];
-        if (p && p.xtype === 'Materialize' && p.parent != null) { chain0.unshift(p); p = nodes[p.parent]; }
+        if (p && p.nodeType === 'Materialize' && p.parent != null) { chain0.unshift(p); p = nodes[p.parent]; }
         const joinSpec = join => {
           const conds = join.filters
             .filter(f => /Cond$|Join Filter/.test(f.key))
@@ -1844,11 +2229,11 @@
         };
         // anti-join first: "Hash Anti Join" would also match the generic
         // hash/merge pattern below
-        if (p && /Anti Join$/.test(p.xtype) && p.rowsTotal * 4 < n.rowsTotal) {
-          add('ANJ_ROWS', [{ n: p, ext: rowsX(p) }, ...chain0.map(c => ({ n: c, ext: rowsX(c) }))],
+        if (p && /Anti Join$/.test(p.nodeType) && p.rowsTotal * 4 < n.rowsTotal) {
+          add('ANTIJOIN_FULLREAD', [{ n: p, ext: rowsX(p) }, ...chain0.map(c => ({ n: c, ext: rowsX(c) }))],
             joinSpec(p));
-        } else if (p && /^(Hash|Merge).*Join$/.test(p.xtype) && p.rowsTotal * 4 < n.rowsTotal) {
-          add('HSH_ROWS', [{ n: p, ext: rowsX(p) }, ...chain0.map(c => ({ n: c, ext: rowsX(c) }))],
+        } else if (p && /^(Hash|Merge).*Join$/.test(p.nodeType) && p.rowsTotal * 4 < n.rowsTotal) {
+          add('JOIN_FULLREAD', [{ n: p, ext: rowsX(p) }, ...chain0.map(c => ({ n: c, ext: rowsX(c) }))],
             joinSpec(p));
         }
       }
@@ -1862,7 +2247,7 @@
           const heads = [{ n, ext: `kept rows=${kept}, removed by join filter=${rf}` + ratioX(kept, rf) }];
           let spec = null;
           if (inner) {
-            if (inner.xtype === 'Materialize') {
+            if (inner.nodeType === 'Materialize') {
               heads.push({ n: inner });
               const mc = firstRealChild(inner);
               if (mc) inner = mc;
@@ -1877,26 +2262,26 @@
               };
             }
           }
-          add('NLJ_RRJF', heads, spec);
+          add('NESTLOOP_DISCARD', heads, spec);
         }
       }
       // redundant nested sort
       if (x === 'Sort' && n.sortKey && n.parent != null) {
         let p = nodes[n.parent];
         const chain = [n];
-        if (p && p.xtype.endsWith('Subquery Scan') && p.parent != null) {
+        if (p && p.nodeType.endsWith('Subquery Scan') && p.parent != null) {
           chain.push(p); p = nodes[p.parent];
         }
-        if (p && p.xtype === 'Sort' && p.sortKey) {
-          add('CLN_SORT', [{ n: p, ext: p.sortKey }, ...chain.map(c => ({ n: c, ext: c.sortKey || null }))]);
+        if (p && p.nodeType === 'Sort' && p.sortKey) {
+          add('REDUNDANT_SORT', [{ n: p, ext: p.sortKey }, ...chain.map(c => ({ n: c, ext: c.sortKey || null }))]);
         }
       }
       // redundant regrouping
       if (/Aggregate$/.test(x) && n.groupKey && !n.filters.length) {
         const ch = firstRealChild(n);
-        if (ch && /Aggregate$/.test(ch.xtype) && ch.groupKey
+        if (ch && /Aggregate$/.test(ch.nodeType) && ch.groupKey
             && ch.groupKey.replace(/^\((.*)\)$/, '$1') === n.groupKey.replace(/^\((.*)\)$/, '$1')) {
-          add('CLN_GROUP', [{ n, ext: n.groupKey }, { n: ch, ext: ch.groupKey }]);
+          add('REDUNDANT_GROUP', [{ n, ext: n.groupKey }, { n: ch, ext: ch.groupKey }]);
         }
       }
       // duplicated subtree
@@ -1910,7 +2295,7 @@
           if (c.spec) { for (const g of c.children) walk(g, base); return; }
           hasRel = hasRel || !!c.relation;
           ids.push(c.id);
-          sig.push((c.depth - base) + ':' + c.xtype + ':' + (c.relation || '') + ':' + (c.index || ''));
+          sig.push((c.depth - base) + ':' + c.nodeType + ':' + (c.relation || '') + ':' + (c.index || ''));
           for (const g of c.children) walk(g, base);
         })(n.id, n.depth);
         if (hasRel && ids.length >= 2) {
@@ -1920,35 +2305,137 @@
             sigHash.set(key, ids.slice());
           } else {
             for (const id of ids) sigDone.add(id);
-            add('CLN_COPY', ids.map((id, i) => ({ n: nodes[id], ext: 'same as node #' + main[i] })));
+            add('REPEATED_WORK', ids.map((id, i) => ({ n: nodes[id], ext: 'same as node #' + main[i] })));
           }
         }
       }
     }
 
-    // plan-level advice
-    const planEntry = (code, ext, impactMs, impactBase) => {
-      const meta = ADVICE_META[code];
-      advice.push({
-        code, badge: badgeOf(code), sev: meta.sev,
-        obs: meta.obs, hyp: meta.hyp || null, next: meta.next || null,
-        nodes: [], ext,
-        impactMs, impactBase, // consumed by the gating pass below
+    // -- residual-finding cleanup. UNEXPLAINED_TIME says "nothing here explains the
+    // time"; where the same node already carries a measured cause, the
+    // residual restates it, double-counts the milliseconds in the ranking
+    // and pushes the actionable card down the list.
+    const explained = new Set();
+    {
+      for (const a of advice) {
+        if (!CAUSE_CODES.has(a.code)) continue;
+        for (const h of a.nodes) explained.add(h.id);
+      }
+      const dropped = new Set();
+      advice = advice.filter(a => {
+        if (a.code !== 'UNEXPLAINED_TIME') return true;
+        if (!a.nodes.every(h => explained.has(h.id))) return true;
+        dropped.add(a);
+        return false;
       });
+      if (dropped.size) {
+        for (const n of nodes) {
+          if (n.advice) n.advice = n.advice.filter(a => !dropped.has(a));
+        }
+      }
+    }
+
+    // plan-level advice
+    const planEntry = (code, ext, impactMs, impactBase, heads, over) => {
+      const meta = ADVICE_META[code];
+      const entry = {
+        code, badge: badgeOf(code), sev: meta.sev,
+        // the finding is about the plan, not about the nodes it names
+        scope: 'plan',
+        obs: meta.obs, hyp: meta.hyp || null, next: meta.next || null,
+        nodes: (heads || []).map(h => ({ id: h.n.id, ext: h.ext || null })), ext,
+        impactMs, impactBase, // consumed by the gating pass below
+      };
+      if (over) Object.assign(entry, over);
+      advice.push(entry);
+      for (const h of (heads || [])) (h.n.advice ??= []).push(entry);
+      return entry;
     };
+    // one entry for "the plan spends its time somewhere the plan cannot show".
+    // Nodes whose time another rule already explains are not part of it.
+    // (self times on a truncated plan are inflated by the missing children,
+    // so the "unexplained time" arithmetic does not hold there)
+    const unexplainedSlow = localOnly ? [] : slowNoBuf.filter(n => !explained.has(n.id));
+    if (unexplainedSlow.length) {
+      unexplainedSlow.sort((a, b) => b.timeExcl - a.timeExcl);
+      const top = unexplainedSlow.slice(0, 8);
+      const sum = unexplainedSlow.reduce((s, n) => s + n.timeExcl, 0);
+      planEntry('UNEXPLAINED_TIME',
+        `${unexplainedSlow.length} node(s), no buffer data to explain their self time`,
+        sum, null,
+        top.map(n => ({ n, ext: `time=${n.timeExcl}ms` })),
+        {
+          obs: 'Time is concentrated in nodes whose cost the plan cannot account for: '
+            + 'this EXPLAIN carries no BUFFERS, so I/O and memory traffic per node are unknown.',
+          hyp: 'Without buffer counters, CPU-heavy expressions, cold reads, lock waits and a '
+            + 'saturated host all look identical.',
+          next: 'Re-run with EXPLAIN (ANALYZE, BUFFERS) to split I/O from CPU; correlate with '
+            + 'pg_stat_activity wait events if the time stays unexplained.',
+        });
+    }
     if (plan.executionTime != null && plan.totals.time != null) {
       const overhead = plan.executionTime - plan.totals.time;
-      if (overhead > 1 && overhead / plan.executionTime >= 0.8) {
-        planEntry('EXT_EXECTIME',
+      if (overhead > 20 && overhead / plan.executionTime >= 0.8) {
+        planEntry('OUTSIDE_PLAN',
           `${(overhead / plan.executionTime * 100).toFixed(1)}% of ${plan.executionTime.toFixed(3)}ms is outside the plan`,
           overhead, plan.executionTime);
       }
     }
-    if (plan.planningTime != null && plan.totals.time != null
-        && plan.planningTime > 1 && plan.planningTime >= plan.totals.time) {
-      planEntry('EXT_PLANTIME',
-        `planning ${plan.planningTime.toFixed(3)}ms vs execution ${plan.totals.time.toFixed(3)}ms`,
-        plan.planningTime, plan.planningTime + plan.totals.time);
+    // planning is part of what the caller waits for: judge it against the
+    // whole latency, not only against the case where it exceeds execution
+    {
+      const execRef = plan.executionTime != null ? plan.executionTime : plan.totals.time;
+      const pt = plan.planningTime;
+      if (pt != null && execRef != null && pt > 20 && pt >= (pt + execRef) * 0.1) {
+        // the query text settles whether "use prepared statements" is advice
+        // or noise: a statement already sent with $N is being re-planned for
+        // another reason
+        const sql = plan.sql && plan.sql.bound ? plan.sql : null;
+        let over = null;
+        if (sql && sql.params.count > 0) {
+          over = {
+            hyp: 'The statement is already parameterized ($1…), so this planning cost is not '
+              + 'a missing prepared statement: either the prepared statement is not reused '
+              + 'across calls, or the server keeps choosing a custom plan for it.',
+            next: 'Check that the client re-uses the prepared statement instead of re-preparing '
+              + 'it; then compare plan_cache_mode = force_generic_plan. If the table is '
+              + 'partitioned, check how many partitions survive pruning at plan time.',
+          };
+        } else if (sql && sql.predicateLiterals > 0 && sql.params.count === 0) {
+          over = {
+            hyp: 'The query text carries literal values rather than parameters. If it is sent '
+              + 'that way on every call the server re-plans it every time — though the plan '
+              + 'cannot show whether the client prepares and reuses the statement.',
+            next: 'Send the varying values as parameters and reuse one prepared statement; if it '
+              + 'is prepared already, check that the client keeps the handle instead of '
+              + 're-preparing per call.',
+          };
+        }
+        planEntry('PLANNING_TIME',
+          `planning ${round3(pt)}ms of ${round3(pt + execRef)}ms total latency `
+          + `(${(pt / (pt + execRef) * 100).toFixed(1)}%), execution ${round3(execRef)}ms`
+          + (over ? (sql.params.count > 0
+            ? `, query uses ${sql.params.count} parameter(s)`
+            : ', query text carries literals, not parameters') : ''),
+          pt, pt + execRef, null, over);
+      }
+    }
+    // JIT compilation is charged to execution time but lives outside the tree
+    if (plan.jit && plan.jit.total != null) {
+      const execRef = plan.executionTime != null ? plan.executionTime : plan.totals.time;
+      const jt = plan.jit.total;
+      if (execRef != null && jt >= 5 && jt >= execRef * 0.1) {
+        const opts = Object.entries(plan.jit.options || {})
+          .filter(([, v]) => v).map(([k]) => k);
+        const slow = Object.entries(plan.jit.timing || {})
+          .filter(([k]) => k !== 'total').sort((a, b) => b[1] - a[1])[0];
+        planEntry('JIT_TIME',
+          `JIT ${round3(jt)}ms of ${round3(execRef)}ms execution (${(jt / execRef * 100).toFixed(1)}%)`
+          + (plan.jit.functions != null ? `, ${plan.jit.functions} functions` : '')
+          + (slow ? `, most of it in ${slow[0]} (${round3(slow[1])}ms)` : '')
+          + (opts.length ? `; enabled: ${opts.join(', ')}` : ''),
+          jt, execRef);
+      }
     }
 
     // -- impact gating: share of plan time attributable to the flagged nodes,
@@ -1957,7 +2444,9 @@
     const totalTime = plan.totals.time;
     for (const a of advice) {
       let ms = a.impactMs != null ? a.impactMs : null;
-      let base = a.impactBase != null ? a.impactBase : totalTime;
+      // on a truncated plan the self times are upper bounds, so a share of
+      // the total would be fiction — rank by absolute time, claim no level
+      let base = localOnly ? null : (a.impactBase != null ? a.impactBase : totalTime);
       delete a.impactMs; delete a.impactBase;
       if (ms == null) {
         let sum = 0, has = false;
@@ -1992,7 +2481,7 @@
     advice.sort(byImpact);
 
     // -- family collapsing: a big plan can trigger the same rule on dozens
-    // of nodes (archive sweep: 20× ANY_SLOW, 40× ROW_RATIO in one plan).
+    // of nodes (archive sweep: 20× UNEXPLAINED_TIME, 40× ROW_ESTIMATE in one plan).
     // Keep the three highest-impact entries per code and roll the rest into
     // one aggregate entry; DDL candidates from rolled-up entries survive on
     // the aggregate, and row badges still mark every affected node.
@@ -2010,7 +2499,9 @@
         collapsed.push(...kept);
         const ms = tail.reduce((s, a) => s + (a.impact.ms || 0), 0);
         const hasMs = tail.some(a => a.impact.ms != null);
-        const pct = hasMs && totalTime ? ms / totalTime * 100 : null;
+        // same base as the individual entries: on a truncated plan the self
+        // times are upper bounds, so a share of the total stays unknown
+        const pct = hasMs && !localOnly && totalTime ? ms / totalTime * 100 : null;
         let level = 'unknown';
         if (hasMs) {
           if ((pct != null && pct < 2) || ms < 1) level = 'minor';
@@ -2031,7 +2522,7 @@
         }
         collapsed.push({
           _ord: tail[0]._ord,
-          code: tail[0].code, sev: tail[0].sev, agg: tail.length,
+          code: tail[0].code, badge: tail[0].badge, sev: tail[0].sev, agg: tail.length,
           obs: tail.length + ' more nodes match this pattern'
             + (hasMs ? ', combined self time ' + round3(ms) + ' ms'
               + (pct != null ? ' (' + (Math.round(pct * 10) / 10) + '% of total)' : '') : ''),
@@ -2054,6 +2545,133 @@
   }
 
   /* ------------------------------------------------------------------ *
+   * SQL context — what the accompanying query text adds to the plan.
+   * Everything here is gated on the pair actually belonging together:
+   * a plan analyzed against somebody else's query is worse than no query.
+   * ------------------------------------------------------------------ */
+
+  function buildSqlContext(plan) {
+    plan.sql = null;
+    if (!Sql || !plan.query) return;
+    const diag = (code, severity, message, samples) => {
+      plan.diagnostics.push({
+        code, severity, message, count: 1,
+        samples: samples ? samples.slice(0, 3).map(x => String(x).slice(0, 200)) : [],
+      });
+    };
+    let sc, bd;
+    try {
+      sc = Sql.scan(plan.query);
+      bd = Sql.bind(sc, plan);
+    } catch (e) {
+      diag('sql_unparsed', 'info',
+        'The SQL text could not be scanned: findings that would rely on the query are off');
+      return;
+    }
+    if (bd.reason === 'multi-statement') {
+      diag('sql_multi_statement', 'warn',
+        'The SQL text contains ' + sc.statements + ' statements while a plan describes one of '
+        + 'them, and nothing in the plan says which: relations, casts and parameters from the '
+        + 'other statements would be attributed to this one. Findings that rely on the query '
+        + 'are off — paste the single statement this plan belongs to.');
+    } else if (bd.reason === 'partial') {
+      diag('sql_mismatch', 'warn',
+        'The SQL text and the plan match only partially ('
+        + bd.sqlOnly.slice(0, 3).join(', ')
+        + (bd.sqlOnly.length > 3 ? ', …' : '')
+        + ' named in the query but not read by the plan): either the two inputs are from '
+        + 'different statements, or the planner removed those relations (view expansion, join '
+        + 'elimination). The difference is not visible from here, so findings that rely on the '
+        + 'query are off.', bd.sqlOnly);
+    } else if (bd.reason === 'plan-only') {
+      diag('sql_mismatch', 'warn',
+        'The plan reads relations the query never names ('
+        + bd.planOnly.slice(0, 3).join(', ')
+        + (bd.planOnly.length > 3 ? ', …' : '')
+        + '): the two inputs are not the same statement, or the plan expands a view. '
+        + 'Findings that rely on the query are off.', bd.planOnly);
+    } else if (bd.reason === 'no-relations') {
+      diag('sql_mismatch', 'warn',
+        'The SQL text names no relation the plan could read: findings that rely on the query are off');
+    }
+    // Map plan nodes onto the FROM item they came from, so a node can be
+    // pointed back at the fragment of the query that produced it. An alias
+    // reused in several subqueries is marked rather than guessed at.
+    let matchedNodes = 0;
+    if (bd.bound) {
+      const fold = Sql.fold;
+      const uses = new Map();
+      for (const r of sc.relations) {
+        const k = r.alias || r.name;
+        if (k) uses.set(k, (uses.get(k) || 0) + 1);
+      }
+      for (const n of plan.nodes) {
+        if (n.spec || !n.relation) continue;
+        const alias = n.alias ? fold(n.alias) : null;
+        const name = fold(String(n.relation).split('.').pop());
+        // An alias may only speak for a node whose relation agrees with the
+        // FROM item it names: "payments o" is not the query's "orders o",
+        // however well the aliases line up.
+        const viaAlias = alias ? bd.byAlias.get(alias) : null;
+        const aliasOk = viaAlias && (viaAlias.kind !== 'table' || viaAlias.name === name);
+        // a CTE Scan belongs to the CTE definition rather than to whichever
+        // reference of it happens to come first in the text
+        const parent = Sql.parentAlias(alias);
+        const hit = bd.byCte.get(name)
+          || (aliasOk ? viaAlias : null)
+          || bd.byName.get(name)
+          // a partitioned/inherited child, recognized by the alias PostgreSQL
+          // derives from the parent's ("orders o" -> "orders_p2026_08 o_1")
+          || (parent ? bd.byAlias.get(parent) : null)
+          || null;
+        if (!hit) continue;
+        n.sqlSpan = { s: hit.s, e: hit.e, ref: hit.ref || null };
+        if (uses.get(alias || name) > 1) n.sqlSpan.ambiguous = true;
+        matchedNodes++;
+      }
+
+      // Attribute every cast written in the query to the FROM item it names.
+      // A bare "id::numeric" belongs to nobody in particular, so it counts
+      // only when the statement reads a single source; otherwise the column
+      // name alone would hand one relation's cast to another's index.
+      const sources = sc.relations.filter(r => r.kind === 'table');
+      const soleSource = sources.length === 1 ? sources[0] : null;
+      const castsFor = new Map();     // FROM-item span key -> Set('col::type')
+      for (const c of sc.casts) {
+        const dot = c.qualified.lastIndexOf('.');
+        const qual = dot > 0 ? fold(c.qualified.slice(0, dot)) : null;
+        const target = qual
+          ? (bd.byAlias.get(qual) || bd.byName.get(qual) || null)
+          : soleSource;
+        if (!target) continue;        // ambiguous: never used
+        const key = target.s + ':' + target.e;
+        if (!castsFor.has(key)) castsFor.set(key, new Set());
+        castsFor.get(key).add(c.col + '::' + c.type);
+      }
+      for (const n of plan.nodes) {
+        if (!n.sqlSpan) continue;
+        const set = castsFor.get(n.sqlSpan.s + ':' + n.sqlSpan.e);
+        if (set && set.size) n.sqlCasts = [...set].sort();
+      }
+    }
+    plan.sql = {
+      bound: bd.bound,
+      reason: bd.reason,
+      coverage: Math.round(bd.coverage * 100) / 100,
+      matchedNodes,
+      statements: sc.statements,
+      params: sc.params,
+      predicateLiterals: sc.predicateLiterals,
+      relations: sc.relations,
+      ctes: sc.ctes,
+      casts: sc.casts,
+      forms: sc.forms,
+      unmatched: bd.sqlOnly,
+      planOnly: bd.planOnly,
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
    * EXPLAIN coaching — which missing options would answer open questions.
    * Never suggests an unsafe one-click command: for DML the side-effect
    * warning is explicit.
@@ -2065,7 +2683,7 @@
     // with different options in any meaningful way
     if (plan.inProgress || plan.truncated) { plan.coaching = coaching; return; }
     const nodes = plan.nodes;
-    const isDml = nodes.length && /^(Insert|Update|Delete|Merge)$/.test(nodes[0].xtype);
+    const isDml = nodes.length && /^(Insert|Update|Delete|Merge)$/.test(nodes[0].nodeType);
     const hasActual = nodes.some(n => n.loops != null || n.never);
     const hasTimes = nodes.some(n => n.timeTotal != null);
     const hasBuf = nodes.some(n => Object.keys(n.buf).length > 0);
@@ -2280,7 +2898,7 @@
         parsed.truncated = true;
         parsed.diagnostics.push({
           code: 'truncated_input', severity: 'warn',
-          message: 'The plan starts with attribute lines: its head node is missing; recommendations are disabled',
+          message: 'The plan starts with attribute lines: its head node is missing; only node-local recommendations are produced',
           count: 1, samples: [String(root.head).slice(0, 200)],
         });
       }
@@ -2308,6 +2926,9 @@
     analyze(plan);
     buildStats(plan);
     buildDomain(plan);
+    // the SQL context has to exist before the advisor runs: several rules
+    // change what they claim once the query text is known
+    buildSqlContext(plan);
     buildAdvice(plan);
     buildCoaching(plan);
     if (Expr) {

@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 2,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "bloat_vacuum.accounts",
+    "name": "accounts",
+    "schema": "bloat_vacuum",
+    "kind": "table",
+    "depth": 0,
+    "s": 7,
+    "e": 28,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,15 +90,23 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Update accounts",
   "  ->  Scan Table accounts"
  ],
  "stats": [
   {
-   "type": "Update",
-   "xtype": "Update",
+   "rawType": "Update",
+   "nodeType": "Update",
    "relation": "accounts",
    "index": null,
    "time": 0.595,
@@ -77,8 +124,8 @@
    "timePct": 60.22267206477733
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "accounts",
    "index": null,
    "time": 0.393,
@@ -125,8 +172,8 @@
  },
  "advice": [
   {
-   "code": "SEQ_RRBF",
-   "badge": "SR",
+   "code": "SEQSCAN_DISCARD",
+   "badge": "SD",
    "sev": "crit",
    "obs": "The sequential scan discards most of the rows it reads by filter.",
    "hyp": "An index on the filter conditions could replace the full-table read.",
@@ -134,7 +181,7 @@
    "nodes": [
     {
      "id": 1,
-     "ext": "rows=51, RRbF=4983, ratio=97.7"
+     "ext": "rows=51, removed by filter=4983, ratio=97.7"
     }
    ],
    "idxs": [
@@ -161,8 +208,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Update",
-   "xtype": "Update",
+   "rawType": "Update",
+   "nodeType": "Update",
    "relation": "accounts",
    "relationRef": "accounts",
    "index": null,
@@ -204,7 +251,7 @@
    "sortMethod": null,
    "timeIncl": 0.988,
    "timeExcl": 0.595,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -216,12 +263,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Update on accounts  (cost=0.00..191.63 rows=0 width=0) (actual time=0.988..0.988 rows=0.00 loops=1)",
-   "costExcl": 0
+   "costExcl": 0,
+   "sqlSpan": {
+    "s": 7,
+    "e": 28,
+    "ref": "bloat_vacuum.accounts"
+   }
   },
   {
    "id": 1,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "accounts",
    "relationRef": "accounts",
    "index": null,
@@ -270,7 +322,7 @@
    "sortMethod": null,
    "timeIncl": 0.393,
    "timeExcl": 0.393,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 51,
    "rowsRemovedTotal": 4983,
@@ -283,8 +335,13 @@
    "ratioDir": 1,
    "rawHead": "Seq Scan on accounts  (cost=0.00..191.63 rows=25 width=24) (actual time=0.017..0.393 rows=51.00 loops=1)",
    "costExcl": 191.63,
+   "sqlSpan": {
+    "s": 7,
+    "e": 28,
+    "ref": "bloat_vacuum.accounts"
+   },
    "advice": [
-    "SEQ_RRBF"
+    "SEQSCAN_DISCARD"
    ]
   }
  ]

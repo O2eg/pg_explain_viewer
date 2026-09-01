@@ -21,9 +21,9 @@
  *   PgPlanRender.renderStats(container, plan, ctx)
  *   PgPlanRender.renderDiagram(container, plan, ctx)
  *   PgPlanRender.renderText(container, plan)
- *   PgPlanRender.renderQuery(container, plan)
- *   ctx is optional: { goToNode(id), setTab(name) } for cross-pane
- *   navigation; omit it when embedding a single pane.
+ *   PgPlanRender.renderQuery(container, plan, ctx) -> {focusNode(id)}
+ *   ctx is optional: { goToNode(id), setTab(name), showSql(id) } for
+ *   cross-pane navigation; omit it when embedding a single pane.
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) { module.exports = factory(); }
@@ -123,7 +123,7 @@
       const re = new RegExp('(^|[\\s.])(' + reEscape(esc(val)) + ')(?=[\\s:.]|$)');
       html = html.replace(re, (m, p1, p2) => p1 + '<span class="' + cls + '">' + p2 + '</span>');
     };
-    wrap(node.spec ? node.spec : node.type, 'pv-t-type');
+    wrap(node.spec ? node.spec : node.rawType, 'pv-t-type');
     wrap(node.index, 'pv-t-index');
     wrap(node.relation, 'pv-t-rel');
     if (node.alias && node.alias !== node.relation) wrap(node.alias, 'pv-t-alias');
@@ -348,8 +348,8 @@
 
   const nodeAbbr = n => {
     if (n.spec) return n.spec;
-    const a = n.xtype.replace(/[a-z ()]+/g, '');
-    return a === 'IOS' ? 'IS' : a || n.xtype.slice(0, 2);
+    const a = n.nodeType.replace(/[a-z ()]+/g, '');
+    return a === 'IOS' ? 'IS' : a || n.nodeType.slice(0, 2);
   };
 
   /* ================= plan table ================= */
@@ -437,7 +437,7 @@
     if (cols.time) th('tree, ms', 'node time including its subtree');
     if (cols.rows) th('rows', 'rows returned × loops', 'rows');
     if (cols.ratio) th('ratio', 'estimated vs actual rows: ↑ underestimated, ↓ overestimated', 'ratio');
-    if (cols.rowsRemoved) th('RRbF', 'Rows Removed by Filter × loops', 'rowsRemoved');
+    if (cols.rowsRemoved) th('rows removed', 'Rows Removed by Filter × loops', 'rowsRemoved');
     if (cols.filter) th('<span class="pv-flt-ico">⚲</span>', 'node has filter / condition');
     if (cols.loops) th('loops', 'number of node executions', 'loops');
     if (hasAdvice) th('', 'recommendations');
@@ -568,7 +568,7 @@
             : (max.timeExcl ? fmtNum(100 * r, 1) + '% of the hottest node' : null);
           tr.appendChild(metricCell('pv-t-excl', n.timeExcl, max.timeExcl, color, {
             dec: 3, title,
-            sub: n.prlTime != null ? '∑' + fmtNum(n.prlTime, 3) : null,
+            sub: n.parallelTime != null ? '∑' + fmtNum(n.parallelTime, 3) : null,
           }));
         } else tr.appendChild(emptyCell());
       }
@@ -878,10 +878,68 @@
 
   /* ================= query pane ================= */
 
-  function renderQuery(container, plan) {
+  // Wrap [s, e) of the pane's text content in a <mark>. The pane holds
+  // highlight.js markup, so the range is applied per text node instead of
+  // through Range.surroundContents, which refuses partially covered elements.
+  function markSpan(root, s, e) {
+    if (!(e > s) || typeof document === 'undefined') return null;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const jobs = [];
+    let pos = 0, node;
+    while ((node = walker.nextNode())) {
+      const len = node.nodeValue.length;
+      const a = Math.max(s, pos), b = Math.min(e, pos + len);
+      if (b > a) jobs.push({ node, from: a - pos, to: b - pos });
+      pos += len;
+      if (pos >= e) break;
+    }
+    let first = null;
+    for (const j of jobs) {
+      let t = j.node;
+      if (j.to < t.nodeValue.length) t.splitText(j.to);
+      if (j.from > 0) t = t.splitText(j.from);
+      const mk = document.createElement('mark');
+      mk.className = 'pv-sqlmark';
+      t.replaceWith(mk);
+      mk.appendChild(t);
+      if (!first) first = mk;
+    }
+    return first;
+  }
+
+  function clearMarks(root) {
+    for (const m of [...root.querySelectorAll('.pv-sqlmark')]) {
+      m.replaceWith(document.createTextNode(m.textContent));
+    }
+    root.normalize();
+  }
+
+  function renderQuery(container, plan, ctx) {
     const pre = el('pre', 'pv-text pv-query pv-sql', container);
-    if (plan.query) pre.innerHTML = sqlHtml(plan.query);
-    else pre.textContent = '— no query text in the input —';
+    if (!plan.query) {
+      pre.textContent = '— no query text in the input —';
+      return {};
+    }
+    pre.innerHTML = sqlHtml(plan.query);
+    const note = el('div', 'pv-sqlnote', container);
+    note.hidden = true;
+    return {
+      focusNode(id) {
+        const n = plan.nodes[id];
+        clearMarks(pre);
+        note.hidden = true;
+        if (!n || !n.sqlSpan) return false;
+        const mk = markSpan(pre, n.sqlSpan.s, n.sqlSpan.e);
+        if (!mk) return false;
+        mk.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (n.sqlSpan.ambiguous) {
+          note.hidden = false;
+          note.textContent = 'this alias appears more than once in the query — '
+            + 'the first occurrence is highlighted';
+        }
+        return true;
+      },
+    };
   }
 
   /* ================= domain pane ================= */
@@ -898,12 +956,29 @@
 
   /* ================= diagnostics pane ================= */
 
+  // What the reader has to know before trusting the numbers: model
+  // adjustments AND the EXPLAIN options whose absence limits the analysis.
+  // Both answer the same question, so they belong on the same pane.
+  function diagItems(plan) {
+    const items = (plan.diagnostics || []).slice();
+    for (const c of (plan.coaching || [])) {
+      items.push({
+        code: 'missing_option',
+        severity: 'info',
+        message: 'Re-run with EXPLAIN (' + c.option + '): ' + c.reason,
+        count: 1,
+        samples: c.warning ? [c.warning] : [],
+      });
+    }
+    return items;
+  }
+
   function renderDiagnostics(container, plan, ctx) {
     ctx = ctx || makeLocalCtx(container);
     bindTooltips(container.closest('.pv') || container);
     const list = el('div', 'pv-diaglist', container);
     // warnings (trust-affecting) first, notes after; stable within a group
-    const diags = (plan.diagnostics || []).slice()
+    const diags = diagItems(plan)
       .sort((a, b) => (a.severity === 'warn' ? 0 : 1) - (b.severity === 'warn' ? 0 : 1));
     for (const d of diags) {
       const item = el('div', 'pv-diagitem pv-diagitem-' + d.severity, list);
@@ -994,7 +1069,7 @@
       return metricCell('', g.rows, maxRows, g.rows > 1 && r >= 0.01 ? heatWarm(hues, r) : null, {});
     });
     if (hasRR) {
-      addCol('RRbF', 'rows removed by filters', 'rowsRemoved', g => {
+      addCol('rows removed', 'rows removed by filters', 'rowsRemoved', g => {
         const r = maxRR ? g.rowsRemoved / maxRR : 0;
         return metricCell('', g.rowsRemoved, maxRR,
           g.rowsRemoved ? heatWarm(hues, r, 0.1 + 0.9 * Math.max(r, 0.3)) : null, {});
@@ -1009,7 +1084,7 @@
     }
     addCol('node type', null, 'type', g => {
       const td = emptyCell('pv-l');
-      el('span', 'pv-t-type', td).textContent = g.type;
+      el('span', 'pv-t-type', td).textContent = g.rawType;
       return td;
     });
     addCol('relation', null, 'relation', g => {
@@ -1118,7 +1193,9 @@
     // group advice entries by their primary node (first head node)
     const byNode = new Map(); // nodeId|null -> [entries]
     for (const a of list) {
-      const key = a.nodes.length ? a.nodes[0].id : null;
+      // plan-scoped findings name nodes as evidence, but they are not about
+      // one node — they must not borrow a node's header and metrics
+      const key = a.scope === 'plan' || !a.nodes.length ? null : a.nodes[0].id;
       if (!byNode.has(key)) byNode.set(key, []);
       byNode.get(key).push(a);
     }
@@ -1128,12 +1205,25 @@
       if (nodeId != null && !cardsByNode.has(nodeId)) cardsByNode.set(nodeId, card);
 
       // header: node summary with metric shares
+      if (nodeId == null) {
+        const head = el('div', 'pv-card-head pv-card-head-plan', card);
+        el('span', 'pv-card-scope', head).textContent = 'whole plan';
+      }
       if (nodeId != null) {
         const n = plan.nodes[nodeId];
         const head = el('div', 'pv-card-head', card);
         head.appendChild(nodeLink(ctx, n.id, '# ' + n.id));
         const ht = el('span', 'pv-card-title', head);
         ht.innerHTML = markupHead(n);
+        // the query text can say which FROM item this node came from
+        if (n.sqlSpan && ctx && ctx.showSql) {
+          const b = btn('pv-card-sql', head);
+          b.textContent = 'sql';
+          tip(b, n.sqlSpan.ref
+            ? 'show "' + n.sqlSpan.ref + '" in the query text'
+            : 'show this node in the query text');
+          b.addEventListener('click', () => ctx.showSql(n.id));
+        }
         const met = el('div', 'pv-card-metrics', card);
         const addMetric = (label, valueHtml, share) => {
           const m = el('span', 'pv-metric', met);
@@ -1157,7 +1247,7 @@
             totals.ioRead ? n.ioReadExcl / totals.ioRead * 100 : null);
         }
         if (n.rowsTotal) addMetric('rows', fmtInt(n.rowsTotal), null);
-        if (n.rowsRemovedTotal) addMetric('RRbF', fmtInt(n.rowsRemovedTotal), null);
+        if (n.rowsRemovedTotal) addMetric('rows removed', fmtInt(n.rowsRemovedTotal), null);
       }
 
       for (const a of entries) {
@@ -1165,6 +1255,12 @@
         const b = el('span', 'pv-badge pv-sev-' + a.sev, ad);
         b.textContent = a.badge;
         tip(b, a.code);
+        // an aggregate entry stands for several nodes: say so where it shows
+        if (a.agg) {
+          const g = el('span', 'pv-adv-agg', ad);
+          g.textContent = '+' + a.agg + ' similar';
+          tip(g, a.agg + ' more nodes with the same finding, rolled up');
+        }
         // impact chip: time attributable to the flagged nodes
         if (a.impact && a.impact.ms != null) {
           const im = el('span', 'pv-impact pv-impact-' + a.impact.level, ad);
@@ -1408,7 +1504,7 @@
       const typeLbl = document.createElementNS(NS, 'text');
       typeLbl.setAttribute('class', 'pv-dg-type');
       typeLbl.setAttribute('y', -R - 5);
-      typeLbl.textContent = n.xtype;
+      typeLbl.textContent = n.nodeType;
       g.appendChild(typeLbl);
 
       tip(g, `#${n.id} ${n.head}\n`
@@ -1545,7 +1641,7 @@
         (r.schema ? r.schema + '.' : '') + r.name + (r.virtual ? ' — ' + r.virtual : ''),
         r.aliases.length ? 'aliases: ' + r.aliases.join(', ') : null,
         'nodes: ' + relNodeIds
-          .map(id => '#' + id + ' ' + plan.nodes[id].xtype
+          .map(id => '#' + id + ' ' + plan.nodes[id].nodeType
             + (plan.nodes[id].rowsTotal ? ' (' + fmtInt(plan.nodes[id].rowsTotal) + ' rows)' : ''))
           .join(', '),
         r.indexes.length ? 'indexes used: ' + r.indexes.map(i => i.name).join(', ') : null,
@@ -1652,16 +1748,19 @@
         'snapshot of a running query: "Current loop" numbers are not final');
     }
     if (plan.truncated) {
-      chip('state', 'truncated', 'the plan is incomplete: recommendations are disabled');
+      chip('state', 'truncated',
+        'the plan is incomplete: only node-local recommendations are produced, '
+        + 'and per-node self times are upper bounds');
     }
 
     // parser/analyzer diagnostics: approximations, clamps, ignored lines
-    if (plan.diagnostics && plan.diagnostics.length) {
-      const worst = plan.diagnostics.some(d => d.severity === 'warn') ? 'warn' : 'info';
+    const diagAll = diagItems(plan);
+    if (diagAll.length) {
+      const worst = diagAll.some(d => d.severity === 'warn') ? 'warn' : 'info';
       const c = btn('pv-chip pv-chip-diag pv-diag-' + worst, summary);
       c.innerHTML = '<span class="pv-chip-l">diagnostics</span>'
-        + '<span class="pv-chip-v">' + plan.diagnostics.length + '</span>';
-      tip(c, plan.diagnostics.map(d =>
+        + '<span class="pv-chip-v">' + diagAll.length + '</span>';
+      tip(c, diagAll.map(d =>
         '[' + d.severity + '] ' + d.code + ': ' + d.message
         + (d.count > 1 ? ' (×' + d.count + ')' : '')).join('\n'));
       if (ctx) c.addEventListener('click', () => ctx.setTab('diagnostics'));
@@ -1718,29 +1817,32 @@
     container.classList.remove('pv');
   }
 
+  // Reading order: the plan itself, then the views that summarize it, then
+  // what the widget concluded about it. The two raw-input panes are pushed to
+  // the far end of the bar (`right`) — they are references, not findings.
   const PANES = [
-    { name: 'plan', label: 'plan', applicable: () => true },
+    { name: 'plan', label: 'Plan', applicable: () => true },
+    { name: 'stats', label: 'Stats', applicable: p => p.stats && p.stats.length > 0 },
+    { name: 'diagram', label: 'Diagram', applicable: p => p.nodes.filter(n => !n.spec).length > 1 },
+    { name: 'relations', label: 'Relations', applicable: p => p.schema && p.schema.rels.length > 0 },
+    { name: 'domain', label: 'Model', applicable: p => p.domain && p.domain.length > 0 },
+    {
+      name: 'diagnostics',
+      label: p => 'Diagnostics (' + diagItems(p).length + ')',
+      applicable: p => diagItems(p).length > 0,
+    },
     {
       name: 'advice',
       label: p => {
         const major = p.advice.filter(a => !a.impact || a.impact.level !== 'minor').length;
         const minor = p.advice.length - major;
-        return 'recommendations (' + major + (minor ? '+' + minor : '') + ')';
+        return 'Recommendations (' + major + (minor ? '+' + minor : '') + ')';
       },
       applicable: p => (p.advice && p.advice.length > 0)
         || (p.coaching && p.coaching.length > 0),
     },
-    {
-      name: 'diagnostics',
-      label: p => 'diagnostics (' + p.diagnostics.length + ')',
-      applicable: p => p.diagnostics && p.diagnostics.length > 0,
-    },
-    { name: 'stats', label: 'stats', applicable: p => p.stats && p.stats.length > 0 },
-    { name: 'diagram', label: 'diagram', applicable: p => p.nodes.filter(n => !n.spec).length > 1 },
-    { name: 'relations', label: 'relations', applicable: p => p.schema && p.schema.rels.length > 0 },
-    { name: 'text', label: 'text', applicable: () => true },
-    { name: 'domain', label: 'model', applicable: p => p.domain && p.domain.length > 0 },
-    { name: 'query', label: 'query', applicable: p => !!p.query },
+    { name: 'text', label: 'Plan text', right: true, applicable: () => true },
+    { name: 'query', label: 'SQL query', right: true, applicable: p => !!p.query },
   ];
 
   function render(container, plan, opts) {
@@ -1767,6 +1869,12 @@
         setTab(name);
         if (name === 'advice' && nodeId != null && adviceApi.goToCard) adviceApi.goToCard(nodeId);
       },
+      // jump to the fragment of the query text a node came from
+      showSql(nodeId) {
+        if (!paneEls.has('query')) return false;
+        setTab('query');
+        return queryApi.focusNode ? queryApi.focusNode(nodeId) : false;
+      },
       addCleanup(fn) { cleanups.push(fn); },
     };
 
@@ -1781,9 +1889,13 @@
     const tabEls = new Map();
     const rendered = new Set();
 
+    let pushed = false;
     for (const p of panes) {
       if (tabbar) {
         const t = btn('pv-tab', tabbar);
+        // the first right-hand tab carries the auto margin that pushes it and
+        // everything after it to the end of the row
+        if (p.right && !pushed) { t.classList.add('pv-tab-push'); pushed = true; }
         t.textContent = typeof p.label === 'function' ? p.label(plan) : p.label;
         t.setAttribute('role', 'tab');
         t.id = uid + '-tab-' + p.name;
@@ -1817,6 +1929,7 @@
 
     let tableApi = { goToNode() {} };
     let adviceApi = {};
+    let queryApi = {};
 
     const renderPane = name => {
       if (rendered.has(name)) return;
@@ -1831,7 +1944,7 @@
         case 'relations': renderRelations(pane, plan, ctx); break;
         case 'text': renderText(pane, plan); break;
         case 'domain': renderDomain(pane, plan); break;
-        case 'query': renderQuery(pane, plan); break;
+        case 'query': queryApi = renderQuery(pane, plan, ctx) || queryApi; break;
       }
     };
 

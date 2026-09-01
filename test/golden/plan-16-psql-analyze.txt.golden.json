@@ -7,6 +7,13 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": null,
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -94,8 +101,8 @@
  ],
  "stats": [
   {
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "index": null,
    "time": 12.482,
@@ -111,8 +118,8 @@
    "timePct": 37.17425618727104
   },
   {
-   "type": "Hash Left Join",
-   "xtype": "Hash Left Join",
+   "rawType": "Hash Left Join",
+   "nodeType": "Hash Left Join",
    "relation": null,
    "index": null,
    "time": 7.475,
@@ -128,8 +135,8 @@
    "timePct": 22.26226285850433
   },
   {
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "index": null,
    "time": 4.864,
@@ -145,8 +152,8 @@
    "timePct": 14.486106561038802
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 3.299,
@@ -164,8 +171,8 @@
    "timePct": 9.825177949191408
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "order_items_2",
    "index": null,
    "time": 3.238,
@@ -184,8 +191,8 @@
    "timePct": 9.643505971349434
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "index": null,
    "time": 2.216,
@@ -203,8 +210,8 @@
    "timePct": 6.599755785210114
   },
   {
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "index": null,
    "time": 0.003,
@@ -301,8 +308,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Limit",
-   "xtype": "Limit",
+   "rawType": "Limit",
+   "nodeType": "Limit",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -345,7 +352,7 @@
    "sortMethod": null,
    "timeIncl": 33.577,
    "timeExcl": 0.003,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 20,
    "rowsRemovedTotal": 0,
@@ -359,8 +366,8 @@
   },
   {
    "id": 1,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -405,7 +412,7 @@
    "sortMethod": "top-N heapsort",
    "timeIncl": 33.574,
    "timeExcl": 3.299,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 20,
    "rowsRemovedTotal": 0,
@@ -424,8 +431,8 @@
   },
   {
    "id": 2,
-   "type": "HashAggregate",
-   "xtype": "HashAggregate",
+   "rawType": "HashAggregate",
+   "nodeType": "HashAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -470,7 +477,7 @@
    "sortMethod": null,
    "timeIncl": 30.275,
    "timeExcl": 12.482,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -482,12 +489,13 @@
    "rawHead": "HashAggregate  (cost=2861.94..3307.29 rows=44535 width=16) (actual time=25.433..30.275 rows=44535.00 loops=1)",
    "groupKey": "s.id",
    "memUsageKb": 2841,
+   "hashBatches": 1,
    "costExcl": 668.02
   },
   {
    "id": 3,
-   "type": "Hash Left Join",
-   "xtype": "Hash Left Join",
+   "rawType": "Hash Left Join",
+   "nodeType": "Hash Left Join",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -537,7 +545,7 @@
    "sortMethod": null,
    "timeIncl": 17.793,
    "timeExcl": 7.475,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -551,8 +559,8 @@
   },
   {
    "id": 4,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "stock_items",
    "relationRef": "stock_items",
    "index": null,
@@ -591,7 +599,7 @@
    "sortMethod": null,
    "timeIncl": 2.216,
    "timeExcl": 2.216,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 44535,
    "rowsRemovedTotal": 0,
@@ -607,8 +615,8 @@
   },
   {
    "id": 5,
-   "type": "Hash",
-   "xtype": "Hash",
+   "rawType": "Hash",
+   "nodeType": "Hash",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -652,7 +660,7 @@
    "sortMethod": null,
    "timeIncl": 8.102,
    "timeExcl": 4.864,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 50000,
    "rowsRemovedTotal": 0,
@@ -663,12 +671,14 @@
    "ratioDir": 0,
    "rawHead": "Hash  (cost=818.00..818.00 rows=50000 width=8) (actual time=8.101..8.102 rows=50000.00 loops=1)",
    "memUsageKb": 2466,
+   "hashBuckets": 65536,
+   "hashBatches": 1,
    "costExcl": 0
   },
   {
    "id": 6,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "order_items_2",
    "relationRef": "order_items_2",
    "index": null,
@@ -709,7 +719,7 @@
    "sortMethod": null,
    "timeIncl": 3.238,
    "timeExcl": 3.238,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 50000,
    "rowsRemovedTotal": 0,

@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 1,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "jsonb_docs.documents",
+    "name": "documents",
+    "schema": "jsonb_docs",
+    "kind": "table",
+    "depth": 0,
+    "s": 21,
+    "e": 41,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,14 +90,22 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Scan Table documents"
  ],
  "stats": [
   {
-   "type": "Parallel Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Parallel Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "documents",
    "index": null,
    "time": 4.923,
@@ -76,8 +123,8 @@
    "timePct": 91.96712124042593
   },
   {
-   "type": "Gather",
-   "xtype": "Gather",
+   "rawType": "Gather",
+   "nodeType": "Gather",
    "relation": null,
    "index": null,
    "time": 0.424,
@@ -93,8 +140,8 @@
    "timePct": 7.920792079207921
   },
   {
-   "type": "Finalize Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Finalize Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "index": null,
    "time": 0.003,
@@ -110,8 +157,8 @@
    "timePct": 0.05604334018307491
   },
   {
-   "type": "Partial Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Partial Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "index": null,
    "time": 0.003,
@@ -155,8 +202,8 @@
  },
  "advice": [
   {
-   "code": "SEQ_RRBF",
-   "badge": "SR",
+   "code": "SEQSCAN_DISCARD",
+   "badge": "SD",
    "sev": "crit",
    "obs": "The sequential scan discards most of the rows it reads by filter.",
    "hyp": "An index on the filter conditions could replace the full-table read.",
@@ -164,7 +211,7 @@
    "nodes": [
     {
      "id": 3,
-     "ext": "rows=0, RRbF=54600"
+     "ext": "rows=0, removed by filter=54600"
     }
    ],
    "idxs": [
@@ -188,8 +235,8 @@
    }
   },
   {
-   "code": "ROW_RATIO",
-   "badge": "RR",
+   "code": "ROW_ESTIMATE",
+   "badge": "RE",
    "sev": "info",
    "obs": "The planner’s row estimate differs strongly from the actual count.",
    "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
@@ -207,7 +254,7 @@
    }
   },
   {
-   "code": "GTH_WRKS",
+   "code": "GATHER_WORKERS",
    "badge": "GW",
    "sev": "info",
    "obs": "Fewer parallel workers were launched than the planner asked for.",
@@ -229,8 +276,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Finalize Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Finalize Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -271,7 +318,7 @@
    "sortMethod": null,
    "timeIncl": 5.353,
    "timeExcl": 0.003,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -285,8 +332,8 @@
   },
   {
    "id": 1,
-   "type": "Gather",
-   "xtype": "Gather",
+   "rawType": "Gather",
+   "nodeType": "Gather",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -329,7 +376,7 @@
    "sortMethod": null,
    "timeIncl": 5.35,
    "timeExcl": 0.424,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -341,13 +388,13 @@
    "rawHead": "Gather  (cost=2090.53..2090.55 rows=2 width=8) (actual time=5.272..5.350 rows=1.00 loops=1)",
    "costExcl": 0,
    "advice": [
-    "GTH_WRKS"
+    "GATHER_WORKERS"
    ]
   },
   {
    "id": 2,
-   "type": "Partial Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Partial Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -388,7 +435,7 @@
    "sortMethod": null,
    "timeIncl": 4.926,
    "timeExcl": 0.003,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": 1,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -402,8 +449,8 @@
   },
   {
    "id": 3,
-   "type": "Parallel Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Parallel Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "documents",
    "relationRef": "documents",
    "index": null,
@@ -451,7 +498,7 @@
    "sortMethod": null,
    "timeIncl": 4.923,
    "timeExcl": 4.923,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": 1,
    "rowsTotal": 0,
    "rowsRemovedTotal": 54600,
@@ -464,9 +511,14 @@
    "ratioDir": -1,
    "rawHead": "Parallel Seq Scan on documents  (cost=0.00..2090.25 rows=114 width=0) (actual time=4.923..4.923 rows=0.00 loops=1)",
    "costExcl": 2090.25,
+   "sqlSpan": {
+    "s": 21,
+    "e": 41,
+    "ref": "jsonb_docs.documents"
+   },
    "advice": [
-    "SEQ_RRBF",
-    "ROW_RATIO"
+    "SEQSCAN_DISCARD",
+    "ROW_ESTIMATE"
    ]
   }
  ]

@@ -7,6 +7,71 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 3,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 1,
+  "relations": [
+   {
+    "ref": "r",
+    "name": "r",
+    "schema": null,
+    "kind": "table",
+    "depth": 1,
+    "s": 59,
+    "e": 60,
+    "alias": null
+   },
+   {
+    "ref": "r",
+    "name": "r",
+    "schema": null,
+    "kind": "table",
+    "depth": 0,
+    "s": 97,
+    "e": 98,
+    "alias": null
+   },
+   {
+    "ref": "pagila.rental",
+    "name": "rental",
+    "schema": "pagila",
+    "kind": "table",
+    "depth": 0,
+    "s": 104,
+    "e": 120,
+    "alias": "re"
+   }
+  ],
+  "ctes": [
+   {
+    "name": "r",
+    "s": 15,
+    "e": 75
+   }
+  ],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -70,6 +135,13 @@
     5,
     0
    ]
+  },
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
   }
  ],
  "domain": [
@@ -80,8 +152,8 @@
  ],
  "stats": [
   {
-   "type": "Index Only Scan",
-   "xtype": "Index Only Scan",
+   "rawType": "Index Only Scan",
+   "nodeType": "Index Only Scan",
    "relation": "rental",
    "index": "rental_pkey",
    "time": 0.5,
@@ -99,8 +171,8 @@
    "timePct": 71.63323782234957
   },
   {
-   "type": "Recursive Union",
-   "xtype": "Recursive Union",
+   "rawType": "Recursive Union",
+   "nodeType": "Recursive Union",
    "relation": null,
    "index": null,
    "time": 0.14,
@@ -116,8 +188,8 @@
    "timePct": 20.057306590257884
   },
   {
-   "type": "CTE Scan",
-   "xtype": "CTE Scan",
+   "rawType": "CTE Scan",
+   "nodeType": "CTE Scan",
    "relation": "r",
    "index": null,
    "time": 0.057,
@@ -133,8 +205,8 @@
    "timePct": 8.166189111747851
   },
   {
-   "type": "Result",
-   "xtype": "Result",
+   "rawType": "Result",
+   "nodeType": "Result",
    "relation": null,
    "index": null,
    "time": 0.001,
@@ -150,8 +222,8 @@
    "timePct": 0.14326647564469916
   },
   {
-   "type": "WorkTable Scan",
-   "xtype": "WorkTable Scan",
+   "rawType": "WorkTable Scan",
+   "nodeType": "WorkTable Scan",
    "relation": "r",
    "index": null,
    "time": 0,
@@ -167,8 +239,8 @@
    "timePct": 0
   },
   {
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "index": null,
    "time": 0,
@@ -184,8 +256,8 @@
    "timePct": 0
   },
   {
-   "type": "Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "index": null,
    "time": 0,
@@ -286,8 +358,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "Aggregate",
-   "xtype": "Aggregate",
+   "rawType": "Aggregate",
+   "nodeType": "Aggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -329,7 +401,7 @@
    "sortMethod": null,
    "timeIncl": 0.698,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -344,8 +416,8 @@
   },
   {
    "id": 1,
-   "type": "CTE r",
-   "xtype": "CTE",
+   "rawType": "CTE r",
+   "nodeType": "CTE",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -382,7 +454,7 @@
    "sortMethod": null,
    "timeIncl": 0.141,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -396,8 +468,8 @@
   },
   {
    "id": 2,
-   "type": "Recursive Union",
-   "xtype": "Recursive Union",
+   "rawType": "Recursive Union",
+   "nodeType": "Recursive Union",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -437,7 +509,7 @@
    "sortMethod": null,
    "timeIncl": 0.141,
    "timeExcl": 0.14,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 500,
    "rowsRemovedTotal": 0,
@@ -451,8 +523,8 @@
   },
   {
    "id": 3,
-   "type": "Result",
-   "xtype": "Result",
+   "rawType": "Result",
+   "nodeType": "Result",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -487,7 +559,7 @@
    "sortMethod": null,
    "timeIncl": 0.001,
    "timeExcl": 0.001,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
    "rowsRemovedTotal": 0,
@@ -501,8 +573,8 @@
   },
   {
    "id": 4,
-   "type": "WorkTable Scan",
-   "xtype": "WorkTable Scan",
+   "rawType": "WorkTable Scan",
+   "nodeType": "WorkTable Scan",
    "relation": "r",
    "relationRef": "r",
    "index": null,
@@ -547,7 +619,7 @@
    "sortMethod": null,
    "timeIncl": 0,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 500,
    "rowsRemovedTotal": 0,
@@ -557,12 +629,17 @@
    "ratio": 3,
    "ratioDir": -1,
    "rawHead": "WorkTable Scan on r r_1  (cost=0.00..0.23 rows=3 width=4) (actual time=0.000..0.000 rows=1.00 loops=500)",
-   "costExcl": 0.23
+   "costExcl": 0.23,
+   "sqlSpan": {
+    "s": 15,
+    "e": 75,
+    "ref": null
+   }
   },
   {
    "id": 5,
-   "type": "Nested Loop",
-   "xtype": "Nested Loop",
+   "rawType": "Nested Loop",
+   "nodeType": "Nested Loop",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -604,7 +681,7 @@
    "sortMethod": null,
    "timeIncl": 0.698,
    "timeExcl": 0,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 479,
    "rowsRemovedTotal": 0,
@@ -619,8 +696,8 @@
   },
   {
    "id": 6,
-   "type": "CTE Scan",
-   "xtype": "CTE Scan",
+   "rawType": "CTE Scan",
+   "nodeType": "CTE Scan",
    "relation": "r",
    "relationRef": "r",
    "index": null,
@@ -657,7 +734,7 @@
    "sortMethod": null,
    "timeIncl": 0.198,
    "timeExcl": 0.057,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 500,
    "rowsRemovedTotal": 0,
@@ -667,12 +744,18 @@
    "ratio": 16.129032258064516,
    "ratioDir": 1,
    "rawHead": "CTE Scan on r  (cost=0.00..0.62 rows=31 width=4) (actual time=0.002..0.198 rows=500.00 loops=1)",
-   "costExcl": 0.62
+   "costExcl": 0.62,
+   "sqlSpan": {
+    "s": 15,
+    "e": 75,
+    "ref": null,
+    "ambiguous": true
+   }
   },
   {
    "id": 7,
-   "type": "Index Only Scan",
-   "xtype": "Index Only Scan",
+   "rawType": "Index Only Scan",
+   "nodeType": "Index Only Scan",
    "relation": "rental",
    "relationRef": "rental",
    "index": "rental_pkey",
@@ -719,7 +802,7 @@
    "sortMethod": null,
    "timeIncl": 0.5,
    "timeExcl": 0.5,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 480,
    "rowsRemovedTotal": 0,
@@ -731,7 +814,12 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Index Only Scan using rental_pkey on rental re  (cost=0.28..0.90 rows=1 width=4) (actual time=0.001..0.001 rows=0.96 loops=500)",
-   "costExcl": 0.9
+   "costExcl": 0.9,
+   "sqlSpan": {
+    "s": 104,
+    "e": 120,
+    "ref": "pagila.rental"
+   }
   }
  ]
 }

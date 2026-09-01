@@ -7,6 +7,45 @@
  "inProgress": false,
  "truncated": false,
  "queryId": null,
+ "jit": null,
+ "sql": {
+  "bound": true,
+  "reason": null,
+  "coverage": 1,
+  "matchedNodes": 8,
+  "statements": 1,
+  "params": {
+   "count": 0,
+   "max": 0
+  },
+  "predicateLiterals": 0,
+  "relations": [
+   {
+    "ref": "partition_aging.events",
+    "name": "events",
+    "schema": "partition_aging",
+    "kind": "table",
+    "depth": 0,
+    "s": 46,
+    "e": 68,
+    "alias": null
+   }
+  ],
+  "ctes": [],
+  "casts": [],
+  "forms": {
+   "notIn": [],
+   "notExists": 0,
+   "inSubquery": 0
+  },
+  "unmatched": [],
+  "planOnly": []
+ },
+ "parameters": {
+  "external": [],
+  "internal": []
+ },
+ "coaching": [],
  "columns": {
   "time": true,
   "cost": false,
@@ -51,7 +90,22 @@
  },
  "ext": [],
  "triggers": [],
- "diagnostics": [],
+ "diagnostics": [
+  {
+   "code": "totals_missing",
+   "severity": "info",
+   "message": "The plan carries no Planning Time / Execution Time line: time spent outside the tree (planning, JIT, result transfer, triggers) cannot be accounted for",
+   "count": 1,
+   "nodes": []
+  },
+  {
+   "code": "runtime_pruning",
+   "severity": "info",
+   "message": "25 partition subplan(s) were removed at run time: the plan shows only the partitions that survived pruning, not the ones the query could have touched",
+   "count": 1,
+   "nodes": []
+  }
+ ],
  "domain": [
   "Scan Table events_2026_08_26",
   "Scan Table events_2026_08_27",
@@ -64,8 +118,8 @@
  ],
  "stats": [
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_31",
    "index": null,
    "time": 2.933,
@@ -83,8 +137,8 @@
    "timePct": 41.977959066838416
   },
   {
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "index": null,
    "time": 1.498,
@@ -102,8 +156,8 @@
    "timePct": 21.439816802633466
   },
   {
-   "type": "Append",
-   "xtype": "Append",
+   "rawType": "Append",
+   "nodeType": "Append",
    "relation": null,
    "index": null,
    "time": 0.903,
@@ -119,8 +173,8 @@
    "timePct": 12.924001717475313
   },
   {
-   "type": "GroupAggregate",
-   "xtype": "GroupAggregate",
+   "rawType": "GroupAggregate",
+   "nodeType": "GroupAggregate",
    "relation": null,
    "index": null,
    "time": 0.878,
@@ -136,8 +190,8 @@
    "timePct": 12.566194360956063
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_30",
    "index": null,
    "time": 0.234,
@@ -155,8 +209,8 @@
    "timePct": 3.3490768570201808
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_28",
    "index": null,
    "time": 0.148,
@@ -174,8 +228,8 @@
    "timePct": 2.1182195505939605
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_29",
    "index": null,
    "time": 0.145,
@@ -193,8 +247,8 @@
    "timePct": 2.07528266781165
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_27",
    "index": null,
    "time": 0.134,
@@ -212,8 +266,8 @@
    "timePct": 1.9178474309431803
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_26",
    "index": null,
    "time": 0.102,
@@ -231,8 +285,8 @@
    "timePct": 1.4598540145985404
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_09_02",
    "index": null,
    "time": 0.007,
@@ -248,8 +302,8 @@
    "timePct": 0.10018605982539003
   },
   {
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_09_01",
    "index": null,
    "time": 0.005,
@@ -458,8 +512,8 @@
  "nodes": [
   {
    "id": 0,
-   "type": "GroupAggregate",
-   "xtype": "GroupAggregate",
+   "rawType": "GroupAggregate",
+   "nodeType": "GroupAggregate",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -501,7 +555,7 @@
    "sortMethod": null,
    "timeIncl": 6.987,
    "timeExcl": 0.878,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 6,
    "rowsRemovedTotal": 0,
@@ -516,8 +570,8 @@
   },
   {
    "id": 1,
-   "type": "Sort",
-   "xtype": "Sort",
+   "rawType": "Sort",
+   "nodeType": "Sort",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -560,7 +614,7 @@
    "sortMethod": "quicksort",
    "timeIncl": 6.109,
    "timeExcl": 1.498,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 17117,
    "rowsRemovedTotal": 0,
@@ -579,8 +633,8 @@
   },
   {
    "id": 2,
-   "type": "Append",
-   "xtype": "Append",
+   "rawType": "Append",
+   "nodeType": "Append",
    "relation": null,
    "relationRef": null,
    "index": null,
@@ -629,7 +683,7 @@
    "sortMethod": null,
    "timeIncl": 4.611,
    "timeExcl": 0.903,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 17117,
    "rowsRemovedTotal": 0,
@@ -639,12 +693,13 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Append  (cost=0.15..696.97 rows=17145 width=8) (actual time=0.015..4.611 rows=17117.00 loops=1)",
+   "subplansRemoved": 25,
    "costExcl": 168.74
   },
   {
    "id": 3,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_26",
    "relationRef": "events_2026_08_26",
    "index": null,
@@ -692,7 +747,7 @@
    "sortMethod": null,
    "timeIncl": 0.102,
    "timeExcl": 0.102,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 228,
    "rowsRemovedTotal": 222,
@@ -704,12 +759,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_26 events_1  (cost=0.00..13.45 rows=229 width=8) (actual time=0.015..0.102 rows=228.00 loops=1)",
-   "costExcl": 13.45
+   "costExcl": 13.45,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 4,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_27",
    "relationRef": "events_2026_08_27",
    "index": null,
@@ -754,7 +814,7 @@
    "sortMethod": null,
    "timeIncl": 0.134,
    "timeExcl": 0.134,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 490,
    "rowsRemovedTotal": 0,
@@ -766,12 +826,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_27 events_2  (cost=0.00..14.80 rows=490 width=8) (actual time=0.008..0.134 rows=490.00 loops=1)",
-   "costExcl": 14.8
+   "costExcl": 14.8,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 5,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_28",
    "relationRef": "events_2026_08_28",
    "index": null,
@@ -816,7 +881,7 @@
    "sortMethod": null,
    "timeIncl": 0.148,
    "timeExcl": 0.148,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 566,
    "rowsRemovedTotal": 0,
@@ -828,12 +893,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_28 events_3  (cost=0.00..17.32 rows=566 width=8) (actual time=0.005..0.148 rows=566.00 loops=1)",
-   "costExcl": 17.32
+   "costExcl": 17.32,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 6,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_29",
    "relationRef": "events_2026_08_29",
    "index": null,
@@ -878,7 +948,7 @@
    "sortMethod": null,
    "timeIncl": 0.145,
    "timeExcl": 0.145,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 646,
    "rowsRemovedTotal": 0,
@@ -890,12 +960,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_29 events_4  (cost=0.00..19.92 rows=646 width=8) (actual time=0.003..0.145 rows=646.00 loops=1)",
-   "costExcl": 19.92
+   "costExcl": 19.92,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 7,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_30",
    "relationRef": "events_2026_08_30",
    "index": null,
@@ -940,7 +1015,7 @@
    "sortMethod": null,
    "timeIncl": 0.234,
    "timeExcl": 0.234,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1104,
    "rowsRemovedTotal": 0,
@@ -952,12 +1027,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_30 events_5  (cost=0.00..33.08 rows=1104 width=8) (actual time=0.007..0.234 rows=1104.00 loops=1)",
-   "costExcl": 33.08
+   "costExcl": 33.08,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 8,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_08_31",
    "relationRef": "events_2026_08_31",
    "index": null,
@@ -1002,7 +1082,7 @@
    "sortMethod": null,
    "timeIncl": 2.933,
    "timeExcl": 2.933,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 14083,
    "rowsRemovedTotal": 0,
@@ -1014,12 +1094,17 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Seq Scan on events_2026_08_31 events_6  (cost=0.00..429.66 rows=14083 width=8) (actual time=0.005..2.933 rows=14083.00 loops=1)",
-   "costExcl": 429.66
+   "costExcl": 429.66,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 9,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_09_01",
    "relationRef": "events_2026_09_01",
    "index": null,
@@ -1061,7 +1146,7 @@
    "sortMethod": null,
    "timeIncl": 0.005,
    "timeExcl": 0.005,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1071,12 +1156,17 @@
    "ratio": "Infinity",
    "ratioDir": -1,
    "rawHead": "Seq Scan on events_2026_09_01 events_7  (cost=0.00..0.00 rows=1 width=8) (actual time=0.005..0.005 rows=0.00 loops=1)",
-   "costExcl": 0
+   "costExcl": 0,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   },
   {
    "id": 10,
-   "type": "Seq Scan",
-   "xtype": "Seq Scan",
+   "rawType": "Seq Scan",
+   "nodeType": "Seq Scan",
    "relation": "events_2026_09_02",
    "relationRef": "events_2026_09_02",
    "index": null,
@@ -1118,7 +1208,7 @@
    "sortMethod": null,
    "timeIncl": 0.007,
    "timeExcl": 0.007,
-   "prlTime": null,
+   "parallelTime": null,
    "gatherWorkers": null,
    "rowsTotal": 0,
    "rowsRemovedTotal": 0,
@@ -1128,7 +1218,12 @@
    "ratio": "Infinity",
    "ratioDir": -1,
    "rawHead": "Seq Scan on events_2026_09_02 events_8  (cost=0.00..0.00 rows=1 width=8) (actual time=0.007..0.007 rows=0.00 loops=1)",
-   "costExcl": 0
+   "costExcl": 0,
+   "sqlSpan": {
+    "s": 46,
+    "e": 68,
+    "ref": "partition_aging.events"
+   }
   }
  ]
 }
