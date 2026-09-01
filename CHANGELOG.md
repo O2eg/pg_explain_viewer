@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.7.2] — 2026-09-02
+
+### Added
+
+- The page carries the PostgreSQL elephant as its icon, inlined as an SVG
+  data URI from the project's own three-colour logo. Inline because the
+  icon has to travel with the file — served over Pages, opened from
+  `file://`, or exported as a self-contained copy — and because a
+  `favicon.ico` beside the page would be a 404 for every visitor and no
+  icon at all offline. Trademark and source are recorded in
+  `THIRD_PARTY_NOTICES.md`.
+
 ## [0.7.1] — 2026-09-02
 
 ### Fixed

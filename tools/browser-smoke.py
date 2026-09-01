@@ -365,6 +365,13 @@ Execution Time: 100.4 ms"""
           and controls["clear"].split("|")[2] != "0px",
           controls)
 
+    # the page icon has to travel with the file: inline, not a sibling request
+    check("the page declares an inline icon",
+          page.evaluate("""() => {
+            const l = document.querySelector('link[rel=icon]');
+            return !!l && l.getAttribute('href').startsWith('data:image/svg+xml');
+          }"""))
+
     check("tablist role present", page.query_selector(".pv-tabbar[role=tablist]") is not None)
     check("tabs are buttons with role=tab and aria-selected",
           page.evaluate("""() => [...document.querySelectorAll('.pv-tab')]
