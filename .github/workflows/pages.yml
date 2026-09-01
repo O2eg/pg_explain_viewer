@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  contents: read
   pages: write
   id-token: write
 
@@ -29,13 +30,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Build offline viewer
         run: python3 build.py
       - name: Stage demo site
         run: |
           mkdir -p _site
           cp dist/pg-explain-viewer.html _site/index.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
       - id: deployment

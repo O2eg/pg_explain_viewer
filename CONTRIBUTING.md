@@ -22,13 +22,15 @@ dependency-free — please keep it that way.
 
 ## Development
 
-No install step. Node.js ≥ 18 and Python 3 are enough.
+Node.js ≥ 18 and Python 3 are enough. Install the lockfile-pinned build
+tooling before the first build (and after lockfile changes):
 
 ```bash
+npm ci                      # install the pinned build-time minifier
 npm test                     # node:test suite (see test/)
 UPDATE_GOLDEN=1 npm test     # regenerate golden snapshots after an
                              # intentional model change — review the diff!
-python3 build.py             # build dist/pg-explain-viewer.html
+npm run build                # build dist/pg-explain-viewer.html with minified JS
 ```
 
 Headless-browser regression (needs playwright + a Chromium/Chrome):
@@ -38,6 +40,13 @@ python3 -m pip install --target="$PWD/.pwlib" playwright
 PWLIB="$PWD/.pwlib" python3 -m playwright install chromium
 PWLIB="$PWD/.pwlib" PW_CHANNEL= python3 tools/browser-smoke.py
 ```
+
+## Release
+
+Set `package.json` to the release version and push a matching annotated tag
+(`v0.7.1` for package version `0.7.1`). The Release workflow rejects a version
+mismatch, runs the tests, builds the self-contained HTML and publishes it with
+its SHA-256 checksum and license notices on GitHub Releases.
 
 Regenerating the PostgreSQL 10…18 format matrix (needs Docker):
 
@@ -56,7 +65,7 @@ VERSIONS="18" ONLY="parallel-sort" tools/gen-fixtures.sh
   matrix) — not just code.
 - Keep the CSS contract: all colors/fonts as `--pv-*` custom properties
   in `pgplan-theme.css`; `pgplan.css` stays structural.
-- Run `npm test` and `python3 build.py` before submitting; CI runs the
+- Run `npm test` and `npm run build` before submitting; CI runs the
   same plus the browser regression.
 
 ## Security & data sensitivity

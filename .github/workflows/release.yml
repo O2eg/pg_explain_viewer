@@ -17,14 +17,21 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify tag matches package version
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          test "v${package_version}" = "${GITHUB_REF_NAME}"
       - run: npm test
       - name: Build offline viewer
         run: python3 build.py
+      - name: Write artifact checksum
+        run: sha256sum dist/pg-explain-viewer.html > dist/pg-explain-viewer.html.sha256
       - name: Attach viewer and license notices to the release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/pg-explain-viewer.html
+            dist/pg-explain-viewer.html.sha256
             LICENSE
             THIRD_PARTY_NOTICES.md
             vendor/highlight-11.11.1.LICENSE.txt

@@ -40,6 +40,13 @@ was tracked manually.
 
 ### Changed
 
+- The self-contained HTML build now minifies every embedded executable script
+  with the lockfile-pinned Terser. Independent script scopes stay independent,
+  inline JSON is left untouched, and CI installs the pinned build tooling before
+  checking byte-for-byte reproducibility.
+- The Pages workflow follows GitHub's current configure/upload/deploy sequence.
+  Tagged releases verify that the tag matches `package.json`, then publish the
+  ready-to-open HTML together with a SHA-256 checksum and license notices.
 - The planning documents (`charts.md`, `ROADMAP.md`) moved out of the
   repository; `docs/how-it-works.md` stays as the model contract.
 
