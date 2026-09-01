@@ -180,6 +180,9 @@ Execution Time: 30.5 ms"""
       codes: [...document.querySelectorAll('.pv-badge')].map(b => b.textContent),
       exportBtn: !!document.querySelector('.vw-export'),
       readOnly: document.getElementById('src').readOnly,
+      controls: ['go', 'clear'].filter(id => document.getElementById(id)),
+      planShown: !document.getElementById('src').hidden
+        && document.getElementById('src').value.length > 0,
       xss: window.__pwXss || 0,
     })"""
     page.evaluate("() => { window.__pwXss = 0; }")
@@ -205,6 +208,11 @@ Execution Time: 30.5 ms"""
           {"was": original, "now": reopened})
     check("the copy carries no export button of its own", reopened["exportBtn"] is False)
     check("the copy's input is read-only", reopened["readOnly"] is True)
+    check("the copy still shows the plan it was built from",
+          reopened["planShown"] is True, reopened)
+    check("the copy drops the controls that would act on the data",
+          reopened["controls"] == [] and original["controls"] == ["go", "clear"],
+          {"was": original["controls"], "now": reopened["controls"]})
     check("a hostile plan in the payload executes nothing", reopened["xss"] == 0)
     check("the copy loads without errors", not copy_errors, copy_errors[:2])
     copy.close()

@@ -4,17 +4,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.6.1] — 2026-09-02
+
+### Changed
+
+- An exported copy removes **Visualize** and **Clear** instead of
+  disabling them: with read-only fields neither has anything to act on.
+  Input placeholders are dropped and a field carrying no data is hidden.
+
 ## [0.6.0] — 2026-09-01
 
 ### Added
 
 - **Export**: the viewer page saves a self-contained copy of itself, with
   the plan and query baked in. Only data travels — every tab is recomputed
-  on open by the code already inlined in the file. The copy is read-only:
-  no Export button of its own, input fields not editable, buttons
-  disabled (a `frozen` flag in the payload). The button sits at the end of
-  the tab bar through the new `opts.tabActions` slot, which lets a host
-  place its own actions there.
+  on open by the code already inlined in the file. The copy is read-only
+  (a `frozen` flag in the payload): no Export button of its own, the input
+  fields cannot be edited, and Visualize/Clear are removed rather than
+  greyed out, since nothing there acts on the data any more. Placeholders
+  go too — they instruct, and a snapshot has nothing to instruct about —
+  and a field that carries no data is hidden. The Export button sits at
+  the end of the tab bar through the new `opts.tabActions` slot, which
+  lets a host place its own actions there.
 - The viewer page is now a build output: `viewer.template.html` is the
   source, and `build.py` writes the self-contained page to both `dist/`
   and the repository root. A page that links its styles and scripts cannot

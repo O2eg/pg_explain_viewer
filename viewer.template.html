@@ -226,7 +226,7 @@
     <div>
       <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
       <div class="vw-ident">
-        <span>version <span id="version">0.6.0</span></span>
+        <span>version <span id="version">0.6.1</span></span>
         <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
@@ -307,7 +307,6 @@
     try { localStorage.setItem('pv-theme', theme); } catch (e) {}
     applyTheme(theme);
     if (lastPlan) show(lastPlan); // re-render so heat colors pick up theme hues
-    if (frozen) $('go').disabled = $('clear').disabled = true;
   });
 
   let lastPlan = null;
@@ -382,11 +381,18 @@
       t.readOnly = true;
       t.setAttribute('aria-readonly', 'true');
     }
-    $('go').disabled = true;
-    $('clear').disabled = true;
+    // nothing here acts on the data any more, so the controls go rather than
+    // sit greyed out
+    for (const id of ['go', 'clear']) { const b = $(id); if (b) b.remove(); }
+    // placeholders instruct; a snapshot has nothing to instruct about, and an
+    // empty field carries no data worth showing
+    for (const t of [srcEl, sqlEl]) {
+      t.removeAttribute('placeholder');
+      if (!t.value.trim()) t.hidden = true;
+    }
     const hint = document.querySelector('.vw-hint');
     if (hint) {
-      hint.textContent = 'Exported snapshot — the plan and query below are the ones it was '
+      hint.textContent = 'Exported snapshot — the plan and query above are the ones it was '
         + 'built from and cannot be edited here. Open the viewer itself to analyze another plan.';
     }
   }
@@ -432,9 +438,10 @@
     if (!island) return;
     try {
       const data = JSON.parse(island.textContent);
-      if (data.frozen) freeze();
       srcEl.value = data.plan || '';
       sqlEl.value = data.sql || '';
+      // after the values land: freeze() hides fields that carry no data
+      if (data.frozen) freeze();
       if (data.theme) {
         theme = data.theme;
         themeEl.checked = theme === 'light';
