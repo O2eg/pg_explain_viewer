@@ -199,7 +199,7 @@
     <div>
       <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
       <div class="vw-ident">
-        <span>version <span id="version">0.5.1</span></span>
+        <span>version <span id="version">0.5.2</span></span>
         <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
@@ -260,6 +260,11 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const srcEl = $('src'), sqlEl = $('sql'), errEl = $('error'), outEl = $('out');
+  // The input block moves into the widget's first tab once a plan is shown.
+  // Remember where it belongs so it can come back when there is no widget.
+  const inputBox = $('inputbox');
+  const inputHome = inputBox.parentNode, inputAfter = inputBox.nextSibling;
+  const restoreInput = () => inputHome.insertBefore(inputBox, inputAfter);
 
   /* theme — dark by default, like the pg_diag report */
   const applyTheme = t => {
@@ -281,7 +286,7 @@
 
   function show(plan) {
     outEl.style.display = 'block';
-    PgPlanRender.render($('planview'), plan);
+    PgPlanRender.render($('planview'), plan, { inputPane: inputBox });
   }
 
   function visualize(scrollToResult) {
@@ -294,6 +299,8 @@
       if (scrollToResult) outEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (e) {
       lastPlan = null;
+      // the failed render must not take the input form down with it
+      restoreInput();
       outEl.style.display = 'none';
       errEl.textContent = 'Parse error: ' + e.message;
       errEl.style.display = 'block';
@@ -304,7 +311,9 @@
   $('clear').addEventListener('click', () => {
     srcEl.value = ''; sqlEl.value = '';
     lastPlan = null; // a later theme switch must not resurrect the old plan
+    restoreInput();
     outEl.style.display = 'none';
+    errEl.style.display = 'none';
     srcEl.focus();
   });
   for (const t of [srcEl, sqlEl]) {

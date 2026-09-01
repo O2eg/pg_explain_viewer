@@ -14,6 +14,8 @@
  *     opts.defaultTab : pane to open first (default 'plan')
  *     opts.expanded   : start with all plan nodes expanded
  *     opts.summary    : show the summary chip row (default true)
+ *     opts.inputPane  : element to show as a first "Input data" tab; the
+ *                       widget moves it into the pane and never disposes it
  *
  * Low-level API (render a single pane into your own layout):
  *   PgPlanRender.renderTable(container, plan, ctx, opts)
@@ -1851,6 +1853,13 @@
 
     const wanted = opts.tabs || PANES.map(p => p.name);
     const panes = PANES.filter(p => wanted.includes(p.name) && p.applicable(plan));
+    // A host can hand over an element — its own input form, say — to be shown
+    // as the first tab. The widget only moves it into the pane; it never
+    // creates or destroys it, so the host must keep its own reference and
+    // pass the same element on every re-render.
+    if (opts.inputPane) {
+      panes.unshift({ name: 'input', label: opts.inputLabel || 'Input data' });
+    }
 
     const ctx = {
       goToNode(id) { setTab('plan'); tableApi.goToNode(id); },
@@ -1867,13 +1876,14 @@
       addCleanup(fn) { cleanups.push(fn); },
     };
 
-    if (opts.summary !== false) renderSummary(container, plan, ctx);
-
     let tabbar = null;
     if (panes.length > 1) {
       tabbar = el('div', 'pv-tabbar', container);
       tabbar.setAttribute('role', 'tablist');
     }
+    // the readouts sit under the tab bar: they describe the plan the tabs
+    // navigate, so they read as a caption rather than as another control row
+    if (opts.summary !== false) renderSummary(container, plan, ctx);
     const paneEls = new Map();
     const tabEls = new Map();
     const rendered = new Set();
@@ -1896,6 +1906,7 @@
       pane.hidden = true;
       pane.setAttribute('role', 'tabpanel');
       pane.setAttribute('aria-labelledby', uid + '-tab-' + p.name);
+      if (p.name === 'input') pane.appendChild(opts.inputPane);
       paneEls.set(p.name, pane);
     }
 
@@ -1935,6 +1946,7 @@
         case 'text': renderText(pane, plan); break;
         case 'domain': renderDomain(pane, plan); break;
         case 'query': queryApi = renderQuery(pane, plan, ctx) || queryApi; break;
+        case 'input': break;   // the host filled this pane itself
       }
     };
 
@@ -1954,7 +1966,10 @@
 
     const destroy = () => destroyIn(container);
 
-    setTab(opts.defaultTab && paneEls.has(opts.defaultTab) ? opts.defaultTab : panes[0].name);
+    // the host's own pane is a place to go back to, never where a freshly
+    // rendered plan should land
+    const landing = panes.find(p => p.name !== 'input') || panes[0];
+    setTab(opts.defaultTab && paneEls.has(opts.defaultTab) ? opts.defaultTab : landing.name);
     return { setTab, goToNode: ctx.goToNode, destroy };
   }
 

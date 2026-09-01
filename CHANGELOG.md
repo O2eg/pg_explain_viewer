@@ -4,6 +4,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.5.2] — 2026-09-01
+
+### Changed
+
+- The widget accepts `opts.inputPane`: an element the host wants shown as
+  a first **Input data** tab. The viewer page hands over its own plan and
+  SQL fields, so the input form now lives in the tab strip instead of
+  standing above the result. The widget only moves the element — it never
+  creates or disposes it — and a freshly rendered plan never lands on that
+  tab.
+- The tab bar moved above the summary chips: the chips describe the plan
+  the tabs navigate, so they read as its caption rather than as a second
+  row of controls.
+
 ## [0.5.1] — 2026-09-01
 
 ### Changed

@@ -27,6 +27,15 @@ failures = []
 errors = []
 
 
+def open_input(page):
+    """The input form moves into the widget's "Input data" tab after the first
+    render, so anything that types into it has to open that tab first."""
+    page.evaluate("""() => {
+      for (const t of document.querySelectorAll('.pv-tab'))
+        if (t.textContent === 'Input data') t.click();
+    }""")
+
+
 def check(name, ok, detail=""):
     print(("ok  " if ok else "FAIL") + " " + name + (": " + str(detail) if detail and not ok else ""))
     if not ok:
@@ -51,6 +60,7 @@ with sync_playwright() as p:
     # ---- sweep: every repo sample plan x tabs x both themes ----
     plans = sorted(pathlib.Path(ROOT, "test", "plans").glob("plan-*.txt"))
     for pf in plans:
+        open_input(page)
         page.fill("#src", pf.read_text())
         page.click("#go")
         page.wait_for_selector(".pv-summary", timeout=5000)
@@ -63,6 +73,7 @@ with sync_playwright() as p:
     check("plan sweep (%d plans, both themes)" % len(plans), True)
 
     # ---- hostile input: nothing executes, payloads render as text ----
+    open_input(page)
     page.fill("#src", HOSTILE)
     page.click("#go")
     page.wait_for_selector(".pv-summary")
@@ -98,6 +109,7 @@ with sync_playwright() as p:
 
     # ---- the SQL field is user input rendered as HTML: it must not execute ----
     page.evaluate("() => { window.__pwXss = 0; }")
+    open_input(page)
     page.fill("#src", """Seq Scan on t  (cost=0.00..1.00 rows=1 width=4) (actual time=0.01..0.02 rows=1 loops=1)
 Execution Time: 0.5 ms""")
     page.fill("#sql", "SELECT * FROM t WHERE x = '<img src=x onerror=\"window.__pwXss=1\">'"
@@ -123,6 +135,7 @@ Execution Time: 0.5 ms""")
         ->  Seq Scan on customers c  (cost=0.00..1.00 rows=1 width=8) (actual time=0.01..0.02 rows=1 loops=1)
 Execution Time: 900.5 ms"""
     SQL_TEXT = "SELECT * FROM public.orders o JOIN customers c ON c.id = o.customer_id WHERE o.status = 'x'"
+    open_input(page)
     page.fill("#src", SQL_PLAN)
     page.fill("#sql", SQL_TEXT)
     page.click("#go")
@@ -145,6 +158,7 @@ Execution Time: 900.5 ms"""
         check("clicking it opens the query tab", marked["onQueryTab"], marked)
         check("and highlights the FROM item the node came from",
               marked["text"] == "public.orders o", marked)
+    open_input(page)
     page.fill("#sql", "")
 
     # ---- minor-observations section: collapsed by default, toggles ----
@@ -154,6 +168,7 @@ Execution Time: 900.5 ms"""
         Filter: (b = 3)
         Rows Removed by Filter: 10000
 Execution Time: 100.4 ms"""
+    open_input(page)
     page.fill("#src", MINOR_PLAN)
     page.click("#go")
     page.wait_for_selector(".pv-summary")
@@ -171,6 +186,20 @@ Execution Time: 100.4 ms"""
               hidden_before and not hidden_after)
 
     # ---- accessibility: ARIA tabs + keyboard operation ----
+    # ---- layout: navigation on top, readouts under it, host pane first ----
+    layout = page.evaluate("""() => {
+      const kids = [...document.querySelector('.pv').children].map(e => e.className.split(' ')[0]);
+      const tabs = [...document.querySelectorAll('.pv-tab')].map(t => t.textContent);
+      return { tabbarBeforeSummary: kids.indexOf('pv-tabbar') < kids.indexOf('pv-summary'),
+               first: tabs[0], active: (document.querySelector('.pv-tab-on') || {}).textContent,
+               inputInPane: !!document.querySelector('.pv-pane #inputbox') };
+    }""")
+    check("tab bar sits above the summary chips", layout["tabbarBeforeSummary"], layout)
+    check("the host input pane is the first tab", layout["first"] == "Input data", layout)
+    check("a rendered plan does not land on the input tab",
+          layout["active"] != "Input data", layout)
+    check("the host element really moved into the pane", layout["inputInPane"], layout)
+
     check("tablist role present", page.query_selector(".pv-tabbar[role=tablist]") is not None)
     check("tabs are buttons with role=tab and aria-selected",
           page.evaluate("""() => [...document.querySelectorAll('.pv-tab')]
