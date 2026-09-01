@@ -4,6 +4,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.7.0] — 2026-09-02
+
+### Added
+
+- **Charts pane**: one tab, three sections — *Time* (reported time
+  composition, execution hotspots, spills, block I/O timing), *Rows*
+  (discarded rows, planner estimate vs actual, repeated inner work) and
+  *Resources* (buffer access mix, write activity, Memoize, worker skew).
+- Only quantities the model guarantees to be a whole are drawn as a
+  composition; everything else is a ranked or stacked bar. **A chart whose
+  whole cannot be trusted is not drawn** — a truncated plan, parts that
+  exceed the root, a plan captured without `BUFFERS` — and the pane lists
+  what each missing chart would need instead of showing empty cards.
+  Rejected on the same grounds: one pie over all buffer counters (hit and
+  dirtied overlap), a global kept-vs-discarded pie (root output and
+  plan-wide removals have no shared denominator), JIT and triggers as
+  latency slices (their timings are counted inside the node timing — on
+  every JIT plan measured, the out-of-tree residual is smaller than the
+  compilation time).
+- Every mark and every legend row carries a tooltip with the value, its
+  share where one exists, and what the quantity means — and every value is
+  also printed, since hover is neither a keyboard nor a touch interaction.
+- `buildCharts(plan, {blockSize})` is exported: pure, no DOM, so the
+  arithmetic and the gates are unit-tested without a browser
+  (`test/charts.test.js`).
+- `tools/chart-coverage.js` reports how often each chart would have data
+  over a corpus of plans.
+
 ## [0.6.1] — 2026-09-02
 
 ### Changed

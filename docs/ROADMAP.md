@@ -494,7 +494,7 @@ claims the query could settle.
 Explicitly **not** done, and not planned: a SQL parser, a SQL linter, any
 rewriting of the user's query.
 
-### Batch 8 — charts pane (M) — planned
+### Batch 8 — charts pane (M) — done, v0.7.0
 
 A tab of donut charts over quantities the model already guarantees to be
 a whole: latency composition (planning / JIT / in-tree / out-of-tree),

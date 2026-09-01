@@ -884,6 +884,631 @@
     pre.innerHTML = out.join('\n');
   }
 
+
+  /* ================= charts: the data behind the pane =================
+   * Pure: no DOM, no formatting decisions, no percentages stored back into
+   * the plan. Every chart declares what it is allowed to claim — see
+   * docs/charts.md. A chart whose whole cannot be trusted is not drawn: it
+   * comes back `blocked` with the reason, and the pane says so.
+   */
+
+  const CHART_TOL = 0.5;              // ms of rounding slack in a residual
+  const blocksOf = (buf, keys) => keys.reduce((s, k) => s + (buf[k] || 0), 0);
+
+  function buildCharts(plan, opts) {
+    const blockSize = (opts && opts.blockSize) || 8192;
+    const out = [];
+    const nodes = plan.nodes || [];
+    const totals = plan.totals || {};
+    const buf = totals.buf || {};
+    const diag = code => (plan.diagnostics || []).some(d => d.code === code);
+    const real = nodes.filter(n => !n.spec && !n.never);
+    const byTime = (a, b) => (b.value || 0) - (a.value || 0);
+    const chart = c => { out.push(c); return c; };
+    const blocked = (id, section, title, reason, message) =>
+      chart({ id, section, title, kind: null, unit: null, whole: null,
+              quality: null, diagnostics: [], items: [], annotations: [],
+              blocked: { reason, message } });
+
+    /* ---- time: latency composition (the one honest donut) ---- */
+    {
+      const id = 'latency', title = 'Reported time composition';
+      const pt = plan.planningTime, et = plan.executionTime, root = totals.time;
+      if (plan.truncated) {
+        blocked(id, 'time', title, 'truncated',
+          'The plan is cut off, so its visible root may not be the real root: '
+          + 'the composition would be measured against the wrong whole.');
+      } else if (pt == null || et == null) {
+        blocked(id, 'time', title, 'totals_missing',
+          'Needs both Planning Time and Execution Time; this plan carries '
+          + (pt == null && et == null ? 'neither' : pt == null ? 'no Planning Time' : 'no Execution Time') + '.');
+      } else {
+        const annotations = [];
+        if (plan.jit && plan.jit.total != null) {
+          annotations.push({ label: 'JIT compilation', value: plan.jit.total, unit: 'ms',
+            note: 'reported separately, but counted inside the executor timing above — '
+              + 'not an extra phase' });
+        }
+        const trig = (plan.triggers || []).reduce((s, t) => s + (t.time || 0), 0);
+        if (trig > 0) {
+          annotations.push({ label: 'triggers', value: trig, unit: 'ms',
+            note: 'included in Execution Time, and BEFORE-trigger time is also inside '
+              + 'the DML node — do not add it to the slices' });
+        }
+        const residual = root == null ? null : et - root;
+        const items = (root == null || residual < -CHART_TOL)
+          ? [{ label: 'planning', value: pt, ids: [] },
+             { label: 'execution', value: et, ids: [] }]
+          : [{ label: 'planning', value: pt, ids: [] },
+             { label: 'top plan node', value: root, ids: nodes.length ? [0] : [] },
+             { label: 'outside top-node timing', value: Math.max(0, residual), ids: [],
+               note: 'result transfer, triggers, serialization — everything Execution Time '
+                 + 'covers that the root node does not' }];
+        chart({ id, section: 'time', title, kind: 'donut', unit: 'ms',
+          whole: pt + et, quality: 'exact', diagnostics: [],
+          items, annotations, blocked: null,
+          note: root != null && residual < -CHART_TOL
+            ? 'The root node reports more time than Execution Time; only the two-slice '
+              + 'split is defensible here.' : null });
+      }
+    }
+
+    /* ---- time: execution hotspots ---- */
+    {
+      const id = 'hotspots', title = 'Execution hotspots';
+      const stats = (plan.stats || []).filter(g => g.time > 0);
+      if (plan.truncated) {
+        blocked(id, 'time', title, 'truncated',
+          'Nodes whose children are missing carry the whole missing subtree in their '
+          + 'self time, so a ranking of self times would be a ranking of the damage.');
+      } else if (!stats.length) {
+        blocked(id, 'time', title, 'no_timing',
+          'The plan carries no per-node timing to rank.');
+      } else {
+        const approx = ['excl_overshoot', 'parallel_estimate', 'charge_fallback'].filter(diag);
+        const group = keyOf => {
+          const m = new Map();
+          for (const g of stats) {
+            const k = keyOf(g);
+            let e = m.get(k);
+            if (!e) { e = { label: k, value: 0, ids: [] }; m.set(k, e); }
+            e.value += g.time;
+            e.ids.push(...g.ids);
+          }
+          return [...m.values()].sort(byTime);
+        };
+        // Shares need a whole the parts actually fit in. Measure it instead of
+        // inferring it from a diagnostic name: charge_fallback moves time
+        // between two nodes without changing the sum, while excl_overshoot
+        // means the parts genuinely exceed the root.
+        const sum = stats.reduce((s, g) => s + g.time, 0);
+        const fits = totals.time == null || sum <= totals.time * 1.02 + 0.1;
+        chart({ id, section: 'time', title, kind: 'bars', unit: 'ms',
+          whole: fits ? sum : null,
+          quality: approx.length ? 'approximate' : 'exact',
+          diagnostics: approx,
+          items: group(g => g.nodeType),
+          variants: [
+            { id: 'by-type', label: 'by operation', items: group(g => g.nodeType) },
+            // self time of a Sort or a Hash cannot honestly be charged to the
+            // relation below it: it gets its own bucket, never a table's name
+            { id: 'by-relation', label: 'by relation',
+              items: group(g => g.relation || 'operators (no relation)') },
+          ],
+          annotations: [], blocked: null });
+      }
+    }
+
+    /* ---- time: spill hotspots ---- */
+    {
+      const id = 'spill', title = 'Spills past work_mem';
+      const items = [];
+      for (const n of real) {
+        const temp = (n.bufExcl && n.bufExcl['temp-written']) || 0;
+        if (n.sortSpace === 'Disk' && n.sortSizeKb > 0) {
+          items.push({ label: labelOfNode(n), value: n.sortSizeKb * 1024, ids: [n.id],
+            note: n.sortMethod || 'sort spilled to disk' });
+        } else if (n.diskUsageKb > 0) {
+          items.push({ label: labelOfNode(n), value: n.diskUsageKb * 1024, ids: [n.id],
+            note: 'reported disk usage' });
+        } else if (n.hashBatches > 1) {
+          items.push({ label: labelOfNode(n), value: (n.memUsageKb || 0) * 1024, ids: [n.id],
+            derived: true,
+            note: n.hashBatches + ' batches — the volume written is not reported, this is '
+              + 'the peak memory of one batch' });
+        } else if (temp > 0) {
+          items.push({ label: labelOfNode(n), value: temp * blockSize, ids: [n.id],
+            note: temp + ' temp blocks written' });
+        }
+      }
+      if (!items.length) {
+        blocked(id, 'time', title, 'no_spill', 'No node reports a sort, hash or temp spill.');
+      } else {
+        const derived = items.some(i => i.derived);
+        chart({ id, section: 'time', title, kind: 'bars', unit: 'bytes', whole: null,
+          quality: derived ? 'approximate' : 'exact', diagnostics: [],
+          items: items.sort(byTime), annotations: [], blocked: null,
+          note: derived
+            ? 'A hash spill reports only its batch count and the peak memory of one '
+              + 'batch, so its bar is an order of magnitude, not a measured volume.'
+            : 'Volumes as reported by the sort or the temp counters.' });
+      }
+    }
+
+    /* ---- time: reported block I/O ---- */
+    {
+      const id = 'iotiming', title = 'Reported block I/O timing';
+      const r = totals.ioRead || 0, w = totals.ioWrite || 0;
+      if (!(r > 0 || w > 0)) {
+        blocked(id, 'time', title, 'no_io_timing',
+          'The plan carries no I/O Timings; buffer counts alone do not say how long '
+          + 'the reads took.');
+      } else {
+        const parallel = diag('parallel_estimate');
+        const items = [
+          { label: 'read', value: r, ids: [] },
+          { label: 'write', value: w, ids: [] },
+        ].filter(i => i.value > 0);
+        // only when the parts can sit inside elapsed time does this become a
+        // composition; summed worker I/O routinely exceeds it
+        const fits = !parallel && totals.time != null && r + w <= totals.time + CHART_TOL;
+        if (fits) items.push({ label: 'not reported as block I/O', value: totals.time - r - w, ids: [] });
+        chart({ id, section: 'time', title, kind: 'bars', unit: 'ms',
+          whole: fits ? totals.time : null,
+          quality: parallel ? 'approximate' : 'exact',
+          diagnostics: parallel ? ['parallel_estimate'] : [],
+          items, annotations: [], blocked: null,
+          note: parallel
+            ? 'Parallel plan: these are worker times added together and can exceed the '
+              + 'elapsed time, so no share is shown.'
+            : 'Timed I/O may have been served by the operating system cache; this is not '
+              + 'proof of physical disk reads.' });
+      }
+    }
+
+    /* ---- rows: filter-discard hotspots ---- */
+    {
+      const id = 'discard', title = 'Rows read and discarded';
+      const items = real
+        .filter(n => n.rowsRemovedTotal > 0)
+        .map(n => ({
+          label: labelOfNode(n),
+          value: n.rowsTotal + n.rowsRemovedTotal,
+          total: n.rowsTotal + n.rowsRemovedTotal,
+          segments: [
+            { label: 'kept', value: n.rowsTotal },
+            { label: 'removed by filter', value: n.rowsRemovedTotal },
+          ],
+          ids: [n.id],
+          sort: n.timeExcl || 0,
+          note: Object.entries(n.rowsRemovedBy || {})
+            .map(([k, v]) => v + ' by ' + k.toLowerCase()).join(', ') || null,
+        }))
+        .sort((a, b) => b.sort - a.sort || b.segments[1].value - a.segments[1].value);
+      if (!items.length) {
+        blocked(id, 'rows', title, 'no_removals', 'No node reports rows removed by a filter.');
+      } else {
+        chart({ id, section: 'rows', title, kind: 'stacked-bars', unit: 'rows',
+          // per-node denominators only: the root output and plan-wide removals
+          // are not two parts of one population
+          whole: null, quality: 'exact', diagnostics: [],
+          items, annotations: [], blocked: null });
+      }
+    }
+
+    /* ---- rows: estimate error ---- */
+    {
+      const id = 'estimate', title = 'Planner estimate vs actual';
+      const items = real
+        .filter(n => n.ratio != null && (n.ratio === Infinity || n.ratio > 10)
+          && n.planRows != null && n.rows != null
+          // the planner's floor is one row: a probe estimated at 1 and
+          // finding 0 is not an error worth charting
+          && Math.max(n.planRows, n.rows) > 100)
+        .map(n => ({
+          label: labelOfNode(n),
+          value: Math.max(n.planRows, n.rows),
+          segments: [
+            { label: 'planned', value: n.planRows },
+            { label: 'actual', value: n.rows },
+          ],
+          ids: [n.id],
+          sort: n.timeExcl || 0,
+          note: (n.loops > 1 ? 'per loop, over ' + n.loops + ' loops' : 'single execution')
+            + (n.ratioDir > 0 ? ' — underestimated' : ' — overestimated'),
+        }))
+        .sort((a, b) => b.sort - a.sort || b.value - a.value);
+      if (!items.length) {
+        blocked(id, 'rows', title, 'no_misestimate',
+          'No node is off by more than 10x between planned and actual rows.');
+      } else {
+        chart({ id, section: 'rows', title, kind: 'grouped-bars', unit: 'rows',
+          whole: null, quality: 'exact', diagnostics: [],
+          items, annotations: [], blocked: null,
+          note: 'Both numbers are per loop, the way the planner states them. The two bars '
+            + 'are alternatives, not parts of a total: each pair is drawn against the '
+            + 'larger of its own two values, so the gap shows how far off the estimate '
+            + 'was; the row reads planned / actual, in the order of the bars. Compare the '
+            + 'numbers, not the bar lengths, across rows.' });
+      }
+    }
+
+    /* ---- rows: fan-out ---- */
+    {
+      const id = 'fanout', title = 'Repeated inner work';
+      const items = real
+        .filter(n => (n.loops || 1) > 1000 && n.rowsTotal + n.rowsRemovedTotal > 0)
+        .map(n => ({
+          label: labelOfNode(n),
+          value: n.rowsTotal + n.rowsRemovedTotal,
+          ids: [n.id],
+          sort: n.timeExcl || 0,
+          note: n.loops + ' executions, ' + (n.rowsTotal + n.rowsRemovedTotal) + ' rows in total',
+        }))
+        .sort((a, b) => b.sort - a.sort || b.value - a.value);
+      if (!items.length) {
+        blocked(id, 'rows', title, 'no_fanout', 'No node is executed more than 1000 times.');
+      } else {
+        chart({ id, section: 'rows', title, kind: 'bars', unit: 'rows',
+          whole: null, quality: 'exact', diagnostics: [],
+          items, annotations: [], blocked: null });
+      }
+    }
+
+    /* ---- resources: buffer access mix ---- */
+    {
+      const id = 'bufaccess', title = 'Buffer access mix';
+      const mk = (label, hitKey, readKey) => {
+        const hit = buf[hitKey] || 0, read = buf[readKey] || 0;
+        if (!(hit + read)) return null;
+        return { label, value: hit + read, total: hit + read,
+          segments: [{ label: 'hit', value: hit }, { label: 'read', value: read }],
+          ids: [], note: 'accesses, not distinct blocks' };
+      };
+      const items = [mk('shared', 'shared-hit', 'shared-read'),
+                     mk('local', 'local-hit', 'local-read')].filter(Boolean);
+      const tempRead = buf['temp-read'] || 0;
+      if (!items.length) {
+        blocked(id, 'resources', title, 'no_buffers',
+          'The plan was captured without BUFFERS, so no access counters exist.');
+      } else {
+        chart({ id, section: 'resources', title, kind: 'stacked-bars', unit: 'blocks',
+          whole: null, quality: 'exact', diagnostics: [], items,
+          annotations: tempRead
+            ? [{ label: 'temp read', value: tempRead, unit: 'blocks',
+                 note: 'no temp-hit counter exists, so this has no denominator' }]
+            : [],
+          blocked: null,
+          note: 'A "read" is a block read into PostgreSQL shared buffers — the operating '
+            + 'system cache may have served it. This is not a database-wide hit ratio.' });
+      }
+    }
+
+    /* ---- resources: write activity ---- */
+    {
+      const id = 'writes', title = 'Write activity';
+      const keys = [['shared-dirtied', 'shared dirtied'], ['shared-written', 'shared written'],
+                    ['local-dirtied', 'local dirtied'], ['local-written', 'local written'],
+                    ['temp-written', 'temp written']];
+      const items = keys.filter(([k]) => buf[k] > 0)
+        .map(([k, label]) => ({ label, value: buf[k], ids: [] })).sort(byTime);
+      if (!items.length) {
+        blocked(id, 'resources', title, 'no_writes',
+          'No dirtied, written or temp-written blocks are reported.');
+      } else {
+        chart({ id, section: 'resources', title, kind: 'bars', unit: 'blocks',
+          // dirtied and written overlap: there is no whole to divide by
+          whole: null, quality: 'exact', diagnostics: [], items,
+          annotations: [], blocked: null,
+          note: 'These counters overlap — a dirtied block may also be written — so they '
+            + 'are shown as absolute values, never as parts of one total.' });
+      }
+    }
+
+    /* ---- resources: memoize ---- */
+    {
+      const id = 'memoize', title = 'Memoize effectiveness';
+      const items = real.filter(n => n.cache && n.cache.hits + n.cache.misses > 0)
+        .map(n => {
+          const look = n.cache.hits + n.cache.misses;
+          return { label: labelOfNode(n), value: look, total: look,
+            segments: [{ label: 'hits', value: n.cache.hits },
+                       { label: 'misses', value: n.cache.misses }],
+            ids: [n.id],
+            note: n.cache.evictions + ' evictions'
+              + (n.memUsageKb ? ', ' + n.memUsageKb + ' kB peak' : '') };
+        }).sort(byTime);
+      if (!items.length) {
+        blocked(id, 'resources', title, 'no_memoize', 'The plan has no Memoize node.');
+      } else {
+        chart({ id, section: 'resources', title, kind: 'stacked-bars', unit: 'lookups',
+          whole: null, quality: 'exact', diagnostics: [], items,
+          annotations: [], blocked: null });
+      }
+    }
+
+    /* ---- resources: worker skew ---- */
+    {
+      const id = 'workers', title = 'Parallel worker skew';
+      const items = [];
+      for (const n of real) {
+        if (!Array.isArray(n.workers) || n.workers.length < 2) continue;
+        for (const w of n.workers) {
+          if (w.timeTotal == null) continue;
+          items.push({ label: labelOfNode(n) + ' · worker ' + w.num, value: w.timeTotal,
+            ids: [n.id], note: (w.rows != null ? w.rows + ' rows' : 'no row count') });
+        }
+      }
+      if (!items.length) {
+        blocked(id, 'resources', title, 'no_worker_stats',
+          'No node reports per-worker timings (they appear only with VERBOSE).');
+      } else {
+        chart({ id, section: 'resources', title, kind: 'bars', unit: 'ms',
+          whole: null, quality: 'approximate', diagnostics: ['parallel_estimate'],
+          items, annotations: [], blocked: null,
+          note: 'Reported per-worker times. The leader is not shown as a worker, and no '
+            + 'share of elapsed time is derived from these.' });
+      }
+    }
+
+    return out;
+  }
+
+  const labelOfNode = n => '#' + n.id + ' ' + n.nodeType
+    + (n.relation ? ' on ' + n.relation : '');
+
+
+  /* ================= charts pane ================= */
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const CHART_CAP = 8;          // ranked rows before the remainder is folded
+  const DONUT_CAP = 6;          // slices before "other"
+
+  // value -> text, in the unit the chart declared
+  function chartValue(v, unit) {
+    if (unit === 'ms') return fmtMs(v);
+    if (unit === 'bytes') return fmtBytes(v);
+    return fmtInt(Math.round(v)) + (unit && unit !== 'rows' ? ' ' + unit : '');
+  }
+
+  // annular sector: an inner arc, not a filled pie with a circle on top —
+  // the hole must not stay hittable underneath
+  function donutArc(cx, cy, r, r0, a0, a1) {
+    const pt = (rad, a) => [cx + rad * Math.cos(a), cy + rad * Math.sin(a)];
+    const big = a1 - a0 > Math.PI ? 1 : 0;
+    const [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a1);
+    const [x2, y2] = pt(r0, a1), [x3, y3] = pt(r0, a0);
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${big} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`
+      + `L${x2.toFixed(2)} ${y2.toFixed(2)}A${r0} ${r0} 0 ${big} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`;
+  }
+
+  // top N by value, the rest folded into one remainder that keeps its names
+  function foldItems(items, cap) {
+    if (items.length <= cap) return { shown: items, rest: null };
+    const shown = items.slice(0, cap - 1), tail = items.slice(cap - 1);
+    const names = tail.slice(0, 8).map(i => i.label);
+    return {
+      shown,
+      rest: {
+        label: 'other', value: tail.reduce((s, i) => s + i.value, 0), ids: [],
+        note: names.join(', ') + (tail.length > names.length
+          ? ', +' + (tail.length - names.length) + ' more' : ''),
+        count: tail.length,
+      },
+    };
+  }
+
+  function renderCharts(container, plan, ctx, opts) {
+    ctx = ctx || makeLocalCtx(container);
+    bindTooltips(container.closest('.pv') || container);
+    const charts = buildCharts(plan, opts);
+    const wrap = el('div', 'pv-charts', container);
+
+    const SECTIONS = [
+      ['time', 'Time', 'where the reported time went'],
+      ['rows', 'Rows', 'what the plan read, kept and threw away'],
+      ['resources', 'Resources', 'what PostgreSQL reported touching'],
+    ];
+
+    for (const [key, title, subtitle] of SECTIONS) {
+      const live = charts.filter(c => c.section === key && !c.blocked);
+      if (!live.length) continue;
+      const head = el('div', 'pv-chart-sec', wrap);
+      el('span', 'pv-chart-sec-t', head).textContent = title;
+      el('span', 'pv-chart-sec-s', head).textContent = subtitle;
+      const grid = el('div', 'pv-chart-grid', wrap);
+      for (const c of live) renderChartCard(grid, c, plan, ctx);
+    }
+
+    // one line per chart that could not be drawn — never a grid of empty cards
+    const off = charts.filter(c => c.blocked);
+    if (off.length) {
+      const box = el('div', 'pv-chart-off', wrap);
+      const h = el('div', 'pv-chart-off-h', box);
+      h.textContent = off.length + ' more chart' + (off.length > 1 ? 's need' : ' needs')
+        + ' evidence this plan does not carry';
+      for (const c of off) {
+        const row = el('div', 'pv-chart-off-r', box);
+        el('span', 'pv-chart-off-t', row).textContent = c.title;
+        el('span', 'pv-chart-off-m', row).textContent = c.blocked.message;
+      }
+      if (ctx && ctx.setTab) {
+        const b = btn('pv-chart-off-link', box);
+        b.textContent = 'open diagnostics';
+        b.addEventListener('click', () => ctx.setTab('diagnostics'));
+      }
+    }
+    if (!wrap.children.length) el('div', 'pv-empty', wrap).textContent = 'no data';
+  }
+
+  function renderChartCard(parent, c, plan, ctx) {
+    const card = el('div', 'pv-chart-card', parent);
+    const head = el('div', 'pv-chart-head', card);
+    el('span', 'pv-chart-title', head).textContent = c.title;
+    const q = el('span', 'pv-chart-q pv-chart-q-' + c.quality, head);
+    q.textContent = c.quality;
+    tip(q, c.quality === 'exact'
+      ? 'the numbers behind this chart are reported by PostgreSQL as they are shown'
+      : 'derived or approximated values — see the note below the chart'
+        + (c.diagnostics.length ? '\ndiagnostics: ' + c.diagnostics.join(', ') : ''));
+
+    // a variant toggle only where the same numbers can be grouped two ways
+    const many = c.variants && c.variants.length > 1;
+    const sw = many ? el('div', 'pv-chart-sw', card) : null;
+    const body = el('div', 'pv-chart-body', card);
+    if (many) {
+      const draw = v => {
+        for (const b of sw.children) b.classList.toggle('pv-chart-sw-on', b.dataset.v === v.id);
+        body.textContent = '';
+        drawChart(body, c, v.items, ctx);
+      };
+      for (const v of c.variants) {
+        const b = btn('pv-chart-sw-b', sw);
+        b.dataset.v = v.id;
+        b.textContent = v.label;
+        b.addEventListener('click', () => draw(v));
+      }
+      draw(c.variants[0]);
+    } else {
+      drawChart(body, c, c.items, ctx);
+    }
+
+    for (const a of (c.annotations || [])) {
+      const row = el('div', 'pv-chart-ann', card);
+      el('span', 'pv-chart-ann-l', row).textContent = a.label;
+      el('span', 'pv-chart-ann-v', row).textContent = chartValue(a.value, a.unit || c.unit);
+      if (a.note) el('span', 'pv-chart-ann-n', row).textContent = a.note;
+    }
+    if (c.note) el('div', 'pv-chart-note', card).textContent = c.note;
+  }
+
+  function drawChart(body, c, items, ctx) {
+    const cap = c.kind === 'donut' ? DONUT_CAP : CHART_CAP;
+    const { shown, rest } = foldItems(items, cap);
+    const list = rest ? shown.concat([rest]) : shown;
+    const share = v => (c.whole ? v / c.whole * 100 : null);
+
+    // one tooltip text, used by the mark and by its legend row
+    const tipOf = (it, idx) => {
+      const lines = [it.label, chartValue(it.value, c.unit)];
+      const s = share(it.value);
+      if (s != null) lines[1] += '  ·  ' + fmtNum(s, 1) + '% of ' + chartValue(c.whole, c.unit);
+      if (it.segments) {
+        for (const g of it.segments) {
+          lines.push(g.label + ': ' + chartValue(g.value, c.unit)
+            + (it.total ? '  ·  ' + fmtNum(g.value / it.total * 100, 1) + '%' : ''));
+        }
+      }
+      if (it.note) lines.push(it.note);
+      if (c.quality === 'approximate') lines.push('approximate — see the note under the chart');
+      return lines.join('\n');
+    };
+    const activate = it => {
+      // a mark backed by exactly one node navigates; a group does not guess
+      if (!ctx || !ctx.goToNode || !it.ids || it.ids.length !== 1) return null;
+      return () => ctx.goToNode(it.ids[0]);
+    };
+
+    if (c.kind === 'donut') drawDonut(body, c, list, tipOf, activate, share);
+    else drawBars(body, c, list, tipOf, activate, share);
+  }
+
+  function drawDonut(body, c, list, tipOf, activate, share) {
+    const size = 168, r = 78, r0 = 48, cx = size / 2, cy = size / 2;
+    const total = list.reduce((s, i) => s + i.value, 0) || 1;
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.classList.add('pv-donut');
+    body.appendChild(svg);
+
+    let a = -Math.PI / 2;
+    list.forEach((it, i) => {
+      const sweep = it.value / total * Math.PI * 2;
+      const path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', donutArc(cx, cy, r, r0, a, a + Math.max(sweep, 0.001)));
+      path.setAttribute('class', 'pv-donut-s pv-cat-' + (it.label === 'other' ? 'other' : (i % 6) + 1));
+      path.setAttribute('data-pv-tip', tipOf(it, i));
+      const go = activate(it);
+      if (go) { path.addEventListener('click', go); keyable(path, go); }
+      svg.appendChild(path);
+      a += sweep;
+    });
+    const mid = document.createElementNS(SVG_NS, 'text');
+    mid.setAttribute('x', cx); mid.setAttribute('y', cy);
+    mid.setAttribute('class', 'pv-donut-mid');
+    mid.textContent = chartValue(c.whole != null ? c.whole : total, c.unit);
+    svg.appendChild(mid);
+    drawLegend(body, c, list, tipOf, activate, share);
+  }
+
+  function drawBars(body, c, list, tipOf, activate, share) {
+    const max = list.reduce((m, i) => Math.max(m, i.value), 0) || 1;
+    const rows = el('div', 'pv-bars', body);
+    list.forEach((it, i) => {
+      const row = el('div', 'pv-bar-row', rows);
+      const lbl = el('span', 'pv-bar-l', row);
+      lbl.textContent = it.label;
+      const track = el('span', 'pv-bar-t', row);
+      const t = tipOf(it, i);
+      tip(track, t);
+      tip(lbl, t);
+      if (it.segments && c.kind === 'grouped-bars') {
+        // Each pair is drawn against the larger of its own two values, not
+        // against the chart maximum. The question here is how far off the
+        // estimate was, and both alternatives fail it: linearly against the
+        // chart, "1 row against 4 million" is an invisible bar; on a log
+        // scale a 53x miss shrinks to a barely visible difference.
+        track.classList.add('pv-bar-t-grouped');
+        const pair = it.segments.reduce((m, g) => Math.max(m, g.value), 0) || 1;
+        for (let s = 0; s < it.segments.length; s++) {
+          const line = el('span', 'pv-bar-g', track);
+          const seg = el('span', 'pv-bar-f pv-cat-' + (s + 1), line);
+          seg.style.width = Math.max(it.segments[s].value / pair * 100, 1.5) + '%';
+        }
+      } else if (it.segments) {
+        for (let s = 0; s < it.segments.length; s++) {
+          const g = it.segments[s];
+          const seg = el('span', 'pv-bar-f pv-cat-' + (s + 1), track);
+          seg.style.width = (g.value / max * 100) + '%';
+        }
+      } else {
+        const f = el('span', 'pv-bar-f pv-cat-' + (it.label === 'other' ? 'other' : 1), track);
+        f.style.width = (it.value / max * 100) + '%';
+      }
+      const v = el('span', 'pv-bar-v', row);
+      // both compared values have to be readable without hovering anything
+      v.textContent = (c.kind === 'grouped-bars' && it.segments)
+        ? it.segments.map(g => chartValue(g.value, c.unit)).join(' / ')
+        : chartValue(it.value, c.unit);
+      const s = share(it.value);
+      if (s != null) el('span', 'pv-bar-p', row).textContent = fmtNum(s, 1) + '%';
+      const go = activate(it);
+      if (go) {
+        row.classList.add('pv-bar-go');
+        row.addEventListener('click', go);
+        keyable(row, go);
+      }
+    });
+  }
+
+  function drawLegend(body, c, list, tipOf, activate, share) {
+    const leg = el('div', 'pv-legend', body);
+    list.forEach((it, i) => {
+      const row = el('div', 'pv-legend-r', leg);
+      el('span', 'pv-legend-sw pv-cat-'
+        + (it.label === 'other' ? 'other' : (i % 6) + 1), row);
+      el('span', 'pv-legend-l', row).textContent = it.label;
+      el('span', 'pv-legend-v', row).textContent = chartValue(it.value, c.unit);
+      const s = share(it.value);
+      if (s != null) el('span', 'pv-legend-p', row).textContent = fmtNum(s, 1) + '%';
+      tip(row, tipOf(it, i));
+      const go = activate(it);
+      if (go) { row.classList.add('pv-bar-go'); row.addEventListener('click', go); keyable(row, go); }
+    });
+  }
+
   /* ================= query pane ================= */
 
   // Wrap [s, e) of the pane's text content in a <mark>. The pane holds
@@ -1818,6 +2443,8 @@
   const PANES = [
     { name: 'plan', label: 'Plan', applicable: () => true },
     { name: 'stats', label: 'Stats', applicable: p => p.stats && p.stats.length > 0 },
+    { name: 'charts', label: 'Charts',
+      applicable: p => buildCharts(p).some(c => !c.blocked) },
     { name: 'diagram', label: 'Diagram', applicable: p => p.nodes.filter(n => !n.spec).length > 1 },
     { name: 'relations', label: 'Relations', applicable: p => p.schema && p.schema.rels.length > 0 },
     { name: 'domain', label: 'Model', applicable: p => p.domain && p.domain.length > 0 },
@@ -1960,6 +2587,7 @@
         case 'advice': adviceApi = renderAdvice(pane, plan, ctx) || adviceApi; break;
         case 'diagnostics': renderDiagnostics(pane, plan, ctx); break;
         case 'stats': renderStats(pane, plan, ctx); break;
+        case 'charts': renderCharts(pane, plan, ctx, opts); break;
         case 'diagram': renderDiagram(pane, plan, ctx); break;
         case 'relations': renderRelations(pane, plan, ctx); break;
         case 'text': renderText(pane, plan); break;
@@ -1996,7 +2624,7 @@
     render,
     destroy: destroyIn,
     renderTable, renderAdvice, renderDiagnostics, renderStats, renderDiagram, renderRelations,
-    renderText, renderQuery, renderDomain,
+    renderText, renderQuery, renderDomain, renderCharts, buildCharts,
     fmtBytes, fmtMs, fmtNum, fmtInt,
   };
 }));

@@ -5,7 +5,9 @@ by hand: *how is EXPLAIN-reported time divided?*, *which operations dominate
 it?*, *where are rows discarded?*, and *what resource traffic did PostgreSQL
 report?*
 
-Status: planned. Nothing below is implemented yet.
+Status: **implemented** in 0.7.0 — one `Charts` tab, three sections, eleven
+charts, each gated as described here. §13 records where the implementation
+departed from this plan and why.
 
 ## 1. What a chart is allowed to show
 
@@ -527,3 +529,28 @@ reproducible only against a comparable corpus. Running the same script over
 `test/plans` (17 fixtures) gives a different and much smaller picture, which
 is the point: these are planning hints about what real plans carry, not
 acceptance criteria.
+
+## 13. Departures from this plan, and why
+
+Two decisions changed while building it. Both are recorded here rather than
+quietly folded into the text above, because both were made against something
+this document had already argued for.
+
+**Hotspot shares are hidden by measurement, not by diagnostic name.** §1.2
+said `excl_overshoot`, `parallel_estimate` and `charge_fallback` all remove
+percentages. In practice `charge_fallback` moves time between two nodes
+without changing the sum, and it fires on a fifth of the corpus — hiding
+shares there would cost most plans their percentages for a reason that does
+not apply. The rule became: compute the sum, compare it with the root, and
+offer a share only when the parts fit inside the whole. The chart is still
+marked *approximate* whenever any of the three diagnostics is present, so the
+caveat is not lost.
+
+**Estimate bars are scaled within each pair, not on a log scale.** §1.6 asked
+for a log scale, and it was implemented that way first. It reads badly: a
+53× miss — the shape of a real problem — came out as 100% against 74%, which
+looks like agreement. Each pair is now drawn against the larger of its own
+two values, so the gap is the size of the miss; the numbers are printed for
+both bars, and the note says bar lengths are not comparable across rows.
+
+Both changes are covered by tests in `test/charts.test.js`.

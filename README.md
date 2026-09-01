@@ -25,7 +25,7 @@ recommendations. No server, no history, no network.
 | `viewer.template.html` | Source of the viewer page: markup, page chrome and the export logic, with build markers where the CSS/JS get inlined. |
 | `build.py` | Inlines CSS + JS and writes the self-contained page twice: `dist/pg-explain-viewer.html` (release / Pages artifact) and `./pg-explain-viewer.html` (the page you open while working). Both are build output and untracked — only a page carrying its own styles and scripts can export a working copy of itself. |
 | `test/plans/` | Real PG18 plans harvested from the pg_stand demo stand csvlog (auto_explain: text/json/yaml, DML, parallel, CTE, InitPlan/SubPlan, partitions, external sort + temp I/O) plus `EXPLAIN`-without-ANALYZE and psql-framed fixtures. |
-| `docs/charts.md` | Design and implementation plan for the charts pane (planned). |
+| `docs/charts.md` | The charts pane: what each chart is allowed to claim, what blocks it, and where the implementation departed from the plan. |
 | `test/*.test.js` | `node:test` suite: `npm test` (parser invariants, golden-model snapshots, advisor spot checks, format-parity for the PG matrix). `UPDATE_GOLDEN=1 npm test` regenerates the snapshots in `test/golden/`. |
 
 ## Using the widget
@@ -69,7 +69,9 @@ its own markup by passing `opts.inputPane` (the dev page puts its plan and
 SQL fields there as **Input data**); the widget moves that element into the
 pane and never disposes it, and a freshly rendered plan does not land on
 it. Then come — **Plan** (table), **Stats**,
-**Diagram**, **Relations**, **Model**, **Diagnostics** (parser/analyzer
+**Charts** (donut and bar summaries over quantities the model guarantees to
+be a whole — a chart whose whole cannot be trusted is not drawn, and the pane
+says why), **Diagram**, **Relations**, **Model**, **Diagnostics** (parser/analyzer
 notes and warnings as cards with severity icons and node links),
 **Recommendations**, and — pushed to the far
 end of the bar, because they are the raw input rather than a finding —

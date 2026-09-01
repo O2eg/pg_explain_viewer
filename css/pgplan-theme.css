@@ -49,6 +49,17 @@
   --pv-accent-fg: #62490f;
   --pv-accent-contrast: #2a1738;
 
+  /* charts: fixed phases keep fixed hues between plans; the categorical ramp
+     is colour-blind safe (Okabe-Ito) and never the only identifier — every
+     mark carries a text label too */
+  --pv-cat-1: #0072b2;
+  --pv-cat-2: #d55e00;
+  --pv-cat-3: #009e73;
+  --pv-cat-4: #cc79a7;
+  --pv-cat-5: #56638a;
+  --pv-cat-6: #b8860b;
+  --pv-cat-other: #9a8fa8;
+
   /* summary chips — a readout surface, deliberately a step away from the
      transparent tab pills so the two rows never read as one control set */
   --pv-chip-bg: #e9dcf6;
@@ -139,6 +150,14 @@
   --pv-accent-soft: #483a1f;
   --pv-accent-fg: #ffeaa3;
   --pv-accent-contrast: #24152f;
+
+  --pv-cat-1: #56b4e9;
+  --pv-cat-2: #e69f5a;
+  --pv-cat-3: #5fc9a3;
+  --pv-cat-4: #e8a0c8;
+  --pv-cat-5: #9aa6d6;
+  --pv-cat-6: #e3c766;
+  --pv-cat-other: #7c6f90;
 
   --pv-chip-bg: #3a2c49;
   --pv-chip-border: #55416a;

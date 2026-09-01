@@ -161,6 +161,73 @@ Execution Time: 900.5 ms"""
     open_input(page)
     page.fill("#sql", "")
 
+    # ---- charts pane ----
+    open_input(page)
+    page.fill("#src", open(os.path.join(ROOT, "test", "plans", "plan-16-psql-analyze.txt")).read())
+    page.click("#go")
+    page.wait_for_selector(".pv-summary")
+    page.evaluate("""() => { for (const t of document.querySelectorAll('.pv-tab'))
+        if (t.textContent === 'Charts') t.click(); }""")
+    page.wait_for_timeout(200)
+    ch = page.evaluate("""() => {
+      const marks = [...document.querySelectorAll('.pv-donut-s, .pv-bar-t, .pv-legend-r')];
+      const rows = [...document.querySelectorAll('.pv-legend-r, .pv-bar-row')];
+      return {
+        sections: [...document.querySelectorAll('.pv-chart-sec-t')].map(t => t.textContent),
+        cards: document.querySelectorAll('.pv-chart-card').length,
+        donutSlices: document.querySelectorAll('.pv-donut-s').length,
+        centre: (document.querySelector('.pv-donut-mid') || {}).textContent,
+        allMarksTipped: marks.length > 0 && marks.every(e => e.hasAttribute('data-pv-tip')),
+        // every value must be readable without hovering anything
+        valuesVisible: rows.every(r => /\d/.test(r.textContent)),
+        blockedRows: document.querySelectorAll('.pv-chart-off-r').length,
+        quality: [...document.querySelectorAll('.pv-chart-q')].map(q => q.textContent),
+        interactiveWithoutNode: [...document.querySelectorAll('.pv-donut-s[role=button]')]
+          .filter(e => !e.__pv).length,
+      };
+    }""")
+    check("charts pane groups into Time / Rows / Resources",
+          ch["sections"] == ["Time", "Rows", "Resources"], ch)
+    check("the latency donut is drawn with its whole in the centre",
+          ch["donutSlices"] >= 2 and bool(ch["centre"]), ch)
+    check("every mark and legend row carries a tooltip", ch["allMarksTipped"], ch)
+    check("every value is readable without hovering", ch["valuesVisible"], ch)
+    check("a compared pair prints both of its numbers, not just the larger",
+          page.evaluate("""() => {
+            const card = [...document.querySelectorAll('.pv-chart-card')]
+              .find(c => /estimate/i.test(c.textContent));
+            if (!card) return true;   // this plan has no misestimate to show
+            return [...card.querySelectorAll('.pv-bar-v')].every(v => v.textContent.includes('/'));
+          }"""))
+    check("charts that cannot be drawn collapse into one list, not empty cards",
+          ch["blockedRows"] > 0 and ch["cards"] <= 8, ch)
+    check("each card states whether it is exact or approximate",
+          len(ch["quality"]) == ch["cards"], ch)
+
+    # a tooltip has to actually appear: hover a point ON the ring, since an
+    # arc's bounding-box centre falls in the hole
+    pt = page.evaluate("""() => {
+      const s = document.querySelector('.pv-donut-s');
+      const p = s.getPointAtLength(s.getTotalLength() * 0.12);
+      const svg = s.ownerSVGElement, box = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      return { x: box.left + p.x / vb.width * box.width, y: box.top + p.y / vb.height * box.height };
+    }""")
+    page.mouse.move(pt["x"], pt["y"])
+    page.wait_for_timeout(400)
+    tiptext = page.evaluate("""() => { const t = document.querySelector('.pv-tooltip');
+      return t && !t.hidden ? t.textContent : null; }""")
+    check("hovering a slice shows the tooltip with its share",
+          bool(tiptext) and "%" in tiptext, tiptext)
+
+    # a plan with no runtime data offers no Charts tab at all
+    open_input(page)
+    page.fill("#src", open(os.path.join(ROOT, "test", "plans", "plan-15-explain-only.txt")).read())
+    page.click("#go")
+    page.wait_for_selector(".pv-summary")
+    check("no Charts tab when nothing can be charted honestly",
+          page.evaluate("""() => ![...document.querySelectorAll('.pv-tab')]
+            .some(t => t.textContent === 'Charts')"""))
+
     # ---- export: the page clones itself, the copy renders the same plan ----
     # a plan whose text carries $-patterns and a closing script tag: both are
     # traps for the splice that writes the payload into the copy
