@@ -4,6 +4,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.5.1] — 2026-09-01
+
+### Changed
+
+- Summary chips got a surface of their own — a step away from the
+  transparent tab pills below them, which they used to be mistaken for.
+  The input-format badge on the right (`TEXT` / `JSON` / `YAML`) is now
+  styled as one of them instead of as loose text.
+- The **Diagnostics** and **Recommendations** tabs carry the theme's gold
+  outline: they hold findings, the rest are views of the plan.
+- The `diagnostics` summary chip is gone — it duplicated its own tab.
+- The dev page header carries the project identity the way the pg_diag
+  report does: version, repository, site, contact. `build.py` fails the
+  build if the version in the page and in `package.json` disagree.
+
 ## [0.5.0] — 2026-09-01
 
 The first release since 0.4.3. It bundles the four development entries

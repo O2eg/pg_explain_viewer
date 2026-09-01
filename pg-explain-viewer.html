@@ -63,10 +63,25 @@
   *::-webkit-scrollbar-thumb:hover { background: var(--vw-accent); background-clip: padding-box; }
   *::-webkit-scrollbar-corner { background: transparent; }
   .vw-wrap { max-width: 1700px; margin: 0 auto; padding: 18px 24px 48px; }
-  .vw-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .vw-top { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
   .vw-title { font-size: 20px; font-weight: 600; margin: 0; }
   .vw-title small { color: var(--vw-muted); font-weight: 400; margin-left: 10px; font-size: 14px; }
   .vw-top .spacer { flex: 1; }
+  /* project identity, laid out like the pg_diag report header */
+  .vw-ident { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 6px; }
+  .vw-ident, .vw-ident a {
+    color: var(--vw-muted);
+    font-family: var(--vw-mono);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .vw-link { display: inline-flex; align-items: center; gap: 5px; }
+  .vw-link:hover, .vw-link:focus-visible { color: var(--vw-fg); text-decoration: underline; outline: none; }
+  .vw-link svg {
+    width: 14px; height: 14px; flex: 0 0 auto;
+    stroke: currentColor; fill: none; stroke-width: 1.8;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   select, button {
     font: inherit;
     color: var(--vw-fg);
@@ -181,7 +196,36 @@
 <body>
 <div class="vw-wrap">
   <div class="vw-top">
-    <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
+    <div>
+      <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
+      <div class="vw-ident">
+        <span>version <span id="version">0.5.1</span></span>
+        <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
+            <path d="M4 2.5h6.5a1 1 0 0 1 1 1v9.5"></path>
+            <path d="M4 2.5A1.5 1.5 0 0 0 2.5 4v8A1.5 1.5 0 0 1 4 10.5h8.5"></path>
+          </svg>
+          <span>github.com/O2eg/pg_explain_viewer</span>
+        </a>
+        <a class="vw-link" href="https://o2eg.com/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.5"></circle>
+            <path d="M2.5 8h11"></path>
+            <path d="M8 2.5c1.7 1.5 2.6 3.3 2.6 5.5S9.7 12 8 13.5C6.3 12 5.4 10.2 5.4 8S6.3 4 8 2.5Z"></path>
+          </svg>
+          <span>o2eg.com</span>
+        </a>
+        <a class="vw-link" href="https://t.me/O2egg" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M14 2.5 2 7.4l4.3 1.5"></path>
+            <path d="M14 2.5 9.5 13.5 6.3 8.9"></path>
+            <path d="M6.3 8.9 10 5.8"></path>
+          </svg>
+          <span>t.me/O2egg</span>
+        </a>
+      </div>
+    </div>
     <div class="spacer"></div>
     <label class="vw-theme-toggle" title="Switch theme">
       <span>Dark</span>

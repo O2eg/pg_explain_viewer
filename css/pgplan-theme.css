@@ -49,9 +49,10 @@
   --pv-accent-fg: #62490f;
   --pv-accent-contrast: #2a1738;
 
-  /* summary chips */
-  --pv-chip-bg: #f4edfb;
-  --pv-chip-border: #dfd2ec;
+  /* summary chips — a readout surface, deliberately a step away from the
+     transparent tab pills so the two rows never read as one control set */
+  --pv-chip-bg: #e9dcf6;
+  --pv-chip-border: #d3c2e6;
   --pv-chip-label: #746286;
   --pv-chip-value: #2b1d38;
 
@@ -139,8 +140,8 @@
   --pv-accent-fg: #ffeaa3;
   --pv-accent-contrast: #24152f;
 
-  --pv-chip-bg: #2e2239;
-  --pv-chip-border: #463456;
+  --pv-chip-bg: #3a2c49;
+  --pv-chip-border: #55416a;
   --pv-chip-label: #d8c8e8;
   --pv-chip-value: #f8f0ff;
 

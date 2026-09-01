@@ -43,6 +43,14 @@ def main() -> None:
 
     assert "PV:" not in html, "unresolved build markers remain"
 
+    # the page states its version in the header; keep it and package.json from
+    # drifting apart rather than shipping a stale number
+    version = json.loads(read(ROOT / "package.json"))["version"]
+    shown = re.search(r'<span id="version">([^<]*)</span>', html)
+    assert shown, "the page carries no version marker"
+    assert shown.group(1) == version, (
+        f'page says version {shown.group(1)}, package.json says {version}')
+
     # the artifact must carry its license notices: project MIT + the full
     # BSD-3 text of the embedded highlight.js (its license requires
     # reproducing copyright, conditions and disclaimer in redistributions)

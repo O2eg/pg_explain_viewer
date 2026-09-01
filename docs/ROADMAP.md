@@ -134,7 +134,7 @@ uncertainty.
       requires a complete tree. *(v0.3.4)*
 - [x] **Plan-arithmetic diagnostics**: report clamping, inferred
       CTE/SubPlan charging, and parallel approximation via
-      `plan.diagnostics[]` and the summary chip. *(v0.3.4)*
+      `plan.diagnostics[]` and the diagnostics pane. *(v0.3.4)*
 - [x] **Per-worker stats**: every `Worker N` block is parsed into
       `node.workers[]` (buffers no longer double-count into the node);
       `workerSkew` is computed and the loops/(workers+1) attribution is

@@ -1753,19 +1753,6 @@
         + 'and per-node self times are upper bounds');
     }
 
-    // parser/analyzer diagnostics: approximations, clamps, ignored lines
-    const diagAll = diagItems(plan);
-    if (diagAll.length) {
-      const worst = diagAll.some(d => d.severity === 'warn') ? 'warn' : 'info';
-      const c = btn('pv-chip pv-chip-diag pv-diag-' + worst, summary);
-      c.innerHTML = '<span class="pv-chip-l">diagnostics</span>'
-        + '<span class="pv-chip-v">' + diagAll.length + '</span>';
-      tip(c, diagAll.map(d =>
-        '[' + d.severity + '] ' + d.code + ': ' + d.message
-        + (d.count > 1 ? ' (×' + d.count + ')' : '')).join('\n'));
-      if (ctx) c.addEventListener('click', () => ctx.setTab('diagnostics'));
-    }
-
     // advice badges: unique codes with node links (minor findings stay in
     // the advice pane's minor section, not in the summary)
     if (plan.advice && plan.advice.length && ctx) {
@@ -1828,11 +1815,13 @@
     { name: 'domain', label: 'Model', applicable: p => p.domain && p.domain.length > 0 },
     {
       name: 'diagnostics',
+      accent: true,
       label: p => 'Diagnostics (' + diagItems(p).length + ')',
       applicable: p => diagItems(p).length > 0,
     },
     {
       name: 'advice',
+      accent: true,
       label: p => {
         const major = p.advice.filter(a => !a.impact || a.impact.level !== 'minor').length;
         const minor = p.advice.length - major;
@@ -1896,6 +1885,7 @@
         // the first right-hand tab carries the auto margin that pushes it and
         // everything after it to the end of the row
         if (p.right && !pushed) { t.classList.add('pv-tab-push'); pushed = true; }
+        if (p.accent) t.classList.add('pv-tab-accent');
         t.textContent = typeof p.label === 'function' ? p.label(plan) : p.label;
         t.setAttribute('role', 'tab');
         t.id = uid + '-tab-' + p.name;

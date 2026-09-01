@@ -74,20 +74,11 @@
   font-size: var(--pv-fs);
 }
 
-.pv-chip-diag.pv-diag-warn {
-  border-color: var(--pv-sev-warn);
-}
-.pv-chip-diag.pv-diag-warn .pv-chip-v {
-  color: var(--pv-sev-warn);
-}
-.pv-chip-diag.pv-diag-info .pv-chip-v {
-  color: var(--pv-sev-info);
-}
-
+/* input format: the same readout as its neighbours, just pushed right */
 .pv-chip-fmt {
-  color: var(--pv-fg-muted);
+  color: var(--pv-chip-value);
   font-family: var(--pv-font-mono);
-  font-size: var(--pv-fs-sm);
+  font-size: var(--pv-fs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-left: auto;
@@ -329,6 +320,10 @@ td.pv-nodecell {
 
 /* raw-input panes sit at the far end of the bar */
 .pv-tab-push { margin-left: auto; }
+
+/* the panes that carry findings rather than views of the plan */
+.pv-tab-accent { border-color: var(--pv-accent); }
+.pv-tab-accent:hover { border-color: var(--pv-accent); }
 
 .pv-tab {
   padding: 6px 15px;

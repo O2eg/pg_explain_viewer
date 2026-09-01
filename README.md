@@ -60,11 +60,12 @@ the same container disposes the previous instance automatically. For
 standalone pane renders (`renderTable(el, …)` etc.) call
 `PgPlanRender.destroy(el)` when the element is retired.
 
-`render()` builds a self-contained widget: summary chips (+ advice badges)
+`render()` builds a self-contained widget: summary chips — plan totals as
+readouts, visually a step away from the tab pills — (+ advice badges)
 and internal tabs, in reading order — **Plan** (table), **Stats**,
 **Diagram**, **Relations**, **Model**, **Diagnostics** (parser/analyzer
-notes and warnings as cards with severity icons and node links; the
-summary chip jumps there), **Recommendations**, and — pushed to the far
+notes and warnings as cards with severity icons and node links),
+**Recommendations**, and — pushed to the far
 end of the bar, because they are the raw input rather than a finding —
 **Plan text** and **SQL query**. Tabs without data are hidden
 automatically. The pane names used by `opts.tabs` are unchanged
