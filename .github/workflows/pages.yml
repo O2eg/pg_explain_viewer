@@ -1,0 +1,37 @@
+# Live demo: the offline viewer itself, served as GitHub Pages.
+# Requires Pages to be enabled with "GitHub Actions" as the source
+# (repo Settings -> Pages -> Build and deployment -> GitHub Actions).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pages: write
+  id-token: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build offline viewer
+        run: python3 build.py
+      - name: Stage demo site
+        run: |
+          mkdir -p _site
+          cp dist/pg-explain-viewer.html _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

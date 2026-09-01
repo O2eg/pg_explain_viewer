@@ -1,0 +1,75 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Gather Merge",
+      "Parallel Aware": false,
+      "Startup Cost": 8568.22,
+      "Total Cost": 15239.94,
+      "Plan Rows": 58015,
+      "Plan Width": 43,
+      "Workers Planned": 1,
+      "Plans": [
+        {
+          "Node Type": "Sort",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Startup Cost": 7568.21,
+          "Total Cost": 7713.25,
+          "Plan Rows": 58015,
+          "Plan Width": 43,
+          "Sort Key": ["o.created"],
+          "Plans": [
+            {
+              "Node Type": "Hash Join",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 29.50,
+              "Total Cost": 2978.02,
+              "Plan Rows": 58015,
+              "Plan Width": 43,
+              "Inner Unique": true,
+              "Hash Cond": "(o.customer_id = c.id)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": true,
+                  "Relation Name": "t_orders",
+                  "Alias": "o",
+                  "Startup Cost": 0.00,
+                  "Total Cost": 2795.59,
+                  "Plan Rows": 58015,
+                  "Plan Width": 23,
+                  "Filter": "(amount > '50'::numeric)"
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Startup Cost": 17.00,
+                  "Total Cost": 17.00,
+                  "Plan Rows": 1000,
+                  "Plan Width": 16,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Relation Name": "t_customers",
+                      "Alias": "c",
+                      "Startup Cost": 0.00,
+                      "Total Cost": 17.00,
+                      "Plan Rows": 1000,
+                      "Plan Width": 16
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

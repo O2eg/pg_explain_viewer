@@ -1,0 +1,20 @@
+Aggregate  (cost=25.10..25.11 rows=1 width=8) (actual time=0.258..0.259 rows=1 loops=1)
+  Buffers: shared hit=7
+  CTE r
+    ->  Recursive Union  (cost=0.00..2.95 rows=31 width=4) (actual time=0.002..0.067 rows=200 loops=1)
+          ->  Result  (cost=0.00..0.01 rows=1 width=4) (actual time=0.001..0.001 rows=1 loops=1)
+          ->  WorkTable Scan on r r_1  (cost=0.00..0.23 rows=3 width=4) (actual time=0.000..0.000 rows=1 loops=200)
+                Filter: (n < 200)
+                Rows Removed by Filter: 0
+  ->  Hash Join  (cost=1.01..22.07 rows=31 width=0) (actual time=0.126..0.249 rows=200 loops=1)
+        Hash Cond: (c.id = r.n)
+        Buffers: shared hit=7
+        ->  Seq Scan on t_customers c  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.062 rows=1000 loops=1)
+              Buffers: shared hit=7
+        ->  Hash  (cost=0.62..0.62 rows=31 width=4) (actual time=0.108..0.108 rows=200 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 16kB
+              ->  CTE Scan on r  (cost=0.00..0.62 rows=31 width=4) (actual time=0.002..0.089 rows=200 loops=1)
+Planning:
+  Buffers: shared hit=136
+Planning Time: 0.372 ms
+Execution Time: 0.324 ms

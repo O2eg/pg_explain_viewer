@@ -1,0 +1,17 @@
+Merge on t_merge_tgt t  (cost=29.50..39.81 rows=0 width=0) (actual time=1.201..1.202 rows=0 loops=1)
+  Tuples: inserted=500 updated=500
+  Buffers: shared hit=2021 read=2 dirtied=6 written=6
+  ->  Hash Right Join  (cost=29.50..39.81 rows=1000 width=28) (actual time=0.219..0.383 rows=1000 loops=1)
+        Hash Cond: (t.id = c.id)
+        Buffers: shared hit=11
+        ->  Seq Scan on t_merge_tgt t  (cost=0.00..9.00 rows=500 width=10) (actual time=0.003..0.044 rows=500 loops=1)
+              Buffers: shared hit=4
+        ->  Hash  (cost=17.00..17.00 rows=1000 width=22) (actual time=0.204..0.204 rows=1000 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 65kB
+              Buffers: shared hit=7
+              ->  Seq Scan on t_customers c  (cost=0.00..17.00 rows=1000 width=22) (actual time=0.005..0.082 rows=1000 loops=1)
+                    Buffers: shared hit=7
+Planning:
+  Buffers: shared hit=166
+Planning Time: 0.387 ms
+Execution Time: 1.298 ms

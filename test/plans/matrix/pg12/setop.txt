@@ -1,0 +1,16 @@
+HashSetOp Except  (cost=0.00..4202.89 rows=1000 width=8) (actual time=18.850..18.851 rows=1 loops=1)
+  Buffers: shared hit=1336
+  ->  Append  (cost=0.00..4152.98 rows=19962 width=8) (actual time=0.005..17.289 rows=20440 loops=1)
+        Buffers: shared hit=1336
+        ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..27.00 rows=1000 width=8) (actual time=0.005..0.130 rows=1000 loops=1)
+              Buffers: shared hit=7
+              ->  Seq Scan on t_customers  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.072 rows=1000 loops=1)
+                    Buffers: shared hit=7
+        ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..4026.17 rows=18962 width=8) (actual time=0.638..16.180 rows=19440 loops=1)
+              Buffers: shared hit=1329
+              ->  Seq Scan on t_orders  (cost=0.00..3836.55 rows=18962 width=4) (actual time=0.638..14.925 rows=19440 loops=1)
+                    Filter: (amount > '90'::numeric)
+                    Rows Removed by Filter: 180560
+                    Buffers: shared hit=1329
+Planning Time: 0.291 ms
+Execution Time: 18.924 ms

@@ -1,0 +1,18 @@
+Finalize Aggregate  (cost=4089.83..4089.84 rows=1 width=32) (actual time=83.692..89.212 rows=1 loops=1)
+  Buffers: shared hit=1325
+  ->  Gather  (cost=4089.71..4089.82 rows=1 width=32) (actual time=83.601..89.201 rows=2 loops=1)
+        Workers Planned: 1
+        Workers Launched: 1
+        Buffers: shared hit=1325
+        ->  Partial Aggregate  (cost=3089.71..3089.72 rows=1 width=32) (actual time=75.338..75.339 rows=1 loops=2)
+              Buffers: shared hit=1325
+              ->  Parallel Seq Scan on t_orders  (cost=0.00..2501.47 rows=117647 width=6) (actual time=0.006..5.904 rows=100000 loops=2)
+                    Buffers: shared hit=1325
+Planning:
+  Buffers: shared hit=101
+Planning Time: 0.217 ms
+JIT:
+  Functions: 8
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 0.363 ms, Inlining 73.294 ms, Optimization 24.117 ms, Emission 18.827 ms, Total 116.600 ms
+Execution Time: 103.067 ms

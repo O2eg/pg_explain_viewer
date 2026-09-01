@@ -1,0 +1,14 @@
+                                       QUERY PLAN                                       
+----------------------------------------------------------------------------------------
+ Sort  (cost=606.17..606.18 rows=4 width=13)
+   Sort Key: (count(*)) DESC
+   ->  HashAggregate  (cost=606.09..606.13 rows=4 width=13)
+         Group Key: c.region
+         ->  Hash Join  (cost=67.00..526.09 rows=16000 width=5)
+               Hash Cond: (o.customer_id = c.id)
+               ->  Seq Scan on orders o  (cost=0.00..417.00 rows=16000 width=8)
+                     Filter: (amount > '100'::numeric)
+               ->  Hash  (cost=42.00..42.00 rows=2000 width=13)
+                     ->  Seq Scan on customers c  (cost=0.00..42.00 rows=2000 width=13)
+(10 rows)
+

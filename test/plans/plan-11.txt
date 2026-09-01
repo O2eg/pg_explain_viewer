@@ -1,0 +1,26 @@
+duration: 0.175 ms  plan:
+Query Text: SELECT r.rental_id, f.title FROM pagila.rental r JOIN pagila.inventory i ON i.inventory_id = r.inventory_id JOIN pagila.film f ON f.film_id = i.film_id WHERE r.customer_id = 42 ORDER BY r.rental_date DESC LIMIT 20;
+Limit  (cost=44.83..44.85 rows=7 width=24) (actual time=0.170..0.172 rows=7.00 loops=1)
+  Buffers: shared hit=30
+  ->  Sort  (cost=44.83..44.85 rows=7 width=24) (actual time=0.170..0.171 rows=7.00 loops=1)
+        Sort Key: r.rental_date DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=30
+        ->  Nested Loop  (cost=26.38..44.73 rows=7 width=24) (actual time=0.100..0.166 rows=7.00 loops=1)
+              Buffers: shared hit=30
+              ->  Hash Join  (cost=26.24..43.14 rows=7 width=16) (actual time=0.085..0.143 rows=7.00 loops=1)
+                    Hash Cond: (i.inventory_id = r.inventory_id)
+                    Buffers: shared hit=16
+                    ->  Seq Scan on inventory i  (cost=0.00..10.04 rows=604 width=8) (actual time=0.003..0.028 rows=604.00 loops=1)
+                          Buffers: shared hit=4
+                    ->  Hash  (cost=26.15..26.15 rows=7 width=16) (actual time=0.076..0.076 rows=7.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=12
+                          ->  Seq Scan on rental r  (cost=0.00..26.15 rows=7 width=16) (actual time=0.006..0.073 rows=7.00 loops=1)
+                                Filter: (customer_id = 42)
+                                Rows Removed by Filter: 1138
+                                Buffers: shared hit=12
+              ->  Index Scan using film_pkey on film f  (cost=0.15..0.23 rows=1 width=16) (actual time=0.003..0.003 rows=1.00 loops=7)
+                    Index Cond: (film_id = i.film_id)
+                    Index Searches: 7
+                    Buffers: shared hit=14

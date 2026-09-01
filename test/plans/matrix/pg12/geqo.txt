@@ -1,0 +1,46 @@
+Aggregate  (cost=180.18..180.19 rows=1 width=8) (actual time=1.443..1.445 rows=1 loops=1)
+  Buffers: shared hit=45
+  ->  Hash Join  (cost=147.50..177.68 rows=1000 width=0) (actual time=0.771..1.402 rows=1000 loops=1)
+        Hash Cond: (b.id = a.id)
+        Buffers: shared hit=45
+        ->  Hash Join  (cost=118.00..145.54 rows=1000 width=20) (actual time=0.599..1.115 rows=1000 loops=1)
+              Hash Cond: (b.id = d.id)
+              Buffers: shared hit=35
+              ->  Hash Join  (cost=88.50..113.41 rows=1000 width=16) (actual time=0.453..0.855 rows=1000 loops=1)
+                    Hash Cond: (b.id = e.id)
+                    Buffers: shared hit=28
+                    ->  Hash Join  (cost=59.00..81.27 rows=1000 width=12) (actual time=0.302..0.587 rows=1000 loops=1)
+                          Hash Cond: (b.id = f.id)
+                          Buffers: shared hit=21
+                          ->  Hash Join  (cost=29.50..49.14 rows=1000 width=8) (actual time=0.154..0.318 rows=1000 loops=1)
+                                Hash Cond: (b.id = c.id)
+                                Buffers: shared hit=14
+                                ->  Seq Scan on t_customers b  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.002..0.049 rows=1000 loops=1)
+                                      Buffers: shared hit=7
+                                ->  Hash  (cost=17.00..17.00 rows=1000 width=4) (actual time=0.139..0.139 rows=1000 loops=1)
+                                      Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                                      Buffers: shared hit=7
+                                      ->  Seq Scan on t_customers c  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.056 rows=1000 loops=1)
+                                            Buffers: shared hit=7
+                          ->  Hash  (cost=17.00..17.00 rows=1000 width=4) (actual time=0.136..0.136 rows=1000 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                                Buffers: shared hit=7
+                                ->  Seq Scan on t_customers f  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.002..0.054 rows=1000 loops=1)
+                                      Buffers: shared hit=7
+                    ->  Hash  (cost=17.00..17.00 rows=1000 width=4) (actual time=0.139..0.139 rows=1000 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                          Buffers: shared hit=7
+                          ->  Seq Scan on t_customers e  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.055 rows=1000 loops=1)
+                                Buffers: shared hit=7
+              ->  Hash  (cost=17.00..17.00 rows=1000 width=4) (actual time=0.136..0.136 rows=1000 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                    Buffers: shared hit=7
+                    ->  Seq Scan on t_customers d  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.002..0.053 rows=1000 loops=1)
+                          Buffers: shared hit=7
+        ->  Hash  (cost=17.00..17.00 rows=1000 width=4) (actual time=0.149..0.149 rows=1000 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 44kB
+              Buffers: shared hit=7
+              ->  Seq Scan on t_customers a  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.063 rows=1000 loops=1)
+                    Buffers: shared hit=7
+Planning Time: 6.192 ms
+Execution Time: 1.549 ms

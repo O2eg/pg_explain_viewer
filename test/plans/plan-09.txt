@@ -1,0 +1,12 @@
+duration: 0.035 ms  plan:
+Query Text: SELECT id FROM queue_skip_locked.tasks WHERE status='pending' ORDER BY priority DESC, id LIMIT 10 FOR UPDATE SKIP LOCKED;
+Limit  (cost=0.28..1.15 rows=10 width=18) (actual time=0.024..0.032 rows=10.00 loops=1)
+  Buffers: shared hit=25
+  WAL: records=10 bytes=540
+  ->  LockRows  (cost=0.28..330.55 rows=3815 width=18) (actual time=0.023..0.031 rows=10.00 loops=1)
+        Buffers: shared hit=25
+        WAL: records=10 bytes=540
+        ->  Index Scan using tasks_pending_idx on tasks  (cost=0.28..292.40 rows=3815 width=18) (actual time=0.006..0.009 rows=10.00 loops=1)
+              Filter: (status = 'pending'::text)
+              Index Searches: 1
+              Buffers: shared hit=5

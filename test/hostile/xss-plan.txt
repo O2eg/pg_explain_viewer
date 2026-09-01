@@ -1,0 +1,11 @@
+Sort  (cost=100.00..125.00 rows=1000 width=8) (actual time=5.00..90.00 rows=1000 loops=1)
+  Sort Key: "<img src=x onerror=window.__xss1=1>".payload DESC
+  ->  Nested Loop  (cost=0.00..90.00 rows=1000 width=8) (actual time=0.02..40.00 rows=1000 loops=1)
+        ->  Seq Scan on "evil<img src=x onerror=window.__xss2=1>" "</script><script>window.__xss3=1</script>"  (cost=0.00..40.00 rows=100 width=8) (actual time=0.01..20.00 rows=100 loops=1)
+              Filter: (payload = '<img src=x onerror=window.__xss4=1>'::text)
+              Rows Removed by Filter: 50000
+        ->  Index Scan using "idx<svg onload=window.__xss5=1>" on t2  (cost=0.00..0.50 rows=10 width=8) (actual time=0.00..0.15 rows=10 loops=100)
+              Filter: ((payload -- evil) = 1)
+              Rows Removed by Filter: 2000
+Execution Time: 90.5 ms
+stray <b onmouseover=window.__xss6=1>garbage</b> line

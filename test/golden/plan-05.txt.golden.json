@@ -1,0 +1,473 @@
+{
+ "format": "text",
+ "duration": 5.358,
+ "query": "SELECT count(*) FROM jsonb_docs.documents WHERE (doc->>'kind') = 'invoice';",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 54600,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 1749
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 5.353,
+  "rows": 1
+ },
+ "max": {
+  "timeExcl": 4.923,
+  "timeIncl": 5.353,
+  "rows": 1,
+  "rowsRemoved": 54600,
+  "loops": 1,
+  "ratio": 2,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 1749
+  },
+  "costExcl": 2090.25,
+  "planRows": 114
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Scan Table documents"
+ ],
+ "stats": [
+  {
+   "type": "Parallel Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "documents",
+   "index": null,
+   "time": 4.923,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 54600,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 1749
+   },
+   "ids": [
+    3
+   ],
+   "timePct": 91.96712124042593
+  },
+  {
+   "type": "Gather",
+   "xtype": "Gather",
+   "relation": null,
+   "index": null,
+   "time": 0.424,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    1
+   ],
+   "timePct": 7.920792079207921
+  },
+  {
+   "type": "Finalize Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 0.003,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 0.05604334018307491
+  },
+  {
+   "type": "Partial Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 0.003,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": 0.05604334018307491
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "documents",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     3
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "doc",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       3
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": []
+ },
+ "advice": [
+  {
+   "code": "SEQ_RRBF",
+   "badge": "SR",
+   "sev": "crit",
+   "obs": "The sequential scan discards most of the rows it reads by filter.",
+   "hyp": "An index on the filter conditions could replace the full-table read.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 3,
+     "ext": "rows=0, RRbF=54600"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "documents",
+     "name": "\"~documents-5eba0a4c\"",
+     "type": "btree",
+     "cols": [
+      "(doc ->> 'kind'::text)"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~documents-5eba0a4c\"\n  ON documents USING btree ((doc ->> 'kind'::text));",
+     "comment": "(doc ->> 'kind'::text) (=)",
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 4.923,
+    "pct": 92,
+    "level": "high"
+   }
+  },
+  {
+   "code": "ROW_RATIO",
+   "badge": "RR",
+   "sev": "info",
+   "obs": "The planner’s row estimate differs strongly from the actual count.",
+   "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
+   "next": "Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).",
+   "nodes": [
+    {
+     "id": 3,
+     "ext": "rows-act=0, rows-est=114"
+    }
+   ],
+   "impact": {
+    "ms": 4.923,
+    "pct": 92,
+    "level": "high"
+   }
+  },
+  {
+   "code": "GTH_WRKS",
+   "badge": "GW",
+   "sev": "info",
+   "obs": "Fewer parallel workers were launched than the planner asked for.",
+   "hyp": "The worker pool (max_parallel_workers / max_worker_processes) may have been exhausted at that moment.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 1,
+     "ext": "launched=0 < planned=2"
+    }
+   ],
+   "impact": {
+    "ms": 0.424,
+    "pct": 7.9,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Finalize Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Finalize Aggregate",
+   "lines": [
+    "Buffers: shared hit=1749"
+   ],
+   "costStartup": 2090.55,
+   "costTotal": 2090.56,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 5.276,
+   "timeTotal": 5.353,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1749
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.353,
+   "timeExcl": 0.003,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Finalize Aggregate  (cost=2090.55..2090.56 rows=1 width=8) (actual time=5.276..5.353 rows=1.00 loops=1)",
+   "costExcl": 0.01
+  },
+  {
+   "id": 1,
+   "type": "Gather",
+   "xtype": "Gather",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Gather",
+   "lines": [
+    "Workers Planned: 2",
+    "Workers Launched: 0",
+    "Buffers: shared hit=1749"
+   ],
+   "costStartup": 2090.53,
+   "costTotal": 2090.55,
+   "planRows": 2,
+   "planWidth": 8,
+   "timeStartup": 5.272,
+   "timeTotal": 5.35,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1749
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": 2,
+   "workersLaunched": 0,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.35,
+   "timeExcl": 0.424,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 2,
+   "ratioDir": -1,
+   "rawHead": "Gather  (cost=2090.53..2090.55 rows=2 width=8) (actual time=5.272..5.350 rows=1.00 loops=1)",
+   "costExcl": 0,
+   "advice": [
+    "GTH_WRKS"
+   ]
+  },
+  {
+   "id": 2,
+   "type": "Partial Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3
+   ],
+   "depth": 2,
+   "indent": 8,
+   "head": "Partial Aggregate",
+   "lines": [
+    "Buffers: shared hit=1749"
+   ],
+   "costStartup": 2090.53,
+   "costTotal": 2090.55,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 4.926,
+   "timeTotal": 4.926,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1749
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 4.926,
+   "timeExcl": 0.003,
+   "prlTime": null,
+   "gatherWorkers": 1,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Partial Aggregate  (cost=2090.53..2090.55 rows=1 width=8) (actual time=4.926..4.926 rows=1.00 loops=1)",
+   "costExcl": 0.3
+  },
+  {
+   "id": 3,
+   "type": "Parallel Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "documents",
+   "relationRef": "documents",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Parallel Seq Scan on documents",
+   "lines": [
+    "Filter: ((doc ->> 'kind'::text) = 'invoice'::text)",
+    "Rows Removed by Filter: 54600",
+    "Buffers: shared hit=1749"
+   ],
+   "costStartup": 0,
+   "costTotal": 2090.25,
+   "planRows": 114,
+   "planWidth": 0,
+   "timeStartup": 4.923,
+   "timeTotal": 4.923,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1749
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 54600,
+   "rowsRemovedBy": {
+    "Filter": 54600
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "((doc ->> 'kind'::text) = 'invoice'::text)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 4.923,
+   "timeExcl": 4.923,
+   "prlTime": null,
+   "gatherWorkers": 1,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 54600,
+   "bufExcl": {
+    "shared-hit": 1749
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Parallel Seq Scan on documents  (cost=0.00..2090.25 rows=114 width=0) (actual time=4.923..4.923 rows=0.00 loops=1)",
+   "costExcl": 2090.25,
+   "advice": [
+    "SEQ_RRBF",
+    "ROW_RATIO"
+   ]
+  }
+ ]
+}

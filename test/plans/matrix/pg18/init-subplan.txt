@@ -1,0 +1,26 @@
+Limit  (cost=19.51..27344.88 rows=50 width=12) (actual time=1.486..5.352 rows=50.00 loops=1)
+  Buffers: shared hit=10120
+  InitPlan 2
+    ->  Aggregate  (cost=19.50..19.51 rows=1 width=32) (actual time=0.103..0.104 rows=1.00 loops=1)
+          Buffers: shared hit=7
+          ->  Seq Scan on t_customers  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.004..0.051 rows=1000.00 loops=1)
+                Buffers: shared hit=7
+  ->  Seq Scan on t_customers c  (cost=0.00..181986.92 rows=333 width=12) (actual time=1.485..5.347 rows=50.00 loops=1)
+        Filter: ((region_id)::numeric > (InitPlan 2).col1)
+        Rows Removed by Filter: 49
+        Buffers: shared hit=10120
+        SubPlan 1
+          ->  Aggregate  (cost=546.43..546.44 rows=1 width=8) (actual time=0.104..0.104 rows=1.00 loops=50)
+                Buffers: shared hit=10111
+                ->  Bitmap Heap Scan on t_orders o  (cost=5.85..545.93 rows=201 width=0) (actual time=0.018..0.095 rows=200.00 loops=50)
+                      Recheck Cond: (customer_id = c.id)
+                      Heap Blocks: exact=10003
+                      Buffers: shared hit=10111
+                      ->  Bitmap Index Scan on t_orders_customer_id_idx  (cost=0.00..5.80 rows=201 width=0) (actual time=0.006..0.006 rows=205.56 loops=50)
+                            Index Cond: (customer_id = c.id)
+                            Index Searches: 50
+                            Buffers: shared hit=108
+Planning:
+  Buffers: shared hit=126
+Planning Time: 0.382 ms
+Execution Time: 5.415 ms

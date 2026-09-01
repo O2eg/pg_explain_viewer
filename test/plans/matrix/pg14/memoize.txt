@@ -1,0 +1,21 @@
+Nested Loop  (cost=8.81..1206.52 rows=546 width=14) (actual time=0.139..1.919 rows=548 loops=1)
+  Buffers: shared hit=1149 read=1
+  ->  Bitmap Heap Scan on t_orders o  (cost=8.53..1032.73 rows=546 width=10) (actual time=0.123..1.522 rows=548 loops=1)
+        Recheck Cond: (created = '2025-03-01'::date)
+        Heap Blocks: exact=548
+        Buffers: shared hit=549 read=1
+        ->  Bitmap Index Scan on t_orders_created_idx  (cost=0.00..8.39 rows=546 width=0) (actual time=0.081..0.081 rows=548 loops=1)
+              Index Cond: (created = '2025-03-01'::date)
+              Buffers: shared hit=1 read=1
+  ->  Memoize  (cost=0.29..0.39 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=548)
+        Cache Key: o.customer_id
+        Cache Mode: logical
+        Hits: 348  Misses: 200  Evictions: 0  Overflows: 0  Memory Usage: 23kB
+        Buffers: shared hit=600
+        ->  Index Scan using t_customers_pkey on t_customers c  (cost=0.28..0.38 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=200)
+              Index Cond: (id = o.customer_id)
+              Buffers: shared hit=600
+Planning:
+  Buffers: shared hit=228
+Planning Time: 0.471 ms
+Execution Time: 1.997 ms

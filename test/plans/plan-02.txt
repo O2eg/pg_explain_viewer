@@ -1,0 +1,21 @@
+duration: 7.222 ms  plan:
+Query Text: SELECT c.region, count(*), sum(o.amount) FROM lab.orders o JOIN lab.customers c ON c.id=o.customer_id WHERE o.status <> 'x' GROUP BY c.region ORDER BY 3 DESC;
+Sort  (cost=686.70..686.71 rows=4 width=45) (actual time=7.212..7.214 rows=4.00 loops=1)
+  Sort Key: (sum(o.amount)) DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=192
+  ->  HashAggregate  (cost=686.61..686.66 rows=4 width=45) (actual time=7.187..7.190 rows=4.00 loops=1)
+        Group Key: c.region
+        Batches: 1  Memory Usage: 32kB
+        Buffers: shared hit=189
+        ->  Hash Join  (cost=67.00..536.61 rows=20000 width=11) (actual time=0.357..4.168 rows=20000.00 loops=1)
+              Hash Cond: (o.customer_id = c.id)
+              Buffers: shared hit=189
+              ->  Seq Scan on orders o  (cost=0.00..417.00 rows=20000 width=14) (actual time=0.009..1.511 rows=20000.00 loops=1)
+                    Filter: (status <> 'x'::text)
+                    Buffers: shared hit=167
+              ->  Hash  (cost=42.00..42.00 rows=2000 width=13) (actual time=0.333..0.333 rows=2000.00 loops=1)
+                    Buckets: 2048  Batches: 1  Memory Usage: 110kB
+                    Buffers: shared hit=22
+                    ->  Seq Scan on customers c  (cost=0.00..42.00 rows=2000 width=13) (actual time=0.008..0.135 rows=2000.00 loops=1)
+                          Buffers: shared hit=22

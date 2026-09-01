@@ -1,0 +1,45 @@
+Limit  (cost=5838.67..5840.97 rows=20 width=18) (actual time=21.623..23.888 rows=20 loops=1)
+  Output: o.id, o.amount, c.name
+  Buffers: shared hit=1447
+  ->  Gather Merge  (cost=5838.67..13756.42 rows=68850 width=18) (actual time=21.622..23.885 rows=20 loops=1)
+        Output: o.id, o.amount, c.name
+        Workers Planned: 1
+        Workers Launched: 1
+        Buffers: shared hit=1447
+        ->  Sort  (cost=4838.66..5010.79 rows=68850 width=18) (actual time=20.251..20.252 rows=13 loops=2)
+              Output: o.id, o.amount, c.name
+              Sort Key: o.amount DESC
+              Sort Method: top-N heapsort  Memory: 28kB
+              Buffers: shared hit=1447
+              Worker 0:  actual time=19.167..19.168 rows=20 loops=1
+                Sort Method: top-N heapsort  Memory: 28kB
+                Buffers: shared hit=751
+              ->  Hash Join  (cost=29.50..3006.59 rows=68850 width=18) (actual time=0.222..13.970 rows=58294 loops=2)
+                    Output: o.id, o.amount, c.name
+                    Inner Unique: true
+                    Hash Cond: (o.customer_id = c.id)
+                    Buffers: shared hit=1390
+                    Worker 0:  actual time=0.242..13.518 rows=55826 loops=1
+                      Buffers: shared hit=694
+                    ->  Parallel Seq Scan on viz.t_orders o  (cost=0.00..2795.59 rows=68850 width=14) (actual time=0.008..7.114 rows=58352 loops=2)
+                          Output: o.id, o.customer_id, o.amount, o.status, o.created
+                          Filter: (o.created > '2025-06-01'::date)
+                          Rows Removed by Filter: 41648
+                          Buffers: shared hit=1325
+                          Worker 0:  actual time=0.005..6.848 rows=55882 loops=1
+                            Buffers: shared hit=639
+                    ->  Hash  (cost=17.00..17.00 rows=1000 width=12) (actual time=0.172..0.172 rows=1000 loops=2)
+                          Output: c.name, c.id
+                          Buckets: 1024  Batches: 1  Memory Usage: 55kB
+                          Buffers: shared hit=14
+                          Worker 0:  actual time=0.174..0.174 rows=1000 loops=1
+                            Buffers: shared hit=7
+                          ->  Seq Scan on viz.t_customers c  (cost=0.00..17.00 rows=1000 width=12) (actual time=0.006..0.069 rows=1000 loops=2)
+                                Output: c.name, c.id
+                                Buffers: shared hit=14
+                                Worker 0:  actual time=0.008..0.072 rows=1000 loops=1
+                                  Buffers: shared hit=7
+Planning:
+  Buffers: shared hit=203
+Planning Time: 0.472 ms
+Execution Time: 23.933 ms

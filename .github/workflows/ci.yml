@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # node:test suite: parser invariants, golden-model snapshots, advisor
+  # rule matrix, DDL safety suite, PG 12..18 format parity
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+
+  # the offline viewer must build and be byte-for-byte reproducible
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build offline viewer
+        run: python3 build.py
+      - name: Reproducible-build check
+        run: |
+          cp dist/pg-explain-viewer.html /tmp/build1.html
+          python3 build.py
+          cmp /tmp/build1.html dist/pg-explain-viewer.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pg-explain-viewer
+          path: dist/pg-explain-viewer.html
+
+  # headless-browser regression: samples x tabs x themes sweep,
+  # hostile-input (XSS) fixture, advice safe-output contract,
+  # accessibility and lifecycle checks — on all three engines
+  browser:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build offline viewer
+        run: python3 build.py
+      - name: Install playwright ${{ matrix.engine }}
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install --with-deps ${{ matrix.engine }}
+      - name: Browser regression (${{ matrix.engine }})
+        run: PW_BROWSER=${{ matrix.engine }} PW_CHANNEL= python3 tools/browser-smoke.py

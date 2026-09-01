@@ -1,0 +1,62 @@
+- Plan: 
+    Node Type: "Result"
+    Parallel Aware: false
+    Async Capable: false
+    Startup Cost: 0.01
+    Total Cost: 17.01
+    Plan Rows: 1000
+    Plan Width: 16
+    Actual Startup Time: 0.001
+    Actual Total Time: 0.002
+    Actual Rows: 0
+    Actual Loops: 1
+    One-Time Filter: "(now() > '2100-01-01 00:00:00'::timestamp without time zone)"
+    Shared Hit Blocks: 0
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Seq Scan"
+        Parent Relationship: "Outer"
+        Parallel Aware: false
+        Async Capable: false
+        Relation Name: "t_customers"
+        Alias: "t_customers"
+        Startup Cost: 0.01
+        Total Cost: 17.01
+        Plan Rows: 1000
+        Plan Width: 16
+        Actual Startup Time: 0.000
+        Actual Total Time: 0.000
+        Actual Rows: 0
+        Actual Loops: 0
+        Shared Hit Blocks: 0
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 57
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.172
+  Triggers: 
+  Execution Time: 0.023

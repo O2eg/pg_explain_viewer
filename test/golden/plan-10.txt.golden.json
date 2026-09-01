@@ -1,0 +1,735 @@
+{
+ "format": "text",
+ "duration": 0.673,
+ "query": "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM r WHERE n < 500)\nSELECT count(*) FROM r JOIN pagila.rental re ON re.rental_id = r.n;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": false,
+  "filter": true,
+  "loops": true,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 1479
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 0.671,
+  "rows": 1
+ },
+ "max": {
+  "timeExcl": 0.5,
+  "timeIncl": 0.671,
+  "rows": 500,
+  "rowsRemoved": 0,
+  "loops": 500,
+  "ratio": 16.129032258064516,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 1479
+  },
+  "costExcl": 27.03,
+  "planRows": 31
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [
+  {
+   "code": "charge_inferred",
+   "severity": "info",
+   "message": "CTE/InitPlan/SubPlan time was attributed to the node that appears to execute it (heuristic)",
+   "count": 1,
+   "nodes": [
+    1
+   ]
+  },
+  {
+   "code": "metric_clamped",
+   "severity": "info",
+   "message": "Negative exclusive time was clamped to zero (attribution/rounding artifact)",
+   "count": 1,
+   "nodes": [
+    5
+   ]
+  }
+ ],
+ "domain": [
+  "Scan CTE r",
+  "Join",
+  "  ->  Scan CTE r",
+  "  ->  Scan Table rental"
+ ],
+ "stats": [
+  {
+   "type": "Index Only Scan",
+   "xtype": "Index Only Scan",
+   "relation": "rental",
+   "index": "rental_pkey",
+   "time": 0.5,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 480,
+   "rowsRemoved": 0,
+   "loops": 500,
+   "buf": {
+    "shared-hit": 1479
+   },
+   "ids": [
+    7
+   ],
+   "timePct": 69.06077348066299
+  },
+  {
+   "type": "Recursive Union",
+   "xtype": "Recursive Union",
+   "relation": null,
+   "index": null,
+   "time": 0.14,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 500,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": 19.33701657458564
+  },
+  {
+   "type": "CTE Scan",
+   "xtype": "CTE Scan",
+   "relation": "r",
+   "index": null,
+   "time": 0.057,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 500,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    6
+   ],
+   "timePct": 7.872928176795581
+  },
+  {
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 0.026,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 3.591160220994475
+  },
+  {
+   "type": "Result",
+   "xtype": "Result",
+   "relation": null,
+   "index": null,
+   "time": 0.001,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    3
+   ],
+   "timePct": 0.13812154696132597
+  },
+  {
+   "type": "WorkTable Scan",
+   "xtype": "WorkTable Scan",
+   "relation": "r",
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 500,
+   "rowsRemoved": 0,
+   "loops": 500,
+   "buf": {},
+   "ids": [
+    4
+   ],
+   "timePct": 0
+  },
+  {
+   "type": "Nested Loop",
+   "xtype": "Nested Loop",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 479,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    5
+   ],
+   "timePct": 0
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "r",
+    "schema": null,
+    "virtual": "WorkTable Scan",
+    "aliases": [
+     "r_1"
+    ],
+    "nodes": [
+     4,
+     6
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "n",
+      "roles": [
+       "filter",
+       "cond",
+       "join"
+      ],
+      "nodes": [
+       4,
+       7
+      ]
+     }
+    ]
+   },
+   {
+    "name": "rental",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "re"
+    ],
+    "nodes": [
+     7
+    ],
+    "indexes": [
+     {
+      "name": "rental_pkey",
+      "nodes": [
+       7
+      ],
+      "cols": [
+       "rental_id"
+      ]
+     }
+    ],
+    "cols": [
+     {
+      "col": "rental_id",
+      "roles": [
+       "cond",
+       "join"
+      ],
+      "nodes": [
+       7
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "r",
+     "col": "n"
+    },
+    "right": {
+     "rel": "rental",
+     "col": "rental_id"
+    },
+    "op": "=",
+    "nodes": [
+     7
+    ]
+   }
+  ]
+ },
+ "advice": [],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1,
+    5
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Aggregate",
+   "lines": [
+    "Buffers: shared hit=1479"
+   ],
+   "costStartup": 31.27,
+   "costTotal": 31.28,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 0.67,
+   "timeTotal": 0.671,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1479
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.671,
+   "timeExcl": 0.026,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Aggregate  (cost=31.27..31.28 rows=1 width=8) (actual time=0.670..0.671 rows=1.00 loops=1)",
+   "costExcl": 0.09
+  },
+  {
+   "id": 1,
+   "type": "CTE r",
+   "xtype": "CTE",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": "CTE",
+   "specName": "r",
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "CTE r",
+   "lines": [],
+   "costStartup": null,
+   "costTotal": null,
+   "planRows": null,
+   "planWidth": null,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.141,
+   "timeExcl": 0,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "CTE r",
+   "chargedTo": 6
+  },
+  {
+   "id": 2,
+   "type": "Recursive Union",
+   "xtype": "Recursive Union",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3,
+    4
+   ],
+   "depth": 2,
+   "indent": 4,
+   "head": "Recursive Union",
+   "lines": [
+    "Storage: Memory  Maximum Storage: 33kB"
+   ],
+   "costStartup": 0,
+   "costTotal": 2.64,
+   "planRows": 31,
+   "planWidth": 4,
+   "timeStartup": 0.002,
+   "timeTotal": 0.141,
+   "rows": 500,
+   "loops": 1,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.141,
+   "timeExcl": 0.14,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 500,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 16.129032258064516,
+   "ratioDir": 1,
+   "rawHead": "Recursive Union  (cost=0.00..2.64 rows=31 width=4) (actual time=0.002..0.141 rows=500.00 loops=1)",
+   "costExcl": 2.4
+  },
+  {
+   "id": 3,
+   "type": "Result",
+   "xtype": "Result",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 10,
+   "head": "Result",
+   "lines": [],
+   "costStartup": 0,
+   "costTotal": 0.01,
+   "planRows": 1,
+   "planWidth": 4,
+   "timeStartup": 0.001,
+   "timeTotal": 0.001,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.001,
+   "timeExcl": 0.001,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Result  (cost=0.00..0.01 rows=1 width=4) (actual time=0.001..0.001 rows=1.00 loops=1)",
+   "costExcl": 0.01
+  },
+  {
+   "id": 4,
+   "type": "WorkTable Scan",
+   "xtype": "WorkTable Scan",
+   "relation": "r",
+   "relationRef": "r",
+   "index": null,
+   "alias": "r_1",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 10,
+   "head": "WorkTable Scan on r r_1",
+   "lines": [
+    "Filter: (n < 500)",
+    "Rows Removed by Filter: 0"
+   ],
+   "costStartup": 0,
+   "costTotal": 0.23,
+   "planRows": 3,
+   "planWidth": 4,
+   "timeStartup": 0,
+   "timeTotal": 0,
+   "rows": 1,
+   "loops": 500,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {
+    "Filter": 0
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(n < 500)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0,
+   "timeExcl": 0,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 500,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 3,
+   "ratioDir": -1,
+   "rawHead": "WorkTable Scan on r r_1  (cost=0.00..0.23 rows=3 width=4) (actual time=0.000..0.000 rows=1.00 loops=500)",
+   "costExcl": 0.23
+  },
+  {
+   "id": 5,
+   "type": "Nested Loop",
+   "xtype": "Nested Loop",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    6,
+    7
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Nested Loop",
+   "lines": [
+    "Buffers: shared hit=1479"
+   ],
+   "costStartup": 0.28,
+   "costTotal": 28.55,
+   "planRows": 31,
+   "planWidth": 0,
+   "timeStartup": 0.042,
+   "timeTotal": 0.645,
+   "rows": 479,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 1479
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.645,
+   "timeExcl": 0,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 479,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 15.451612903225806,
+   "ratioDir": 1,
+   "rawHead": "Nested Loop  (cost=0.28..28.55 rows=31 width=0) (actual time=0.042..0.645 rows=479.00 loops=1)",
+   "exclClamped": 0.053,
+   "costExcl": 27.03
+  },
+  {
+   "id": 6,
+   "type": "CTE Scan",
+   "xtype": "CTE Scan",
+   "relation": "r",
+   "relationRef": "r",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 5,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "CTE Scan on r",
+   "lines": [
+    "Storage: Memory  Maximum Storage: 32kB"
+   ],
+   "costStartup": 0,
+   "costTotal": 0.62,
+   "planRows": 31,
+   "planWidth": 4,
+   "timeStartup": 0.002,
+   "timeTotal": 0.198,
+   "rows": 500,
+   "loops": 1,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.198,
+   "timeExcl": 0.057,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 500,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 16.129032258064516,
+   "ratioDir": 1,
+   "rawHead": "CTE Scan on r  (cost=0.00..0.62 rows=31 width=4) (actual time=0.002..0.198 rows=500.00 loops=1)",
+   "costExcl": 0.62
+  },
+  {
+   "id": 7,
+   "type": "Index Only Scan",
+   "xtype": "Index Only Scan",
+   "relation": "rental",
+   "relationRef": "rental",
+   "index": "rental_pkey",
+   "alias": "re",
+   "spec": null,
+   "specName": null,
+   "parent": 5,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Index Only Scan using rental_pkey on rental re",
+   "lines": [
+    "Index Cond: (rental_id = r.n)",
+    "Heap Fetches: 478",
+    "Index Searches: 500",
+    "Buffers: shared hit=1479"
+   ],
+   "costStartup": 0.28,
+   "costTotal": 0.9,
+   "planRows": 1,
+   "planWidth": 4,
+   "timeStartup": 0.001,
+   "timeTotal": 0.001,
+   "rows": 0.96,
+   "loops": 500,
+   "never": false,
+   "buf": {
+    "shared-hit": 1479
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Index Cond",
+     "val": "(rental_id = r.n)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": 478,
+   "sortMethod": null,
+   "timeIncl": 0.5,
+   "timeExcl": 0.5,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 480,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 1479
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Index Only Scan using rental_pkey on rental re  (cost=0.28..0.90 rows=1 width=4) (actual time=0.001..0.001 rows=0.96 loops=500)",
+   "costExcl": 0.9
+  }
+ ]
+}

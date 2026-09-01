@@ -1,0 +1,14 @@
+Aggregate  (cost=1828.16..1828.17 rows=1 width=8) (actual time=3.470..3.471 rows=1 loops=1)
+  Buffers: shared hit=652 read=14
+  ->  Bitmap Heap Scan on t_orders  (cost=223.87..1788.26 rows=15959 width=0) (actual time=0.521..2.832 rows=15892 loops=1)
+        Recheck Cond: ((created >= '2025-02-01'::date) AND (created <= '2025-03-01'::date))
+        Heap Blocks: exact=650
+        Buffers: shared hit=652 read=14
+        ->  Bitmap Index Scan on t_orders_created_idx  (cost=0.00..219.88 rows=15959 width=0) (actual time=0.455..0.455 rows=15892 loops=1)
+              Index Cond: ((created >= '2025-02-01'::date) AND (created <= '2025-03-01'::date))
+              Buffers: shared hit=2 read=14
+Planning:
+  Buffers: shared hit=103
+  Memory: used=16kB  allocated=32kB
+Planning Time: 0.313 ms
+Execution Time: 3.519 ms

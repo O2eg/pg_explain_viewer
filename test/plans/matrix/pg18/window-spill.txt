@@ -1,0 +1,26 @@
+Limit  (cost=9563.99..9564.04 rows=20 width=23) (actual time=53.843..53.846 rows=20.00 loops=1)
+  Buffers: shared hit=508, temp read=272 written=307
+  ->  Sort  (cost=9563.99..9660.80 rows=38722 width=23) (actual time=53.843..53.844 rows=20.00 loops=1)
+        Sort Key: (rank() OVER w1)
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=508, temp read=272 written=307
+        ->  WindowAgg  (cost=7759.19..8533.61 rows=38722 width=23) (actual time=30.671..50.091 rows=40000.00 loops=1)
+              Window: w1 AS (PARTITION BY status ORDER BY amount ROWS UNBOUNDED PRECEDING)
+              Storage: Memory  Maximum Storage: 17kB
+              Buffers: shared hit=505, temp read=272 written=307
+              ->  Sort  (cost=7759.17..7855.98 rows=38722 width=15) (actual time=30.666..37.715 rows=40000.00 loops=1)
+                    Sort Key: status, amount DESC
+                    Sort Method: external merge  Disk: 1112kB
+                    Buffers: shared hit=505, temp read=272 written=307
+                    ->  Bitmap Heap Scan on t_orders  (cost=432.39..3478.39 rows=38722 width=15) (actual time=0.741..4.872 rows=40000.00 loops=1)
+                          Recheck Cond: (customer_id < 200)
+                          Heap Blocks: exact=464
+                          Buffers: shared hit=499
+                          ->  Bitmap Index Scan on t_orders_customer_id_idx  (cost=0.00..422.71 rows=38722 width=0) (actual time=0.696..0.696 rows=40000.00 loops=1)
+                                Index Cond: (customer_id < 200)
+                                Index Searches: 1
+                                Buffers: shared hit=35
+Planning:
+  Buffers: shared hit=158
+Planning Time: 0.332 ms
+Execution Time: 54.057 ms

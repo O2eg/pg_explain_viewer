@@ -1,0 +1,12 @@
+duration: 34.891 ms  plan:
+Query Text: SELECT * FROM simple_stock.stock_items ORDER BY amount DESC, id LIMIT 5 OFFSET 44000;
+Limit  (cost=6227.97..6227.99 rows=5 width=65) (actual time=34.876..34.878 rows=5.00 loops=1)
+  Buffers: shared hit=637, temp read=829 written=835
+  I/O Timings: temp read=1.118 write=2.449
+  ->  Sort  (cost=6117.97..6229.31 rows=44535 width=65) (actual time=29.660..33.619 rows=44005.00 loops=1)
+        Sort Key: amount DESC, id
+        Sort Method: external merge  Disk: 3320kB
+        Buffers: shared hit=637, temp read=829 written=835
+        I/O Timings: temp read=1.118 write=2.449
+        ->  Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=65) (actual time=0.004..1.793 rows=44535.00 loops=1)
+              Buffers: shared hit=634

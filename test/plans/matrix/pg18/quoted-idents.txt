@@ -1,0 +1,8 @@
+Seq Scan on "we""ird\tbl"  (cost=0.00..18.50 rows=1 width=8) (actual time=0.012..0.051 rows=1.00 loops=1)
+  Filter: (val = 'v7'::text)
+  Rows Removed by Filter: 999
+  Buffers: shared hit=6
+Planning:
+  Buffers: shared hit=32
+Planning Time: 0.151 ms
+Execution Time: 0.080 ms

@@ -1,0 +1,1134 @@
+{
+ "format": "text",
+ "duration": 6.993,
+ "query": "SELECT date_trunc('day', ts) d, count(*) FROM partition_aging.events WHERE ts >= now() - interval '5 days' GROUP BY 1 ORDER BY 1;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 222,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 185
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 6.987,
+  "rows": 6
+ },
+ "max": {
+  "timeExcl": 2.933,
+  "timeIncl": 6.987,
+  "rows": 17117,
+  "rowsRemoved": 222,
+  "loops": 1,
+  "ratio": 2857.5,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 148
+  },
+  "costExcl": 1248.63,
+  "planRows": 17145
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Scan Table events_2026_08_26",
+  "Scan Table events_2026_08_27",
+  "Scan Table events_2026_08_28",
+  "Scan Table events_2026_08_29",
+  "Scan Table events_2026_08_30",
+  "Scan Table events_2026_08_31",
+  "Scan Table events_2026_09_01",
+  "Scan Table events_2026_09_02"
+ ],
+ "stats": [
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_31",
+   "index": null,
+   "time": 2.933,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 14083,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 148
+   },
+   "ids": [
+    8
+   ],
+   "timePct": 41.977959066838416
+  },
+  {
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "index": null,
+   "time": 1.498,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 17117,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 3
+   },
+   "ids": [
+    1
+   ],
+   "timePct": 21.439816802633466
+  },
+  {
+   "type": "Append",
+   "xtype": "Append",
+   "relation": null,
+   "index": null,
+   "time": 0.903,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 17117,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": 12.924001717475313
+  },
+  {
+   "type": "GroupAggregate",
+   "xtype": "GroupAggregate",
+   "relation": null,
+   "index": null,
+   "time": 0.878,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 6,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 12.566194360956063
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_30",
+   "index": null,
+   "time": 0.234,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1104,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 11
+   },
+   "ids": [
+    7
+   ],
+   "timePct": 3.3490768570201808
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_28",
+   "index": null,
+   "time": 0.148,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 566,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 6
+   },
+   "ids": [
+    5
+   ],
+   "timePct": 2.1182195505939605
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_29",
+   "index": null,
+   "time": 0.145,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 646,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 7
+   },
+   "ids": [
+    6
+   ],
+   "timePct": 2.07528266781165
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_27",
+   "index": null,
+   "time": 0.134,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 490,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ids": [
+    4
+   ],
+   "timePct": 1.9178474309431803
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_26",
+   "index": null,
+   "time": 0.102,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 228,
+   "rowsRemoved": 222,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ids": [
+    3
+   ],
+   "timePct": 1.4598540145985404
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_09_02",
+   "index": null,
+   "time": 0.007,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    10
+   ],
+   "timePct": 0.10018605982539003
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_09_01",
+   "index": null,
+   "time": 0.005,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    9
+   ],
+   "timePct": 0.07156147130385002
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "events_2026_08_26",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_1"
+    ],
+    "nodes": [
+     3
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       3
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_08_27",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_2"
+    ],
+    "nodes": [
+     4
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_08_28",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_3"
+    ],
+    "nodes": [
+     5
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       5
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_08_29",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_4"
+    ],
+    "nodes": [
+     6
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       6
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_08_30",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_5"
+    ],
+    "nodes": [
+     7
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       7
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_08_31",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_6"
+    ],
+    "nodes": [
+     8
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       8
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_09_01",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_7"
+    ],
+    "nodes": [
+     9
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       9
+      ]
+     }
+    ]
+   },
+   {
+    "name": "events_2026_09_02",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "events_8"
+    ],
+    "nodes": [
+     10
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "ts",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       10
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": []
+ },
+ "advice": [],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "GroupAggregate",
+   "xtype": "GroupAggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "GroupAggregate",
+   "lines": [
+    "Group Key: (date_trunc('day'::text, events.ts))",
+    "Buffers: shared hit=185"
+   ],
+   "costStartup": 1902.74,
+   "costTotal": 2245.64,
+   "planRows": 17145,
+   "planWidth": 16,
+   "timeStartup": 5.587,
+   "timeTotal": 6.987,
+   "rows": 6,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 185
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 6.987,
+   "timeExcl": 0.878,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 6,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 2857.5,
+   "ratioDir": -1,
+   "rawHead": "GroupAggregate  (cost=1902.74..2245.64 rows=17145 width=16) (actual time=5.587..6.987 rows=6.00 loops=1)",
+   "groupKey": "(date_trunc('day'::text, events.ts))",
+   "costExcl": 300.04
+  },
+  {
+   "id": 1,
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Sort",
+   "lines": [
+    "Sort Key: (date_trunc('day'::text, events.ts))",
+    "Sort Method: quicksort  Memory: 769kB",
+    "Buffers: shared hit=185"
+   ],
+   "costStartup": 1902.74,
+   "costTotal": 1945.6,
+   "planRows": 17145,
+   "planWidth": 8,
+   "timeStartup": 5.564,
+   "timeTotal": 6.109,
+   "rows": 17117,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 185
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": "quicksort",
+   "timeIncl": 6.109,
+   "timeExcl": 1.498,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 17117,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 3
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Sort  (cost=1902.74..1945.60 rows=17145 width=8) (actual time=5.564..6.109 rows=17117.00 loops=1)",
+   "sortKey": "(date_trunc('day'::text, events.ts))",
+   "sortSpace": "Memory",
+   "sortSizeKb": 769,
+   "costExcl": 1248.63
+  },
+  {
+   "id": 2,
+   "type": "Append",
+   "xtype": "Append",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "depth": 2,
+   "indent": 8,
+   "head": "Append",
+   "lines": [
+    "Buffers: shared hit=182",
+    "Subplans Removed: 25"
+   ],
+   "costStartup": 0.15,
+   "costTotal": 696.97,
+   "planRows": 17145,
+   "planWidth": 8,
+   "timeStartup": 0.015,
+   "timeTotal": 4.611,
+   "rows": 17117,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 182
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 4.611,
+   "timeExcl": 0.903,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 17117,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Append  (cost=0.15..696.97 rows=17145 width=8) (actual time=0.015..4.611 rows=17117.00 loops=1)",
+   "costExcl": 168.74
+  },
+  {
+   "id": 3,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_26",
+   "relationRef": "events_2026_08_26",
+   "index": null,
+   "alias": "events_1",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_26 events_1",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Rows Removed by Filter: 222",
+    "Buffers: shared hit=5"
+   ],
+   "costStartup": 0,
+   "costTotal": 13.45,
+   "planRows": 229,
+   "planWidth": 8,
+   "timeStartup": 0.015,
+   "timeTotal": 0.102,
+   "rows": 228,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 222,
+   "rowsRemovedBy": {
+    "Filter": 222
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.102,
+   "timeExcl": 0.102,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 228,
+   "rowsRemovedTotal": 222,
+   "bufExcl": {
+    "shared-hit": 5
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_26 events_1  (cost=0.00..13.45 rows=229 width=8) (actual time=0.015..0.102 rows=228.00 loops=1)",
+   "costExcl": 13.45
+  },
+  {
+   "id": 4,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_27",
+   "relationRef": "events_2026_08_27",
+   "index": null,
+   "alias": "events_2",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_27 events_2",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Buffers: shared hit=5"
+   ],
+   "costStartup": 0,
+   "costTotal": 14.8,
+   "planRows": 490,
+   "planWidth": 8,
+   "timeStartup": 0.008,
+   "timeTotal": 0.134,
+   "rows": 490,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.134,
+   "timeExcl": 0.134,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 490,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 5
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_27 events_2  (cost=0.00..14.80 rows=490 width=8) (actual time=0.008..0.134 rows=490.00 loops=1)",
+   "costExcl": 14.8
+  },
+  {
+   "id": 5,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_28",
+   "relationRef": "events_2026_08_28",
+   "index": null,
+   "alias": "events_3",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_28 events_3",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Buffers: shared hit=6"
+   ],
+   "costStartup": 0,
+   "costTotal": 17.32,
+   "planRows": 566,
+   "planWidth": 8,
+   "timeStartup": 0.005,
+   "timeTotal": 0.148,
+   "rows": 566,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 6
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.148,
+   "timeExcl": 0.148,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 566,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 6
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_28 events_3  (cost=0.00..17.32 rows=566 width=8) (actual time=0.005..0.148 rows=566.00 loops=1)",
+   "costExcl": 17.32
+  },
+  {
+   "id": 6,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_29",
+   "relationRef": "events_2026_08_29",
+   "index": null,
+   "alias": "events_4",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_29 events_4",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Buffers: shared hit=7"
+   ],
+   "costStartup": 0,
+   "costTotal": 19.92,
+   "planRows": 646,
+   "planWidth": 8,
+   "timeStartup": 0.003,
+   "timeTotal": 0.145,
+   "rows": 646,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 7
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.145,
+   "timeExcl": 0.145,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 646,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 7
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_29 events_4  (cost=0.00..19.92 rows=646 width=8) (actual time=0.003..0.145 rows=646.00 loops=1)",
+   "costExcl": 19.92
+  },
+  {
+   "id": 7,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_30",
+   "relationRef": "events_2026_08_30",
+   "index": null,
+   "alias": "events_5",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_30 events_5",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Buffers: shared hit=11"
+   ],
+   "costStartup": 0,
+   "costTotal": 33.08,
+   "planRows": 1104,
+   "planWidth": 8,
+   "timeStartup": 0.007,
+   "timeTotal": 0.234,
+   "rows": 1104,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 11
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.234,
+   "timeExcl": 0.234,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1104,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 11
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_30 events_5  (cost=0.00..33.08 rows=1104 width=8) (actual time=0.007..0.234 rows=1104.00 loops=1)",
+   "costExcl": 33.08
+  },
+  {
+   "id": 8,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_08_31",
+   "relationRef": "events_2026_08_31",
+   "index": null,
+   "alias": "events_6",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_08_31 events_6",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))",
+    "Buffers: shared hit=148"
+   ],
+   "costStartup": 0,
+   "costTotal": 429.66,
+   "planRows": 14083,
+   "planWidth": 8,
+   "timeStartup": 0.005,
+   "timeTotal": 2.933,
+   "rows": 14083,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 148
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 2.933,
+   "timeExcl": 2.933,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 14083,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 148
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on events_2026_08_31 events_6  (cost=0.00..429.66 rows=14083 width=8) (actual time=0.005..2.933 rows=14083.00 loops=1)",
+   "costExcl": 429.66
+  },
+  {
+   "id": 9,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_09_01",
+   "relationRef": "events_2026_09_01",
+   "index": null,
+   "alias": "events_7",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_09_01 events_7",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))"
+   ],
+   "costStartup": 0,
+   "costTotal": 0,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 0.005,
+   "timeTotal": 0.005,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.005,
+   "timeExcl": 0.005,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Seq Scan on events_2026_09_01 events_7  (cost=0.00..0.00 rows=1 width=8) (actual time=0.005..0.005 rows=0.00 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 10,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "events_2026_09_02",
+   "relationRef": "events_2026_09_02",
+   "index": null,
+   "alias": "events_8",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on events_2026_09_02 events_8",
+   "lines": [
+    "Filter: (ts >= (now() - '5 days'::interval))"
+   ],
+   "costStartup": 0,
+   "costTotal": 0,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 0.007,
+   "timeTotal": 0.007,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(ts >= (now() - '5 days'::interval))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.007,
+   "timeExcl": 0.007,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Seq Scan on events_2026_09_02 events_8  (cost=0.00..0.00 rows=1 width=8) (actual time=0.007..0.007 rows=0.00 loops=1)",
+   "costExcl": 0
+  }
+ ]
+}

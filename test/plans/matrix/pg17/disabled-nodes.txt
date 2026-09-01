@@ -1,0 +1,13 @@
+Aggregate  (cost=10000001613.00..10000001613.01 rows=1 width=8) (actual time=74.149..74.150 rows=1 loops=1)
+  Buffers: shared hit=863
+  ->  Seq Scan on t_events  (cost=10000000000.00..10000001488.00 rows=50000 width=0) (actual time=68.231..72.527 rows=50000 loops=1)
+        Filter: (payload ~~ 'x%'::text)
+        Buffers: shared hit=863
+Planning:
+  Buffers: shared hit=69
+Planning Time: 0.215 ms
+JIT:
+  Functions: 4
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 0.170 ms (Deform 0.058 ms), Inlining 50.609 ms, Optimization 9.708 ms, Emission 7.902 ms, Total 68.388 ms
+Execution Time: 88.085 ms

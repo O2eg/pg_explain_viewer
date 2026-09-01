@@ -1,0 +1,11 @@
+Limit  (cost=0.42..178.76 rows=500 width=23) (actual time=0.020..0.436 rows=500 loops=1)
+  Buffers: shared hit=50
+  ->  Index Scan using t_orders_pkey on t_orders  (cost=0.42..7032.42 rows=19715 width=23) (actual time=0.020..0.410 rows=500 loops=1)
+        Filter: (customer_id < 100)
+        Rows Removed by Filter: 4500
+        Buffers: shared hit=50
+Planning:
+  Buffers: shared hit=112
+Planning Time: 0.269 ms
+Serialization: time=0.099 ms  output=23kB  format=text
+Execution Time: 0.585 ms

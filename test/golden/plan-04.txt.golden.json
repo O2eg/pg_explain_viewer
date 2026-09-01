@@ -1,0 +1,291 @@
+{
+ "format": "text",
+ "duration": 0.989,
+ "query": "UPDATE bloat_vacuum.accounts SET balance = balance + 1 WHERE id % 97 = 0;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 4983,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 734
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 0.988,
+  "rows": 0
+ },
+ "max": {
+  "timeExcl": 0.595,
+  "timeIncl": 0.988,
+  "rows": 51,
+  "rowsRemoved": 4983,
+  "loops": 1,
+  "ratio": 2.04,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 618
+  },
+  "costExcl": 191.63,
+  "planRows": 25
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Update accounts",
+  "  ->  Scan Table accounts"
+ ],
+ "stats": [
+  {
+   "type": "Update",
+   "xtype": "Update",
+   "relation": "accounts",
+   "index": null,
+   "time": 0.595,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 618
+   },
+   "ids": [
+    0
+   ],
+   "timePct": 60.22267206477733
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "accounts",
+   "index": null,
+   "time": 0.393,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 51,
+   "rowsRemoved": 4983,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 116
+   },
+   "ids": [
+    1
+   ],
+   "timePct": 39.77732793522267
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "accounts",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     0,
+     1
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "id",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       1
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": []
+ },
+ "advice": [
+  {
+   "code": "SEQ_RRBF",
+   "badge": "SR",
+   "sev": "crit",
+   "obs": "The sequential scan discards most of the rows it reads by filter.",
+   "hyp": "An index on the filter conditions could replace the full-table read.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 1,
+     "ext": "rows=51, RRbF=4983, ratio=97.7"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "accounts",
+     "name": "\"~accounts-6666ccfc\"",
+     "type": "btree",
+     "cols": [
+      "(id % '97'::bigint)"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~accounts-6666ccfc\"\n  ON accounts USING btree ((id % '97'::bigint));",
+     "comment": "(id % '97'::bigint) (=)",
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 0.393,
+    "pct": 39.8,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Update",
+   "xtype": "Update",
+   "relation": "accounts",
+   "relationRef": "accounts",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Update on accounts",
+   "lines": [
+    "Buffers: shared hit=734",
+    "WAL: records=285 bytes=18827"
+   ],
+   "costStartup": 0,
+   "costTotal": 191.63,
+   "planRows": 0,
+   "planWidth": 0,
+   "timeStartup": 0.988,
+   "timeTotal": 0.988,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 734
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.988,
+   "timeExcl": 0.595,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 618
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Update on accounts  (cost=0.00..191.63 rows=0 width=0) (actual time=0.988..0.988 rows=0.00 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 1,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "accounts",
+   "relationRef": "accounts",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [],
+   "depth": 1,
+   "indent": 2,
+   "head": "Seq Scan on accounts",
+   "lines": [
+    "Filter: ((id % '97'::bigint) = 0)",
+    "Rows Removed by Filter: 4983",
+    "Buffers: shared hit=116",
+    "WAL: records=27 bytes=1404"
+   ],
+   "costStartup": 0,
+   "costTotal": 191.63,
+   "planRows": 25,
+   "planWidth": 24,
+   "timeStartup": 0.017,
+   "timeTotal": 0.393,
+   "rows": 51,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 116
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 4983,
+   "rowsRemovedBy": {
+    "Filter": 4983
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "((id % '97'::bigint) = 0)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.393,
+   "timeExcl": 0.393,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 51,
+   "rowsRemovedTotal": 4983,
+   "bufExcl": {
+    "shared-hit": 116
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 2.04,
+   "ratioDir": 1,
+   "rawHead": "Seq Scan on accounts  (cost=0.00..191.63 rows=25 width=24) (actual time=0.017..0.393 rows=51.00 loops=1)",
+   "costExcl": 191.63,
+   "advice": [
+    "SEQ_RRBF"
+   ]
+  }
+ ]
+}

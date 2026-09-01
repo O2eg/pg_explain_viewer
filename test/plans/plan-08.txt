@@ -1,0 +1,21 @@
+duration: 5.445 ms  plan:
+Query Text: SELECT s.id, s.descr FROM simple_stock.stock_items s WHERE s.amount > (SELECT avg(amount) FROM simple_stock.stock_items) AND EXISTS (SELECT 1 FROM simple_stock.order_items_2 oi WHERE oi.id = s.order_items_2_id) LIMIT 50;
+Limit  (cost=1191.28..1203.82 rows=50 width=49) (actual time=5.380..5.432 rows=50.00 loops=1)
+  Buffers: shared hit=676
+  InitPlan 1
+    ->  Aggregate  (cost=1190.69..1190.70 rows=1 width=32) (actual time=5.351..5.352 rows=1.00 loops=1)
+          Buffers: shared hit=634
+          ->  Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=6) (actual time=0.007..1.897 rows=44535.00 loops=1)
+                Buffers: shared hit=634
+  ->  Merge Join  (cost=0.58..3722.57 rows=14845 width=49) (actual time=5.379..5.427 rows=50.00 loops=1)
+        Merge Cond: (s.order_items_2_id = oi.id)
+        Buffers: shared hit=676
+        ->  Index Scan using stock_items_order_2_idx on stock_items s  (cost=0.29..2226.65 rows=14845 width=53) (actual time=5.360..5.389 rows=50.00 loops=1)
+              Filter: (amount > (InitPlan 1).col1)
+              Rows Removed by Filter: 75
+              Index Searches: 1
+              Buffers: shared hit=673
+        ->  Index Only Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..1185.36 rows=50000 width=8) (actual time=0.015..0.021 rows=128.00 loops=1)
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=3

@@ -1,0 +1,8 @@
+Aggregate  (cost=19.50..19.51 rows=1 width=8) (actual time=0.095..0.095 rows=1.00 loops=1)
+  Buffers: shared hit=7
+  ->  Seq Scan on t_customers f  (cost=0.00..17.00 rows=1000 width=0) (actual time=0.007..0.057 rows=1000.00 loops=1)
+        Buffers: shared hit=7
+Planning:
+  Buffers: shared hit=143
+Planning Time: 0.342 ms
+Execution Time: 0.125 ms

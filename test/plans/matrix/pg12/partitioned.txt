@@ -1,0 +1,262 @@
+Limit  (cost=2810.21..2812.74 rows=10 width=12) (actual time=12.439..14.594 rows=10 loops=1)
+  Buffers: shared hit=614
+  ->  Finalize GroupAggregate  (cost=2810.21..2835.54 rows=100 width=12) (actual time=12.438..14.592 rows=10 loops=1)
+        Group Key: t_part_16.val
+        Buffers: shared hit=614
+        ->  Gather Merge  (cost=2810.21..2833.54 rows=200 width=12) (actual time=12.434..14.586 rows=31 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=614
+              ->  Sort  (cost=1810.18..1810.43 rows=100 width=12) (actual time=8.713..8.721 rows=70 loops=3)
+                    Sort Key: t_part_16.val
+                    Sort Method: quicksort  Memory: 29kB
+                    Worker 0:  Sort Method: quicksort  Memory: 29kB
+                    Worker 1:  Sort Method: quicksort  Memory: 29kB
+                    Buffers: shared hit=614
+                    ->  Partial HashAggregate  (cost=1805.86..1806.86 rows=100 width=12) (actual time=8.677..8.689 rows=100 loops=3)
+                          Group Key: t_part_16.val
+                          Buffers: shared hit=600
+                          ->  Parallel Append  (cost=0.00..1555.87 rows=49998 width=4) (actual time=0.008..4.931 rows=40000 loops=3)
+                                Buffers: shared hit=600
+                                ->  Parallel Seq Scan on t_part_16  (cost=0.00..11.42 rows=642 width=4) (actual time=0.008..0.102 rows=1091 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_108  (cost=0.00..11.41 rows=641 width=4) (actual time=0.006..0.114 rows=1089 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_45  (cost=0.00..11.35 rows=635 width=4) (actual time=0.005..0.082 rows=1080 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_71  (cost=0.00..11.26 rows=626 width=4) (actual time=0.005..0.081 rows=1065 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_79  (cost=0.00..11.26 rows=626 width=4) (actual time=0.006..0.078 rows=1065 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_97  (cost=0.00..11.26 rows=626 width=4) (actual time=0.007..0.081 rows=1065 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_18  (cost=0.00..11.24 rows=624 width=4) (actual time=0.005..0.082 rows=1061 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_96  (cost=0.00..11.22 rows=622 width=4) (actual time=0.006..0.082 rows=1057 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_74  (cost=0.00..11.21 rows=621 width=4) (actual time=0.005..0.077 rows=1055 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_94  (cost=0.00..11.21 rows=621 width=4) (actual time=0.005..0.087 rows=1055 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_27  (cost=0.00..11.19 rows=619 width=4) (actual time=0.006..0.098 rows=1052 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_81  (cost=0.00..11.14 rows=614 width=4) (actual time=0.007..0.083 rows=1044 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_24  (cost=0.00..11.14 rows=614 width=4) (actual time=0.006..0.073 rows=1043 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_67  (cost=0.00..11.14 rows=614 width=4) (actual time=0.006..0.083 rows=1043 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_63  (cost=0.00..11.13 rows=613 width=4) (actual time=0.007..0.080 rows=1042 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_60  (cost=0.00..11.12 rows=612 width=4) (actual time=0.002..0.077 rows=1040 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_66  (cost=0.00..11.08 rows=608 width=4) (actual time=0.003..0.074 rows=1033 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_90  (cost=0.00..11.07 rows=607 width=4) (actual time=0.005..0.071 rows=1032 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_32  (cost=0.00..11.05 rows=605 width=4) (actual time=0.003..0.096 rows=1029 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_111  (cost=0.00..11.05 rows=605 width=4) (actual time=0.002..0.080 rows=1029 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_43  (cost=0.00..11.04 rows=604 width=4) (actual time=0.005..0.073 rows=1026 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_65  (cost=0.00..11.04 rows=604 width=4) (actual time=0.003..0.079 rows=1026 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_1  (cost=0.00..11.03 rows=603 width=4) (actual time=0.008..0.080 rows=1025 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_34  (cost=0.00..11.02 rows=602 width=4) (actual time=0.007..0.073 rows=1024 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_70  (cost=0.00..11.02 rows=602 width=4) (actual time=0.005..0.081 rows=1023 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_106  (cost=0.00..11.01 rows=601 width=4) (actual time=0.003..0.066 rows=1022 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_52  (cost=0.00..11.01 rows=601 width=4) (actual time=0.005..0.072 rows=1021 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_40  (cost=0.00..10.99 rows=599 width=4) (actual time=0.005..0.087 rows=1018 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_25  (cost=0.00..10.98 rows=598 width=4) (actual time=0.004..0.072 rows=1017 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_80  (cost=0.00..10.98 rows=598 width=4) (actual time=0.009..0.095 rows=1017 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_55  (cost=0.00..10.98 rows=598 width=4) (actual time=0.007..0.081 rows=1016 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_23  (cost=0.00..10.96 rows=596 width=4) (actual time=0.007..0.098 rows=1014 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_42  (cost=0.00..10.96 rows=596 width=4) (actual time=0.003..0.070 rows=1014 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_46  (cost=0.00..10.96 rows=596 width=4) (actual time=0.003..0.071 rows=1014 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_39  (cost=0.00..10.96 rows=596 width=4) (actual time=0.003..0.101 rows=1013 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_49  (cost=0.00..10.95 rows=595 width=4) (actual time=0.003..0.075 rows=1012 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_107  (cost=0.00..10.95 rows=595 width=4) (actual time=0.006..0.095 rows=1011 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_112  (cost=0.00..10.95 rows=595 width=4) (actual time=0.005..0.070 rows=1011 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_22  (cost=0.00..10.94 rows=594 width=4) (actual time=0.003..0.085 rows=1010 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_89  (cost=0.00..10.94 rows=594 width=4) (actual time=0.003..0.071 rows=1010 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_11  (cost=0.00..10.94 rows=594 width=4) (actual time=0.003..0.068 rows=1009 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_53  (cost=0.00..10.94 rows=594 width=4) (actual time=0.002..0.066 rows=1009 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_105  (cost=0.00..10.94 rows=594 width=4) (actual time=0.003..0.070 rows=1009 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_2  (cost=0.00..10.93 rows=593 width=4) (actual time=0.005..0.070 rows=1008 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_20  (cost=0.00..10.93 rows=593 width=4) (actual time=0.003..0.071 rows=1008 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_76  (cost=0.00..10.93 rows=593 width=4) (actual time=0.003..0.069 rows=1008 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_115  (cost=0.00..10.93 rows=593 width=4) (actual time=0.003..0.073 rows=1008 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_56  (cost=0.00..10.92 rows=592 width=4) (actual time=0.003..0.068 rows=1007 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_69  (cost=0.00..10.92 rows=592 width=4) (actual time=0.006..0.073 rows=1007 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_6  (cost=0.00..10.92 rows=592 width=4) (actual time=0.003..0.067 rows=1006 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_50  (cost=0.00..10.92 rows=592 width=4) (actual time=0.003..0.071 rows=1006 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_114  (cost=0.00..10.92 rows=592 width=4) (actual time=0.003..0.071 rows=1006 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_119  (cost=0.00..10.92 rows=592 width=4) (actual time=0.003..0.069 rows=1006 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_73  (cost=0.00..10.91 rows=591 width=4) (actual time=0.003..0.068 rows=1005 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_3  (cost=0.00..10.91 rows=591 width=4) (actual time=0.005..0.079 rows=1004 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_14  (cost=0.00..10.91 rows=591 width=4) (actual time=0.003..0.064 rows=1004 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_84  (cost=0.00..10.89 rows=589 width=4) (actual time=0.003..0.071 rows=1002 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_9  (cost=0.00..10.89 rows=589 width=4) (actual time=0.003..0.070 rows=1001 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_12  (cost=0.00..10.89 rows=589 width=4) (actual time=0.003..0.071 rows=1001 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_83  (cost=0.00..10.89 rows=589 width=4) (actual time=0.003..0.070 rows=1001 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_8  (cost=0.00..10.88 rows=588 width=4) (actual time=0.003..0.068 rows=999 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_37  (cost=0.00..10.88 rows=588 width=4) (actual time=0.003..0.064 rows=999 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_91  (cost=0.00..10.86 rows=586 width=4) (actual time=0.003..0.068 rows=997 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_33  (cost=0.00..10.86 rows=586 width=4) (actual time=0.003..0.067 rows=996 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_41  (cost=0.00..10.86 rows=586 width=4) (actual time=0.003..0.024 rows=332 loops=3)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_103  (cost=0.00..10.86 rows=586 width=4) (actual time=0.003..0.034 rows=498 loops=2)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_44  (cost=0.00..10.85 rows=585 width=4) (actual time=0.002..0.072 rows=995 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_93  (cost=0.00..10.85 rows=585 width=4) (actual time=0.003..0.065 rows=995 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_68  (cost=0.00..10.84 rows=584 width=4) (actual time=0.004..0.065 rows=993 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_59  (cost=0.00..10.83 rows=583 width=4) (actual time=0.003..0.067 rows=991 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_61  (cost=0.00..10.83 rows=583 width=4) (actual time=0.003..0.065 rows=991 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_86  (cost=0.00..10.83 rows=583 width=4) (actual time=0.003..0.065 rows=991 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_31  (cost=0.00..10.82 rows=582 width=4) (actual time=0.003..0.073 rows=990 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_77  (cost=0.00..10.82 rows=582 width=4) (actual time=0.003..0.066 rows=990 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_101  (cost=0.00..10.82 rows=582 width=4) (actual time=0.003..0.067 rows=989 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_117  (cost=0.00..10.82 rows=582 width=4) (actual time=0.003..0.069 rows=989 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_21  (cost=0.00..10.81 rows=581 width=4) (actual time=0.003..0.063 rows=988 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_36  (cost=0.00..10.81 rows=581 width=4) (actual time=0.003..0.077 rows=988 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_64  (cost=0.00..10.81 rows=581 width=4) (actual time=0.003..0.067 rows=988 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_102  (cost=0.00..10.81 rows=581 width=4) (actual time=0.004..0.068 rows=988 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_62  (cost=0.00..10.79 rows=579 width=4) (actual time=0.003..0.067 rows=985 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_48  (cost=0.00..10.79 rows=579 width=4) (actual time=0.005..0.070 rows=984 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_85  (cost=0.00..10.78 rows=578 width=4) (actual time=0.003..0.067 rows=983 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_29  (cost=0.00..10.78 rows=578 width=4) (actual time=0.003..0.063 rows=982 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_98  (cost=0.00..10.77 rows=577 width=4) (actual time=0.003..0.071 rows=981 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_57  (cost=0.00..10.76 rows=576 width=4) (actual time=0.004..0.066 rows=980 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_110  (cost=0.00..10.76 rows=576 width=4) (actual time=0.004..0.068 rows=980 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_28  (cost=0.00..10.75 rows=575 width=4) (actual time=0.003..0.073 rows=978 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_87  (cost=0.00..10.75 rows=575 width=4) (actual time=0.003..0.063 rows=978 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_0  (cost=0.00..10.75 rows=575 width=4) (actual time=0.003..0.068 rows=977 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_58  (cost=0.00..10.74 rows=574 width=4) (actual time=0.003..0.073 rows=976 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_78  (cost=0.00..10.74 rows=574 width=4) (actual time=0.003..0.069 rows=976 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_118  (cost=0.00..10.74 rows=574 width=4) (actual time=0.003..0.073 rows=976 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_72  (cost=0.00..10.74 rows=574 width=4) (actual time=0.004..0.069 rows=975 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_88  (cost=0.00..10.74 rows=574 width=4) (actual time=0.003..0.070 rows=975 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_47  (cost=0.00..10.73 rows=573 width=4) (actual time=0.003..0.067 rows=974 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_4  (cost=0.00..10.72 rows=572 width=4) (actual time=0.005..0.075 rows=973 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_30  (cost=0.00..10.72 rows=572 width=4) (actual time=0.007..0.069 rows=973 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_99  (cost=0.00..10.72 rows=572 width=4) (actual time=0.003..0.069 rows=973 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_7  (cost=0.00..10.71 rows=571 width=4) (actual time=0.003..0.085 rows=971 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_26  (cost=0.00..10.71 rows=571 width=4) (actual time=0.008..0.076 rows=971 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_54  (cost=0.00..10.71 rows=571 width=4) (actual time=0.008..0.077 rows=970 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_19  (cost=0.00..10.69 rows=569 width=4) (actual time=0.008..0.074 rows=968 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_82  (cost=0.00..10.68 rows=568 width=4) (actual time=0.003..0.072 rows=965 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_109  (cost=0.00..10.68 rows=568 width=4) (actual time=0.003..0.075 rows=965 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_75  (cost=0.00..10.67 rows=567 width=4) (actual time=0.003..0.064 rows=964 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_15  (cost=0.00..10.65 rows=565 width=4) (actual time=0.004..0.066 rows=961 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_92  (cost=0.00..10.65 rows=565 width=4) (actual time=0.007..0.079 rows=961 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_95  (cost=0.00..10.64 rows=564 width=4) (actual time=0.004..0.064 rows=959 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_100  (cost=0.00..10.61 rows=561 width=4) (actual time=0.009..0.081 rows=954 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_113  (cost=0.00..10.61 rows=561 width=4) (actual time=0.003..0.070 rows=954 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_13  (cost=0.00..10.61 rows=561 width=4) (actual time=0.006..0.066 rows=953 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_35  (cost=0.00..10.59 rows=559 width=4) (actual time=0.003..0.072 rows=950 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_38  (cost=0.00..10.57 rows=557 width=4) (actual time=0.007..0.070 rows=947 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_104  (cost=0.00..10.57 rows=557 width=4) (actual time=0.003..0.064 rows=947 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_51  (cost=0.00..10.56 rows=556 width=4) (actual time=0.010..0.083 rows=946 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_5  (cost=0.00..10.54 rows=554 width=4) (actual time=0.007..0.072 rows=941 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_17  (cost=0.00..10.54 rows=554 width=4) (actual time=0.006..0.071 rows=941 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_10  (cost=0.00..10.52 rows=552 width=4) (actual time=0.007..0.076 rows=939 loops=1)
+                                      Buffers: shared hit=5
+                                ->  Parallel Seq Scan on t_part_116  (cost=0.00..10.39 rows=539 width=4) (actual time=0.009..0.079 rows=916 loops=1)
+                                      Buffers: shared hit=5
+Planning Time: 2.325 ms
+Execution Time: 15.322 ms

@@ -1,0 +1,24 @@
+- Plan: 
+    Node Type: "Foreign Scan"
+    Operation: "Select"
+    Parallel Aware: false
+    Async Capable: false
+    Relation Name: "f_customers"
+    Schema: "viz"
+    Alias: "f_customers"
+    Startup Cost: 100.00
+    Total Cost: 126.12
+    Plan Rows: 6
+    Plan Width: 40
+    Actual Startup Time: 0.600
+    Actual Total Time: 0.602
+    Actual Rows: 20
+    Actual Loops: 1
+    Output: 
+      - "id"
+      - "name"
+      - "region_id"
+    Remote SQL: "SELECT id, name, region_id FROM viz.t_customers WHERE ((region_id = 3))"
+  Planning Time: 0.798
+  Triggers: 
+  Execution Time: 3.402

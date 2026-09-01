@@ -1,0 +1,14 @@
+duration: 5.358 ms  plan:
+Query Text: SELECT count(*) FROM jsonb_docs.documents WHERE (doc->>'kind') = 'invoice';
+Finalize Aggregate  (cost=2090.55..2090.56 rows=1 width=8) (actual time=5.276..5.353 rows=1.00 loops=1)
+  Buffers: shared hit=1749
+  ->  Gather  (cost=2090.53..2090.55 rows=2 width=8) (actual time=5.272..5.350 rows=1.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 0
+        Buffers: shared hit=1749
+        ->  Partial Aggregate  (cost=2090.53..2090.55 rows=1 width=8) (actual time=4.926..4.926 rows=1.00 loops=1)
+              Buffers: shared hit=1749
+              ->  Parallel Seq Scan on documents  (cost=0.00..2090.25 rows=114 width=0) (actual time=4.923..4.923 rows=0.00 loops=1)
+                    Filter: ((doc ->> 'kind'::text) = 'invoice'::text)
+                    Rows Removed by Filter: 54600
+                    Buffers: shared hit=1749

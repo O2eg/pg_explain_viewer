@@ -1,0 +1,8 @@
+Nested Loop  (cost=0.58..12303.72 rows=98868 width=39)
+  ->  Index Scan using t_orders_created_idx on t_orders o  (cost=0.29..9540.25 rows=98868 width=23)
+        Filter: (amount > '50'::numeric)
+  ->  Memoize  (cost=0.29..0.30 rows=1 width=16)
+        Cache Key: o.customer_id
+        Cache Mode: logical
+        ->  Index Scan using t_customers_pkey on t_customers c  (cost=0.28..0.29 rows=1 width=16)
+              Index Cond: (id = o.customer_id)

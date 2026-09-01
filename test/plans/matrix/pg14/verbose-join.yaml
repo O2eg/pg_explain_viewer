@@ -1,0 +1,307 @@
+- Plan: 
+    Node Type: "Limit"
+    Parallel Aware: false
+    Async Capable: false
+    Startup Cost: 5848.67
+    Total Cost: 5850.97
+    Plan Rows: 20
+    Plan Width: 18
+    Actual Startup Time: 22.624
+    Actual Total Time: 24.823
+    Actual Rows: 20
+    Actual Loops: 1
+    Output: 
+      - "o.id"
+      - "o.amount"
+      - "c.name"
+    Shared Hit Blocks: 1443
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Gather Merge"
+        Parent Relationship: "Outer"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 5848.67
+        Total Cost: 13805.75
+        Plan Rows: 69192
+        Plan Width: 18
+        Actual Startup Time: 22.622
+        Actual Total Time: 24.821
+        Actual Rows: 20
+        Actual Loops: 1
+        Output: 
+          - "o.id"
+          - "o.amount"
+          - "c.name"
+        Workers Planned: 1
+        Workers Launched: 1
+        Shared Hit Blocks: 1443
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Sort"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Startup Cost: 4848.66
+            Total Cost: 5021.64
+            Plan Rows: 69192
+            Plan Width: 18
+            Actual Startup Time: 21.242
+            Actual Total Time: 21.243
+            Actual Rows: 13
+            Actual Loops: 2
+            Output: 
+              - "o.id"
+              - "o.amount"
+              - "c.name"
+            Sort Key: 
+              - "o.amount DESC"
+            Sort Method: "top-N heapsort"
+            Sort Space Used: 28
+            Sort Space Type: "Memory"
+            Shared Hit Blocks: 1443
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+            Workers: 
+              - Worker Number: 0
+                Actual Startup Time: 20.230
+                Actual Total Time: 20.231
+                Actual Rows: 20
+                Actual Loops: 1
+                Sort Method: "top-N heapsort"
+                Sort Space Used: 28
+                Sort Space Type: "Memory"
+                Shared Hit Blocks: 746
+                Shared Read Blocks: 0
+                Shared Dirtied Blocks: 0
+                Shared Written Blocks: 0
+                Local Hit Blocks: 0
+                Local Read Blocks: 0
+                Local Dirtied Blocks: 0
+                Local Written Blocks: 0
+                Temp Read Blocks: 0
+                Temp Written Blocks: 0
+            Plans: 
+              - Node Type: "Hash Join"
+                Parent Relationship: "Outer"
+                Parallel Aware: false
+                Async Capable: false
+                Join Type: "Inner"
+                Startup Cost: 29.50
+                Total Cost: 3007.48
+                Plan Rows: 69192
+                Plan Width: 18
+                Actual Startup Time: 0.261
+                Actual Total Time: 14.665
+                Actual Rows: 58294
+                Actual Loops: 2
+                Output: 
+                  - "o.id"
+                  - "o.amount"
+                  - "c.name"
+                Inner Unique: true
+                Hash Cond: "(o.customer_id = c.id)"
+                Shared Hit Blocks: 1386
+                Shared Read Blocks: 0
+                Shared Dirtied Blocks: 0
+                Shared Written Blocks: 0
+                Local Hit Blocks: 0
+                Local Read Blocks: 0
+                Local Dirtied Blocks: 0
+                Local Written Blocks: 0
+                Temp Read Blocks: 0
+                Temp Written Blocks: 0
+                Workers: 
+                  - Worker Number: 0
+                    Actual Startup Time: 0.259
+                    Actual Total Time: 14.149
+                    Actual Rows: 56537
+                    Actual Loops: 1
+                    Shared Hit Blocks: 689
+                    Shared Read Blocks: 0
+                    Shared Dirtied Blocks: 0
+                    Shared Written Blocks: 0
+                    Local Hit Blocks: 0
+                    Local Read Blocks: 0
+                    Local Dirtied Blocks: 0
+                    Local Written Blocks: 0
+                    Temp Read Blocks: 0
+                    Temp Written Blocks: 0
+                Plans: 
+                  - Node Type: "Seq Scan"
+                    Parent Relationship: "Outer"
+                    Parallel Aware: true
+                    Async Capable: false
+                    Relation Name: "t_orders"
+                    Schema: "viz"
+                    Alias: "o"
+                    Startup Cost: 0.00
+                    Total Cost: 2795.59
+                    Plan Rows: 69192
+                    Plan Width: 14
+                    Actual Startup Time: 0.017
+                    Actual Total Time: 7.470
+                    Actual Rows: 58352
+                    Actual Loops: 2
+                    Output: 
+                      - "o.id"
+                      - "o.customer_id"
+                      - "o.amount"
+                      - "o.status"
+                      - "o.created"
+                    Filter: "(o.created > '2025-06-01'::date)"
+                    Rows Removed by Filter: 41648
+                    Shared Hit Blocks: 1325
+                    Shared Read Blocks: 0
+                    Shared Dirtied Blocks: 0
+                    Shared Written Blocks: 0
+                    Local Hit Blocks: 0
+                    Local Read Blocks: 0
+                    Local Dirtied Blocks: 0
+                    Local Written Blocks: 0
+                    Temp Read Blocks: 0
+                    Temp Written Blocks: 0
+                    Workers: 
+                      - Worker Number: 0
+                        Actual Startup Time: 0.014
+                        Actual Total Time: 7.264
+                        Actual Rows: 56593
+                        Actual Loops: 1
+                        Shared Hit Blocks: 635
+                        Shared Read Blocks: 0
+                        Shared Dirtied Blocks: 0
+                        Shared Written Blocks: 0
+                        Local Hit Blocks: 0
+                        Local Read Blocks: 0
+                        Local Dirtied Blocks: 0
+                        Local Written Blocks: 0
+                        Temp Read Blocks: 0
+                        Temp Written Blocks: 0
+                  - Node Type: "Hash"
+                    Parent Relationship: "Inner"
+                    Parallel Aware: false
+                    Async Capable: false
+                    Startup Cost: 17.00
+                    Total Cost: 17.00
+                    Plan Rows: 1000
+                    Plan Width: 12
+                    Actual Startup Time: 0.207
+                    Actual Total Time: 0.207
+                    Actual Rows: 1000
+                    Actual Loops: 2
+                    Output: 
+                      - "c.name"
+                      - "c.id"
+                    Hash Buckets: 1024
+                    Original Hash Buckets: 1024
+                    Hash Batches: 1
+                    Original Hash Batches: 1
+                    Peak Memory Usage: 55
+                    Shared Hit Blocks: 14
+                    Shared Read Blocks: 0
+                    Shared Dirtied Blocks: 0
+                    Shared Written Blocks: 0
+                    Local Hit Blocks: 0
+                    Local Read Blocks: 0
+                    Local Dirtied Blocks: 0
+                    Local Written Blocks: 0
+                    Temp Read Blocks: 0
+                    Temp Written Blocks: 0
+                    Workers: 
+                      - Worker Number: 0
+                        Actual Startup Time: 0.188
+                        Actual Total Time: 0.188
+                        Actual Rows: 1000
+                        Actual Loops: 1
+                        Shared Hit Blocks: 7
+                        Shared Read Blocks: 0
+                        Shared Dirtied Blocks: 0
+                        Shared Written Blocks: 0
+                        Local Hit Blocks: 0
+                        Local Read Blocks: 0
+                        Local Dirtied Blocks: 0
+                        Local Written Blocks: 0
+                        Temp Read Blocks: 0
+                        Temp Written Blocks: 0
+                    Plans: 
+                      - Node Type: "Seq Scan"
+                        Parent Relationship: "Outer"
+                        Parallel Aware: false
+                        Async Capable: false
+                        Relation Name: "t_customers"
+                        Schema: "viz"
+                        Alias: "c"
+                        Startup Cost: 0.00
+                        Total Cost: 17.00
+                        Plan Rows: 1000
+                        Plan Width: 12
+                        Actual Startup Time: 0.006
+                        Actual Total Time: 0.084
+                        Actual Rows: 1000
+                        Actual Loops: 2
+                        Output: 
+                          - "c.name"
+                          - "c.id"
+                        Shared Hit Blocks: 14
+                        Shared Read Blocks: 0
+                        Shared Dirtied Blocks: 0
+                        Shared Written Blocks: 0
+                        Local Hit Blocks: 0
+                        Local Read Blocks: 0
+                        Local Dirtied Blocks: 0
+                        Local Written Blocks: 0
+                        Temp Read Blocks: 0
+                        Temp Written Blocks: 0
+                        Workers: 
+                          - Worker Number: 0
+                            Actual Startup Time: 0.008
+                            Actual Total Time: 0.080
+                            Actual Rows: 1000
+                            Actual Loops: 1
+                            Shared Hit Blocks: 7
+                            Shared Read Blocks: 0
+                            Shared Dirtied Blocks: 0
+                            Shared Written Blocks: 0
+                            Local Hit Blocks: 0
+                            Local Read Blocks: 0
+                            Local Dirtied Blocks: 0
+                            Local Written Blocks: 0
+                            Temp Read Blocks: 0
+                            Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 271
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.505
+  Triggers: 
+  Execution Time: 24.863

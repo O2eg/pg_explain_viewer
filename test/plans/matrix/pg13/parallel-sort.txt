@@ -1,0 +1,18 @@
+Limit  (cost=5343.28..5344.45 rows=100 width=23) (actual time=11.526..13.563 rows=100 loops=1)
+  Buffers: shared hit=1439
+  ->  Gather Merge  (cost=5343.28..7289.08 rows=166666 width=23) (actual time=11.525..13.552 rows=100 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=1439
+        ->  Sort  (cost=5343.26..5551.59 rows=83333 width=23) (actual time=9.697..9.700 rows=82 loops=3)
+              Sort Key: amount DESC
+              Sort Method: top-N heapsort  Memory: 40kB
+              Buffers: shared hit=1439
+              Worker 0:  Sort Method: top-N heapsort  Memory: 40kB
+              Worker 1:  Sort Method: top-N heapsort  Memory: 40kB
+              ->  Parallel Seq Scan on t_orders  (cost=0.00..2158.33 rows=83333 width=23) (actual time=0.006..4.004 rows=66667 loops=3)
+                    Buffers: shared hit=1325
+Planning:
+  Buffers: shared hit=118
+Planning Time: 0.257 ms
+Execution Time: 13.612 ms

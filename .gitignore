@@ -1,0 +1,37 @@
+# Build output (attached to releases / deployed to Pages by CI)
+dist/
+
+# JavaScript dependencies and test output
+node_modules/
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Python environments and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Browser smoke-test cache
+.pwlib/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs and temporary files
+*.log
+*.tmp

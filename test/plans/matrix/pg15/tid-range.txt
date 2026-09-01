@@ -1,0 +1,9 @@
+Aggregate  (cost=90.24..90.25 rows=1 width=8) (actual time=0.303..0.303 rows=1 loops=1)
+  Buffers: shared hit=51
+  ->  Tid Range Scan on t_events  (cost=0.01..82.99 rows=2899 width=0) (actual time=0.009..0.204 rows=2900 loops=1)
+        TID Cond: ((ctid >= '(0,1)'::tid) AND (ctid < '(50,1)'::tid))
+        Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=63 read=2
+Planning Time: 0.220 ms
+Execution Time: 0.344 ms

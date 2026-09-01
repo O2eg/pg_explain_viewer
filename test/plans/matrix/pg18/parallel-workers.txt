@@ -1,0 +1,29 @@
+Sort  (cost=2783.75..2783.76 rows=4 width=45) (actual time=16.367..18.533 rows=4.00 loops=1)
+  Sort Key: (sum(amount))
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=1344
+  ->  Finalize GroupAggregate  (cost=2783.44..2783.71 rows=4 width=45) (actual time=16.341..18.514 rows=4.00 loops=1)
+        Group Key: status
+        Buffers: shared hit=1341
+        ->  Gather Merge  (cost=2783.44..2783.56 rows=10 width=45) (actual time=16.332..18.501 rows=12.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=1341
+              ->  Sort  (cost=2783.42..2783.43 rows=4 width=45) (actual time=13.991..13.993 rows=4.00 loops=3)
+                    Sort Key: status
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=1341
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Partial HashAggregate  (cost=2783.33..2783.38 rows=4 width=45) (actual time=13.956..13.957 rows=4.00 loops=3)
+                          Group Key: status
+                          Batches: 1  Memory Usage: 32kB
+                          Buffers: shared hit=1325
+                          Worker 0:  Batches: 1  Memory Usage: 32kB
+                          Worker 1:  Batches: 1  Memory Usage: 32kB
+                          ->  Parallel Seq Scan on t_orders  (cost=0.00..2158.33 rows=83333 width=11) (actual time=0.008..3.531 rows=66666.67 loops=3)
+                                Buffers: shared hit=1325
+Planning:
+  Buffers: shared hit=165
+Planning Time: 0.332 ms
+Execution Time: 18.629 ms

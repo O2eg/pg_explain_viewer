@@ -1,0 +1,522 @@
+{
+ "format": "json",
+ "duration": 5.661,
+ "query": "SELECT c.region, count(*) FROM lab.orders o JOIN lab.customers c ON c.id=o.customer_id GROUP BY c.region;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": false,
+  "rowsRemoved": false,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 189
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 5.656,
+  "rows": 4
+ },
+ "max": {
+  "timeExcl": 2.48,
+  "timeIncl": 5.656,
+  "rows": 20000,
+  "rowsRemoved": 0,
+  "loops": 1,
+  "ratio": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 167
+  },
+  "costExcl": 367,
+  "planRows": 20000
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Join",
+  "  ->  Scan Table orders",
+  "  ->  Scan Table customers"
+ ],
+ "stats": [
+  {
+   "type": "Hash Join",
+   "xtype": "Hash Join",
+   "relation": null,
+   "index": null,
+   "time": 2.48,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 20000,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    1
+   ],
+   "timePct": 43.84724186704385
+  },
+  {
+   "type": "HashAggregate",
+   "xtype": "HashAggregate",
+   "relation": null,
+   "index": null,
+   "time": 2.114,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 4,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 37.37623762376238
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "orders",
+   "index": null,
+   "time": 0.751,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 20000,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 167
+   },
+   "ids": [
+    2
+   ],
+   "timePct": 13.27793493635078
+  },
+  {
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "index": null,
+   "time": 0.188,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 2000,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    3
+   ],
+   "timePct": 3.3239038189533243
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "customers",
+   "index": null,
+   "time": 0.123,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 2000,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 22
+   },
+   "ids": [
+    4
+   ],
+   "timePct": 2.1746817538896748
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "orders",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "o"
+    ],
+    "nodes": [
+     2
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "customer_id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "name": "customers",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "c"
+    ],
+    "nodes": [
+     4
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "region",
+      "roles": [
+       "sort"
+      ],
+      "nodes": [
+       0
+      ]
+     },
+     {
+      "col": "id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       1
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "customers",
+     "col": "id"
+    },
+    "right": {
+     "rel": "orders",
+     "col": "customer_id"
+    },
+    "op": "=",
+    "nodes": [
+     1
+    ]
+   }
+  ]
+ },
+ "advice": [],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "HashAggregate",
+   "xtype": "HashAggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "HashAggregate",
+   "lines": [
+    "Group Key: c.region",
+    "Buffers: shared hit=189",
+    "HashAgg Batches: 1"
+   ],
+   "costStartup": 586.61,
+   "costTotal": 586.65,
+   "planRows": 4,
+   "planWidth": 13,
+   "timeStartup": 5.654,
+   "timeTotal": 5.656,
+   "rows": 4,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 189
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.656,
+   "timeExcl": 2.114,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 4,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "HashAggregate  (cost=586.61..586.65 rows=4 width=13) (actual time=5.654..5.656 rows=4 loops=1)",
+   "groupKey": "c.region",
+   "costExcl": 100.04
+  },
+  {
+   "id": 1,
+   "type": "Hash Join",
+   "xtype": "Hash Join",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2,
+    3
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Hash Join",
+   "lines": [
+    "Hash Cond: (o.customer_id = c.id)",
+    "Buffers: shared hit=189",
+    "Inner Unique: true"
+   ],
+   "costStartup": 67,
+   "costTotal": 486.61,
+   "planRows": 20000,
+   "planWidth": 5,
+   "timeStartup": 0.316,
+   "timeTotal": 3.542,
+   "rows": 20000,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 189
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Hash Cond",
+     "val": "(o.customer_id = c.id)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 3.542,
+   "timeExcl": 2.48,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 20000,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash Join  (cost=67.00..486.61 rows=20000 width=5) (actual time=0.316..3.542 rows=20000 loops=1)",
+   "costExcl": 77.61
+  },
+  {
+   "id": 2,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "orders",
+   "relationRef": "orders",
+   "index": null,
+   "alias": "o",
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Seq Scan on orders o",
+   "lines": [
+    "Buffers: shared hit=167"
+   ],
+   "costStartup": 0,
+   "costTotal": 367,
+   "planRows": 20000,
+   "planWidth": 8,
+   "timeStartup": 0.003,
+   "timeTotal": 0.751,
+   "rows": 20000,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 167
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.751,
+   "timeExcl": 0.751,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 20000,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 167
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on orders o  (cost=0.00..367.00 rows=20000 width=8) (actual time=0.003..0.751 rows=20000 loops=1)",
+   "costExcl": 367
+  },
+  {
+   "id": 3,
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    4
+   ],
+   "depth": 2,
+   "indent": 8,
+   "head": "Hash",
+   "lines": [
+    "Buckets: 2048 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 110kB",
+    "Buffers: shared hit=22"
+   ],
+   "costStartup": 42,
+   "costTotal": 42,
+   "planRows": 2000,
+   "planWidth": 13,
+   "timeStartup": 0.311,
+   "timeTotal": 0.311,
+   "rows": 2000,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 22
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.311,
+   "timeExcl": 0.188,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 2000,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash  (cost=42.00..42.00 rows=2000 width=13) (actual time=0.311..0.311 rows=2000 loops=1)",
+   "memUsageKb": 110,
+   "costExcl": 0
+  },
+  {
+   "id": 4,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "customers",
+   "relationRef": "customers",
+   "index": null,
+   "alias": "c",
+   "spec": null,
+   "specName": null,
+   "parent": 3,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on customers c",
+   "lines": [
+    "Buffers: shared hit=22"
+   ],
+   "costStartup": 0,
+   "costTotal": 42,
+   "planRows": 2000,
+   "planWidth": 13,
+   "timeStartup": 0.003,
+   "timeTotal": 0.123,
+   "rows": 2000,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 22
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.123,
+   "timeExcl": 0.123,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 2000,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 22
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on customers c  (cost=0.00..42.00 rows=2000 width=13) (actual time=0.003..0.123 rows=2000 loops=1)",
+   "costExcl": 42
+  }
+ ]
+}

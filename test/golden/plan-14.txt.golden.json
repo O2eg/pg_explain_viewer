@@ -1,0 +1,608 @@
+{
+ "format": "yaml",
+ "duration": 0.116,
+ "query": "SELECT count(*) FROM pagila.film f LEFT JOIN pagila.inventory i ON i.film_id=f.film_id WHERE f.rating='PG';",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": false,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 224,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 14
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 0.115,
+  "rows": 1
+ },
+ "max": {
+  "timeExcl": 0.042,
+  "timeIncl": 0.115,
+  "rows": 604,
+  "rowsRemoved": 224,
+  "loops": 1,
+  "ratio": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 10
+  },
+  "costExcl": 13.49,
+  "planRows": 604
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Join",
+  "  ->  Scan Table inventory",
+  "  ->  Scan Table film"
+ ],
+ "stats": [
+  {
+   "type": "Hash Right Join",
+   "xtype": "Hash Right Join",
+   "relation": null,
+   "index": null,
+   "time": 0.042,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 119,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    1
+   ],
+   "timePct": 36.521739130434774
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "film",
+   "index": null,
+   "time": 0.039,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 55,
+   "rowsRemoved": 224,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 10
+   },
+   "ids": [
+    4
+   ],
+   "timePct": 33.91304347826086
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "inventory",
+   "index": null,
+   "time": 0.023,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 604,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 4
+   },
+   "ids": [
+    2
+   ],
+   "timePct": 19.999999999999996
+  },
+  {
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 0.006,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 5.217391304347825
+  },
+  {
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "index": null,
+   "time": 0.005,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 55,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    3
+   ],
+   "timePct": 4.347826086956521
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "inventory",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "i"
+    ],
+    "nodes": [
+     2
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "film_id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "name": "film",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "f"
+    ],
+    "nodes": [
+     4
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "film_id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       1
+      ]
+     },
+     {
+      "col": "rating",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       4
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "film",
+     "col": "film_id"
+    },
+    "right": {
+     "rel": "inventory",
+     "col": "film_id"
+    },
+    "op": "=",
+    "nodes": [
+     1
+    ]
+   }
+  ]
+ },
+ "advice": [
+  {
+   "code": "HSH_ROWS",
+   "badge": "HR",
+   "sev": "crit",
+   "obs": "The whole table is read and hashed/merged, but the join keeps only a small fraction of its rows.",
+   "hyp": "If the join key is selective, an indexed nested-loop lookup could avoid the full read. A missing index on the join (foreign-key) column is a common cause — but the plan does not show which indexes exist.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 1,
+     "ext": "rows=119"
+    },
+    {
+     "id": 2,
+     "ext": "rows=604"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "inventory",
+     "name": "\"~inventory-8a6fda70\"",
+     "type": "btree",
+     "cols": [
+      "film_id"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~inventory-8a6fda70\"\n  ON inventory USING btree (film_id);",
+     "comment": "film_id (=)",
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 0.065,
+    "pct": 56.5,
+    "level": "minor"
+   }
+  },
+  {
+   "code": "SEQ_RRBF",
+   "badge": "SR",
+   "sev": "crit",
+   "obs": "The sequential scan discards most of the rows it reads by filter.",
+   "hyp": "An index on the filter conditions could replace the full-table read.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 4,
+     "ext": "rows=55, RRbF=224, ratio=4.1"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "film",
+     "name": "\"~film-3ae1be8c\"",
+     "type": "btree",
+     "cols": [
+      "rating"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~film-3ae1be8c\"\n  ON film USING btree (rating);",
+     "comment": "rating (=)",
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 0.039,
+    "pct": 33.9,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Aggregate",
+   "lines": [
+    "Buffers: shared hit=14"
+   ],
+   "costStartup": 26.12,
+   "costTotal": 26.13,
+   "planRows": 1,
+   "planWidth": 8,
+   "timeStartup": 0.114,
+   "timeTotal": 0.115,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 14
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.115,
+   "timeExcl": 0.006,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Aggregate  (cost=26.12..26.13 rows=1 width=8) (actual time=0.114..0.115 rows=1 loops=1)",
+   "costExcl": 0.31
+  },
+  {
+   "id": 1,
+   "type": "Hash Right Join",
+   "xtype": "Hash Right Join",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2,
+    3
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Hash Right Join",
+   "lines": [
+    "Hash Cond: (i.film_id = f.film_id)",
+    "Buffers: shared hit=14",
+    "Inner Unique: true"
+   ],
+   "costStartup": 14.18,
+   "costTotal": 25.82,
+   "planRows": 119,
+   "planWidth": 0,
+   "timeStartup": 0.049,
+   "timeTotal": 0.109,
+   "rows": 119,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 14
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Hash Cond",
+     "val": "(i.film_id = f.film_id)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.109,
+   "timeExcl": 0.042,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 119,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash Right Join  (cost=14.18..25.82 rows=119 width=0) (actual time=0.049..0.109 rows=119 loops=1)",
+   "costExcl": 2.29,
+   "advice": [
+    "HSH_ROWS"
+   ]
+  },
+  {
+   "id": 2,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "inventory",
+   "relationRef": "inventory",
+   "index": null,
+   "alias": "i",
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Seq Scan on inventory i",
+   "lines": [
+    "Buffers: shared hit=4"
+   ],
+   "costStartup": 0,
+   "costTotal": 10.04,
+   "planRows": 604,
+   "planWidth": 4,
+   "timeStartup": 0.002,
+   "timeTotal": 0.023,
+   "rows": 604,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 4
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.023,
+   "timeExcl": 0.023,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 604,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 4
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on inventory i  (cost=0.00..10.04 rows=604 width=4) (actual time=0.002..0.023 rows=604 loops=1)",
+   "costExcl": 10.04,
+   "advice": [
+    "HSH_ROWS"
+   ]
+  },
+  {
+   "id": 3,
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    4
+   ],
+   "depth": 2,
+   "indent": 8,
+   "head": "Hash",
+   "lines": [
+    "Buckets: 1024 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 10kB",
+    "Buffers: shared hit=10"
+   ],
+   "costStartup": 13.49,
+   "costTotal": 13.49,
+   "planRows": 55,
+   "planWidth": 4,
+   "timeStartup": 0.044,
+   "timeTotal": 0.044,
+   "rows": 55,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 10
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.044,
+   "timeExcl": 0.005,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 55,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash  (cost=13.49..13.49 rows=55 width=4) (actual time=0.044..0.044 rows=55 loops=1)",
+   "memUsageKb": 10,
+   "costExcl": 0
+  },
+  {
+   "id": 4,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "film",
+   "relationRef": "film",
+   "index": null,
+   "alias": "f",
+   "spec": null,
+   "specName": null,
+   "parent": 3,
+   "children": [],
+   "depth": 3,
+   "indent": 14,
+   "head": "Seq Scan on film f",
+   "lines": [
+    "Filter: (rating = 'PG'::pagila.mpaa_rating)",
+    "Rows Removed by Filter: 224",
+    "Buffers: shared hit=10"
+   ],
+   "costStartup": 0,
+   "costTotal": 13.49,
+   "planRows": 55,
+   "planWidth": 4,
+   "timeStartup": 0.004,
+   "timeTotal": 0.039,
+   "rows": 55,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 10
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 224,
+   "rowsRemovedBy": {
+    "Filter": 224
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(rating = 'PG'::pagila.mpaa_rating)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.039,
+   "timeExcl": 0.039,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 55,
+   "rowsRemovedTotal": 224,
+   "bufExcl": {
+    "shared-hit": 10
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on film f  (cost=0.00..13.49 rows=55 width=4) (actual time=0.004..0.039 rows=55 loops=1)",
+   "costExcl": 13.49,
+   "advice": [
+    "SEQ_RRBF"
+   ]
+  }
+ ]
+}

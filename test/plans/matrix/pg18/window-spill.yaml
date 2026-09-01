@@ -1,0 +1,180 @@
+- Plan: 
+    Node Type: "Limit"
+    Parallel Aware: false
+    Async Capable: false
+    Startup Cost: 9563.99
+    Total Cost: 9564.04
+    Plan Rows: 20
+    Plan Width: 23
+    Actual Startup Time: 54.683
+    Actual Total Time: 54.686
+    Actual Rows: 20.00
+    Actual Loops: 1
+    Disabled: false
+    Shared Hit Blocks: 508
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 272
+    Temp Written Blocks: 307
+    Plans: 
+      - Node Type: "Sort"
+        Parent Relationship: "Outer"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 9563.99
+        Total Cost: 9660.80
+        Plan Rows: 38722
+        Plan Width: 23
+        Actual Startup Time: 54.681
+        Actual Total Time: 54.683
+        Actual Rows: 20.00
+        Actual Loops: 1
+        Disabled: false
+        Sort Key: 
+          - "(rank() OVER w1)"
+        Sort Method: "top-N heapsort"
+        Sort Space Used: 26
+        Sort Space Type: "Memory"
+        Shared Hit Blocks: 508
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 272
+        Temp Written Blocks: 307
+        Plans: 
+          - Node Type: "WindowAgg"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Startup Cost: 7759.19
+            Total Cost: 8533.61
+            Plan Rows: 38722
+            Plan Width: 23
+            Actual Startup Time: 31.370
+            Actual Total Time: 50.909
+            Actual Rows: 40000.00
+            Actual Loops: 1
+            Disabled: false
+            Window: "w1 AS (PARTITION BY status ORDER BY amount ROWS UNBOUNDED PRECEDING)"
+            Storage: "Memory"
+            Maximum Storage: 17
+            Shared Hit Blocks: 505
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 272
+            Temp Written Blocks: 307
+            Plans: 
+              - Node Type: "Sort"
+                Parent Relationship: "Outer"
+                Parallel Aware: false
+                Async Capable: false
+                Startup Cost: 7759.17
+                Total Cost: 7855.98
+                Plan Rows: 38722
+                Plan Width: 15
+                Actual Startup Time: 31.367
+                Actual Total Time: 38.480
+                Actual Rows: 40000.00
+                Actual Loops: 1
+                Disabled: false
+                Sort Key: 
+                  - "status"
+                  - "amount DESC"
+                Sort Method: "external merge"
+                Sort Space Used: 1112
+                Sort Space Type: "Disk"
+                Shared Hit Blocks: 505
+                Shared Read Blocks: 0
+                Shared Dirtied Blocks: 0
+                Shared Written Blocks: 0
+                Local Hit Blocks: 0
+                Local Read Blocks: 0
+                Local Dirtied Blocks: 0
+                Local Written Blocks: 0
+                Temp Read Blocks: 272
+                Temp Written Blocks: 307
+                Plans: 
+                  - Node Type: "Bitmap Heap Scan"
+                    Parent Relationship: "Outer"
+                    Parallel Aware: false
+                    Async Capable: false
+                    Relation Name: "t_orders"
+                    Alias: "t_orders"
+                    Startup Cost: 432.39
+                    Total Cost: 3478.39
+                    Plan Rows: 38722
+                    Plan Width: 15
+                    Actual Startup Time: 0.730
+                    Actual Total Time: 4.942
+                    Actual Rows: 40000.00
+                    Actual Loops: 1
+                    Disabled: false
+                    Recheck Cond: "(customer_id < 200)"
+                    Rows Removed by Index Recheck: 0
+                    Exact Heap Blocks: 464
+                    Lossy Heap Blocks: 0
+                    Shared Hit Blocks: 499
+                    Shared Read Blocks: 0
+                    Shared Dirtied Blocks: 0
+                    Shared Written Blocks: 0
+                    Local Hit Blocks: 0
+                    Local Read Blocks: 0
+                    Local Dirtied Blocks: 0
+                    Local Written Blocks: 0
+                    Temp Read Blocks: 0
+                    Temp Written Blocks: 0
+                    Plans: 
+                      - Node Type: "Bitmap Index Scan"
+                        Parent Relationship: "Outer"
+                        Parallel Aware: false
+                        Async Capable: false
+                        Index Name: "t_orders_customer_id_idx"
+                        Startup Cost: 0.00
+                        Total Cost: 422.71
+                        Plan Rows: 38722
+                        Plan Width: 0
+                        Actual Startup Time: 0.684
+                        Actual Total Time: 0.684
+                        Actual Rows: 40000.00
+                        Actual Loops: 1
+                        Disabled: false
+                        Index Cond: "(customer_id < 200)"
+                        Index Searches: 1
+                        Shared Hit Blocks: 35
+                        Shared Read Blocks: 0
+                        Shared Dirtied Blocks: 0
+                        Shared Written Blocks: 0
+                        Local Hit Blocks: 0
+                        Local Read Blocks: 0
+                        Local Dirtied Blocks: 0
+                        Local Written Blocks: 0
+                        Temp Read Blocks: 0
+                        Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 158
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.333
+  Triggers: 
+  Execution Time: 54.987

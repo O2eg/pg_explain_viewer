@@ -1,0 +1,771 @@
+{
+ "format": "text",
+ "duration": 5.445,
+ "query": "SELECT s.id, s.descr FROM simple_stock.stock_items s WHERE s.amount > (SELECT avg(amount) FROM simple_stock.stock_items) AND EXISTS (SELECT 1 FROM simple_stock.order_items_2 oi WHERE oi.id = s.order_items_2_id) LIMIT 50;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 75,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 676
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 5.432,
+  "rows": 50
+ },
+ "max": {
+  "timeExcl": 3.455,
+  "timeIncl": 5.432,
+  "rows": 44535,
+  "rowsRemoved": 75,
+  "loops": 1,
+  "ratio": 390.625,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 634
+  },
+  "costExcl": 2226.65,
+  "planRows": 50000
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [
+  {
+   "code": "charge_inferred",
+   "severity": "info",
+   "message": "CTE/InitPlan/SubPlan time was attributed to the node that appears to execute it (heuristic)",
+   "count": 1,
+   "nodes": [
+    1
+   ]
+  }
+ ],
+ "domain": [
+  "Scan Table stock_items",
+  "Join",
+  "  ->  Scan Table stock_items",
+  "  ->  Scan Table order_items_2"
+ ],
+ "stats": [
+  {
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 3.455,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": 63.604565537555224
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "stock_items",
+   "index": null,
+   "time": 1.897,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 44535,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ids": [
+    3
+   ],
+   "timePct": 34.92268041237113
+  },
+  {
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "stock_items",
+   "index": "stock_items_order_2_idx",
+   "time": 0.037,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 50,
+   "rowsRemoved": 75,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 39
+   },
+   "ids": [
+    5
+   ],
+   "timePct": 0.6811487481590573
+  },
+  {
+   "type": "Index Only Scan",
+   "xtype": "Index Only Scan",
+   "relation": "order_items_2",
+   "index": "order_items_2_pkey",
+   "time": 0.021,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 128,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 3
+   },
+   "ids": [
+    6
+   ],
+   "timePct": 0.3865979381443299
+  },
+  {
+   "type": "Merge Join",
+   "xtype": "Merge Join",
+   "relation": null,
+   "index": null,
+   "time": 0.017,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 50,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    4
+   ],
+   "timePct": 0.312960235640648
+  },
+  {
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "index": null,
+   "time": 0.005,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 50,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 0.09204712812960235
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "stock_items",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "s"
+    ],
+    "nodes": [
+     3,
+     5
+    ],
+    "indexes": [
+     {
+      "name": "stock_items_order_2_idx",
+      "nodes": [
+       5
+      ],
+      "cols": []
+     }
+    ],
+    "cols": [
+     {
+      "col": "order_items_2_id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       4
+      ]
+     },
+     {
+      "col": "amount",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       5
+      ]
+     }
+    ]
+   },
+   {
+    "name": "order_items_2",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "oi"
+    ],
+    "nodes": [
+     6
+    ],
+    "indexes": [
+     {
+      "name": "order_items_2_pkey",
+      "nodes": [
+       6
+      ],
+      "cols": []
+     }
+    ],
+    "cols": [
+     {
+      "col": "id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       4
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "order_items_2",
+     "col": "id"
+    },
+    "right": {
+     "rel": "stock_items",
+     "col": "order_items_2_id"
+    },
+    "op": "=",
+    "nodes": [
+     4
+    ]
+   }
+  ]
+ },
+ "advice": [
+  {
+   "code": "IDX_COND",
+   "badge": "IC",
+   "sev": "hint",
+   "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
+   "hyp": null,
+   "next": null,
+   "nodes": [
+    {
+     "id": 5,
+     "ext": "rows=125 (50 + RRbF=75)"
+    }
+   ],
+   "impact": {
+    "ms": 0.037,
+    "pct": 0.7,
+    "level": "minor"
+   }
+  },
+  {
+   "code": "ROW_RATIO",
+   "badge": "RR",
+   "sev": "info",
+   "obs": "The planner’s row estimate differs strongly from the actual count.",
+   "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
+   "next": "Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).",
+   "nodes": [
+    {
+     "id": 5,
+     "ext": "rows-act=50, rows-est=14845, ratio=296.9"
+    }
+   ],
+   "impact": {
+    "ms": 0.037,
+    "pct": 0.7,
+    "level": "minor"
+   }
+  },
+  {
+   "code": "IDX_COND",
+   "badge": "IC",
+   "sev": "hint",
+   "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
+   "hyp": null,
+   "next": null,
+   "nodes": [
+    {
+     "id": 6,
+     "ext": "rows=128"
+    }
+   ],
+   "impact": {
+    "ms": 0.021,
+    "pct": 0.4,
+    "level": "minor"
+   }
+  },
+  {
+   "code": "ROW_RATIO",
+   "badge": "RR",
+   "sev": "info",
+   "obs": "The planner’s row estimate differs strongly from the actual count.",
+   "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
+   "next": "Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).",
+   "nodes": [
+    {
+     "id": 6,
+     "ext": "rows-act=128, rows-est=50000, ratio=390.6"
+    }
+   ],
+   "impact": {
+    "ms": 0.021,
+    "pct": 0.4,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1,
+    4
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Limit",
+   "lines": [
+    "Buffers: shared hit=676"
+   ],
+   "costStartup": 1191.28,
+   "costTotal": 1203.82,
+   "planRows": 50,
+   "planWidth": 49,
+   "timeStartup": 5.38,
+   "timeTotal": 5.432,
+   "rows": 50,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 676
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.432,
+   "timeExcl": 0.005,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 50,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Limit  (cost=1191.28..1203.82 rows=50 width=49) (actual time=5.380..5.432 rows=50.00 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 1,
+   "type": "InitPlan 1",
+   "xtype": "InitPlan",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": "InitPlan",
+   "specName": "1",
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "InitPlan 1",
+   "lines": [],
+   "costStartup": null,
+   "costTotal": null,
+   "planRows": null,
+   "planWidth": null,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.352,
+   "timeExcl": 0,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "InitPlan 1",
+   "chargedTo": 5
+  },
+  {
+   "id": 2,
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3
+   ],
+   "depth": 2,
+   "indent": 4,
+   "head": "Aggregate",
+   "lines": [
+    "Buffers: shared hit=634"
+   ],
+   "costStartup": 1190.69,
+   "costTotal": 1190.7,
+   "planRows": 1,
+   "planWidth": 32,
+   "timeStartup": 5.351,
+   "timeTotal": 5.352,
+   "rows": 1,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.352,
+   "timeExcl": 3.455,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 1,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Aggregate  (cost=1190.69..1190.70 rows=1 width=32) (actual time=5.351..5.352 rows=1.00 loops=1)",
+   "costExcl": 111.35
+  },
+  {
+   "id": 3,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "stock_items",
+   "relationRef": "stock_items",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 10,
+   "head": "Seq Scan on stock_items",
+   "lines": [
+    "Buffers: shared hit=634"
+   ],
+   "costStartup": 0,
+   "costTotal": 1079.35,
+   "planRows": 44535,
+   "planWidth": 6,
+   "timeStartup": 0.007,
+   "timeTotal": 1.897,
+   "rows": 44535,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 1.897,
+   "timeExcl": 1.897,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 44535,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 634
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=6) (actual time=0.007..1.897 rows=44535.00 loops=1)",
+   "costExcl": 1079.35
+  },
+  {
+   "id": 4,
+   "type": "Merge Join",
+   "xtype": "Merge Join",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    5,
+    6
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Merge Join",
+   "lines": [
+    "Merge Cond: (s.order_items_2_id = oi.id)",
+    "Buffers: shared hit=676"
+   ],
+   "costStartup": 0.58,
+   "costTotal": 3722.57,
+   "planRows": 14845,
+   "planWidth": 49,
+   "timeStartup": 5.379,
+   "timeTotal": 5.427,
+   "rows": 50,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 676
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Merge Cond",
+     "val": "(s.order_items_2_id = oi.id)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.427,
+   "timeExcl": 0.017,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 50,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 296.9,
+   "ratioDir": -1,
+   "rawHead": "Merge Join  (cost=0.58..3722.57 rows=14845 width=49) (actual time=5.379..5.427 rows=50.00 loops=1)",
+   "costExcl": 310.56
+  },
+  {
+   "id": 5,
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "stock_items",
+   "relationRef": "stock_items",
+   "index": "stock_items_order_2_idx",
+   "alias": "s",
+   "spec": null,
+   "specName": null,
+   "parent": 4,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Index Scan using stock_items_order_2_idx on stock_items s",
+   "lines": [
+    "Filter: (amount > (InitPlan 1).col1)",
+    "Rows Removed by Filter: 75",
+    "Index Searches: 1",
+    "Buffers: shared hit=673"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 2226.65,
+   "planRows": 14845,
+   "planWidth": 53,
+   "timeStartup": 5.36,
+   "timeTotal": 5.389,
+   "rows": 50,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 673
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 75,
+   "rowsRemovedBy": {
+    "Filter": 75
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(amount > (InitPlan 1).col1)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 5.389,
+   "timeExcl": 0.037,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 50,
+   "rowsRemovedTotal": 75,
+   "bufExcl": {
+    "shared-hit": 39
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 296.9,
+   "ratioDir": -1,
+   "rawHead": "Index Scan using stock_items_order_2_idx on stock_items s  (cost=0.29..2226.65 rows=14845 width=53) (actual time=5.360..5.389 rows=50.00 loops=1)",
+   "costExcl": 2226.65,
+   "advice": [
+    "IDX_COND",
+    "ROW_RATIO"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "Index Only Scan",
+   "xtype": "Index Only Scan",
+   "relation": "order_items_2",
+   "relationRef": "order_items_2",
+   "index": "order_items_2_pkey",
+   "alias": "oi",
+   "spec": null,
+   "specName": null,
+   "parent": 4,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Index Only Scan using order_items_2_pkey on order_items_2 oi",
+   "lines": [
+    "Heap Fetches: 0",
+    "Index Searches: 1",
+    "Buffers: shared hit=3"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 1185.36,
+   "planRows": 50000,
+   "planWidth": 8,
+   "timeStartup": 0.015,
+   "timeTotal": 0.021,
+   "rows": 128,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 3
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": 0,
+   "sortMethod": null,
+   "timeIncl": 0.021,
+   "timeExcl": 0.021,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 128,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 3
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 390.625,
+   "ratioDir": -1,
+   "rawHead": "Index Only Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..1185.36 rows=50000 width=8) (actual time=0.015..0.021 rows=128.00 loops=1)",
+   "costExcl": 1185.36,
+   "advice": [
+    "IDX_COND",
+    "ROW_RATIO"
+   ]
+  }
+ ]
+}

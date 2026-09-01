@@ -1,0 +1,247 @@
+- Plan: 
+    Node Type: "Result"
+    Parallel Aware: false
+    Async Capable: false
+    Startup Cost: 9931.86
+    Total Cost: 9931.87
+    Plan Rows: 1
+    Plan Width: 40
+    Actual Startup Time: 66.043
+    Actual Total Time: 67.837
+    Actual Rows: 1
+    Actual Loops: 1
+    Shared Hit Blocks: 200168
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Aggregate"
+        Strategy: "Sorted"
+        Partial Mode: "Finalize"
+        Parent Relationship: "InitPlan"
+        Subplan Name: "CTE big"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 1000.30
+        Total Cost: 9886.01
+        Plan Rows: 1000
+        Plan Width: 36
+        Actual Startup Time: 14.419
+        Actual Total Time: 67.386
+        Actual Rows: 1000
+        Actual Loops: 1
+        Group Key: 
+          - "t_orders.customer_id"
+        Shared Hit Blocks: 200168
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Gather Merge"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Startup Cost: 1000.30
+            Total Cost: 9866.01
+            Plan Rows: 1000
+            Plan Width: 36
+            Actual Startup Time: 14.326
+            Actual Total Time: 66.956
+            Actual Rows: 1011
+            Actual Loops: 1
+            Workers Planned: 1
+            Workers Launched: 1
+            Shared Hit Blocks: 200168
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+            Plans: 
+              - Node Type: "Aggregate"
+                Strategy: "Sorted"
+                Partial Mode: "Partial"
+                Parent Relationship: "Outer"
+                Parallel Aware: false
+                Async Capable: false
+                Startup Cost: 0.29
+                Total Cost: 8753.50
+                Plan Rows: 1000
+                Plan Width: 36
+                Actual Startup Time: 0.524
+                Actual Total Time: 33.032
+                Actual Rows: 506
+                Actual Loops: 2
+                Group Key: 
+                  - "t_orders.customer_id"
+                Shared Hit Blocks: 200168
+                Shared Read Blocks: 0
+                Shared Dirtied Blocks: 0
+                Shared Written Blocks: 0
+                Local Hit Blocks: 0
+                Local Read Blocks: 0
+                Local Dirtied Blocks: 0
+                Local Written Blocks: 0
+                Temp Read Blocks: 0
+                Temp Written Blocks: 0
+                Workers: 
+                Plans: 
+                  - Node Type: "Index Scan"
+                    Parent Relationship: "Outer"
+                    Parallel Aware: true
+                    Async Capable: false
+                    Scan Direction: "Forward"
+                    Index Name: "t_orders_customer_id_idx"
+                    Relation Name: "t_orders"
+                    Alias: "t_orders"
+                    Startup Cost: 0.29
+                    Total Cost: 8152.77
+                    Plan Rows: 117647
+                    Plan Width: 10
+                    Actual Startup Time: 0.019
+                    Actual Total Time: 23.761
+                    Actual Rows: 100000
+                    Actual Loops: 2
+                    Shared Hit Blocks: 200168
+                    Shared Read Blocks: 0
+                    Shared Dirtied Blocks: 0
+                    Shared Written Blocks: 0
+                    Local Hit Blocks: 0
+                    Local Read Blocks: 0
+                    Local Dirtied Blocks: 0
+                    Local Written Blocks: 0
+                    Temp Read Blocks: 0
+                    Temp Written Blocks: 0
+                    Workers: 
+      - Node Type: "Aggregate"
+        Strategy: "Plain"
+        Partial Mode: "Simple"
+        Parent Relationship: "InitPlan"
+        Subplan Name: "InitPlan 2"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 23.33
+        Total Cost: 23.34
+        Plan Rows: 1
+        Plan Width: 8
+        Actual Startup Time: 65.900
+        Actual Total Time: 65.900
+        Actual Rows: 1
+        Actual Loops: 1
+        Shared Hit Blocks: 7139
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "CTE Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            CTE Name: "big"
+            Alias: "big"
+            Startup Cost: 0.00
+            Total Cost: 22.50
+            Plan Rows: 333
+            Plan Width: 0
+            Actual Startup Time: 14.422
+            Actual Total Time: 65.849
+            Actual Rows: 1000
+            Actual Loops: 1
+            Filter: "(s > '100'::numeric)"
+            Rows Removed by Filter: 0
+            Shared Hit Blocks: 7139
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+      - Node Type: "Aggregate"
+        Strategy: "Plain"
+        Partial Mode: "Simple"
+        Parent Relationship: "InitPlan"
+        Subplan Name: "InitPlan 3"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 22.50
+        Total Cost: 22.51
+        Plan Rows: 1
+        Plan Width: 32
+        Actual Startup Time: 0.139
+        Actual Total Time: 0.140
+        Actual Rows: 1
+        Actual Loops: 1
+        Shared Hit Blocks: 0
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "CTE Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            CTE Name: "big"
+            Alias: "big_1"
+            Startup Cost: 0.00
+            Total Cost: 20.00
+            Plan Rows: 1000
+            Plan Width: 32
+            Actual Startup Time: 0.000
+            Actual Total Time: 0.051
+            Actual Rows: 1000
+            Actual Loops: 1
+            Shared Hit Blocks: 0
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 127
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.331
+  Triggers: 
+  Execution Time: 67.921

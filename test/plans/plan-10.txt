@@ -1,0 +1,21 @@
+duration: 0.673 ms  plan:
+Query Text: WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM r WHERE n < 500)
+SELECT count(*) FROM r JOIN pagila.rental re ON re.rental_id = r.n;
+Aggregate  (cost=31.27..31.28 rows=1 width=8) (actual time=0.670..0.671 rows=1.00 loops=1)
+  Buffers: shared hit=1479
+  CTE r
+    ->  Recursive Union  (cost=0.00..2.64 rows=31 width=4) (actual time=0.002..0.141 rows=500.00 loops=1)
+          Storage: Memory  Maximum Storage: 33kB
+          ->  Result  (cost=0.00..0.01 rows=1 width=4) (actual time=0.001..0.001 rows=1.00 loops=1)
+          ->  WorkTable Scan on r r_1  (cost=0.00..0.23 rows=3 width=4) (actual time=0.000..0.000 rows=1.00 loops=500)
+                Filter: (n < 500)
+                Rows Removed by Filter: 0
+  ->  Nested Loop  (cost=0.28..28.55 rows=31 width=0) (actual time=0.042..0.645 rows=479.00 loops=1)
+        Buffers: shared hit=1479
+        ->  CTE Scan on r  (cost=0.00..0.62 rows=31 width=4) (actual time=0.002..0.198 rows=500.00 loops=1)
+              Storage: Memory  Maximum Storage: 32kB
+        ->  Index Only Scan using rental_pkey on rental re  (cost=0.28..0.90 rows=1 width=4) (actual time=0.001..0.001 rows=0.96 loops=500)
+              Index Cond: (rental_id = r.n)
+              Heap Fetches: 478
+              Index Searches: 500
+              Buffers: shared hit=1479

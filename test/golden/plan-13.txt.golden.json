@@ -1,0 +1,371 @@
+{
+ "format": "json",
+ "duration": 0.277,
+ "query": "SELECT * FROM queue_skip_locked.tasks WHERE status='done' AND finished_at > now() - interval '1 hour' ORDER BY finished_at DESC LIMIT 25;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": false,
+  "ratio": true,
+  "rowsRemoved": true,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 4500,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 50
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 0.276,
+  "rows": 0
+ },
+ "max": {
+  "timeExcl": 0.272,
+  "timeIncl": 0.276,
+  "rows": 0,
+  "rowsRemoved": 4500,
+  "loops": 1,
+  "ratio": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 50
+  },
+  "costExcl": 140,
+  "planRows": 1
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Scan Table tasks"
+ ],
+ "stats": [
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "tasks",
+   "index": null,
+   "time": 0.272,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 4500,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 50
+   },
+   "ids": [
+    2
+   ],
+   "timePct": 98.55072463768116
+  },
+  {
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "index": null,
+   "time": 0.003,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    1
+   ],
+   "timePct": 1.0869565217391304
+  },
+  {
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "index": null,
+   "time": 0.001,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 0.3623188405797101
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "tasks",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     2
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "status",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       2
+      ]
+     },
+     {
+      "col": "finished_at",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       2
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": []
+ },
+ "advice": [
+  {
+   "code": "SEQ_RRBF",
+   "badge": "SR",
+   "sev": "crit",
+   "obs": "The sequential scan discards most of the rows it reads by filter.",
+   "hyp": "An index on the filter conditions could replace the full-table read.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 2,
+     "ext": "rows=0, RRbF=4500"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "tasks",
+     "name": "\"~tasks-588d62ac\"",
+     "type": "btree",
+     "cols": [
+      "status",
+      "finished_at"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~tasks-588d62ac\"\n  ON tasks USING btree (status, finished_at);",
+     "comment": "status (=), finished_at (>)",
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 0.272,
+    "pct": 98.6,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Limit",
+   "lines": [
+    "Buffers: shared hit=50"
+   ],
+   "costStartup": 140.01,
+   "costTotal": 140.01,
+   "planRows": 1,
+   "planWidth": 60,
+   "timeStartup": 0.275,
+   "timeTotal": 0.276,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 50
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.276,
+   "timeExcl": 0.001,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Limit  (cost=140.01..140.01 rows=1 width=60) (actual time=0.275..0.276 rows=0 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 1,
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Sort",
+   "lines": [
+    "Sort Key: finished_at DESC",
+    "Sort Method: quicksort  Memory: 25kB",
+    "Buffers: shared hit=50"
+   ],
+   "costStartup": 140.01,
+   "costTotal": 140.01,
+   "planRows": 1,
+   "planWidth": 60,
+   "timeStartup": 0.275,
+   "timeTotal": 0.275,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 50
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": "quicksort",
+   "timeIncl": 0.275,
+   "timeExcl": 0.003,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Sort  (cost=140.01..140.01 rows=1 width=60) (actual time=0.275..0.275 rows=0 loops=1)",
+   "sortKey": "finished_at DESC",
+   "sortSpace": "Memory",
+   "sortSizeKb": 25,
+   "costExcl": 0.01
+  },
+  {
+   "id": 2,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "tasks",
+   "relationRef": "tasks",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Seq Scan on tasks",
+   "lines": [
+    "Filter: ((status = 'done'::text) AND (finished_at > (now() - '01:00:00'::interval)))",
+    "Rows Removed by Filter: 4500",
+    "Buffers: shared hit=50"
+   ],
+   "costStartup": 0,
+   "costTotal": 140,
+   "planRows": 1,
+   "planWidth": 60,
+   "timeStartup": 0.272,
+   "timeTotal": 0.272,
+   "rows": 0,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 50
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 4500,
+   "rowsRemovedBy": {
+    "Filter": 4500
+   },
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "((status = 'done'::text) AND (finished_at > (now() - '01:00:00'::interval)))"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.272,
+   "timeExcl": 0.272,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 4500,
+   "bufExcl": {
+    "shared-hit": 50
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": "Infinity",
+   "ratioDir": -1,
+   "rawHead": "Seq Scan on tasks  (cost=0.00..140.00 rows=1 width=60) (actual time=0.272..0.272 rows=0 loops=1)",
+   "costExcl": 140,
+   "advice": [
+    "SEQ_RRBF"
+   ]
+  }
+ ]
+}

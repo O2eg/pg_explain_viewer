@@ -1,0 +1,10 @@
+duration: 0.989 ms  plan:
+Query Text: UPDATE bloat_vacuum.accounts SET balance = balance + 1 WHERE id % 97 = 0;
+Update on accounts  (cost=0.00..191.63 rows=0 width=0) (actual time=0.988..0.988 rows=0.00 loops=1)
+  Buffers: shared hit=734
+  WAL: records=285 bytes=18827
+  ->  Seq Scan on accounts  (cost=0.00..191.63 rows=25 width=24) (actual time=0.017..0.393 rows=51.00 loops=1)
+        Filter: ((id % '97'::bigint) = 0)
+        Rows Removed by Filter: 4983
+        Buffers: shared hit=116
+        WAL: records=27 bytes=1404

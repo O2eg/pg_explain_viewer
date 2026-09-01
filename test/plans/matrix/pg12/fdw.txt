@@ -1,0 +1,5 @@
+Foreign Scan on viz.f_customers  (cost=100.00..126.12 rows=6 width=40) (actual time=0.482..0.484 rows=20 loops=1)
+  Output: id, name, region_id
+  Remote SQL: SELECT id, name, region_id FROM viz.t_customers WHERE ((region_id = 3))
+Planning Time: 0.769 ms
+Execution Time: 3.702 ms

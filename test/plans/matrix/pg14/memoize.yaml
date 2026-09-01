@@ -1,0 +1,150 @@
+- Plan: 
+    Node Type: "Nested Loop"
+    Parallel Aware: false
+    Async Capable: false
+    Join Type: "Inner"
+    Startup Cost: 8.81
+    Total Cost: 1206.52
+    Plan Rows: 546
+    Plan Width: 14
+    Actual Startup Time: 0.124
+    Actual Total Time: 1.866
+    Actual Rows: 548
+    Actual Loops: 1
+    Inner Unique: true
+    Shared Hit Blocks: 1150
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Bitmap Heap Scan"
+        Parent Relationship: "Outer"
+        Parallel Aware: false
+        Async Capable: false
+        Relation Name: "t_orders"
+        Alias: "o"
+        Startup Cost: 8.53
+        Total Cost: 1032.73
+        Plan Rows: 546
+        Plan Width: 10
+        Actual Startup Time: 0.110
+        Actual Total Time: 1.470
+        Actual Rows: 548
+        Actual Loops: 1
+        Recheck Cond: "(created = '2025-03-01'::date)"
+        Rows Removed by Index Recheck: 0
+        Exact Heap Blocks: 548
+        Lossy Heap Blocks: 0
+        Shared Hit Blocks: 550
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Bitmap Index Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Index Name: "t_orders_created_idx"
+            Startup Cost: 0.00
+            Total Cost: 8.39
+            Plan Rows: 546
+            Plan Width: 0
+            Actual Startup Time: 0.067
+            Actual Total Time: 0.068
+            Actual Rows: 548
+            Actual Loops: 1
+            Index Cond: "(created = '2025-03-01'::date)"
+            Shared Hit Blocks: 2
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+      - Node Type: "Memoize"
+        Parent Relationship: "Inner"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 0.29
+        Total Cost: 0.39
+        Plan Rows: 1
+        Plan Width: 12
+        Actual Startup Time: 0.001
+        Actual Total Time: 0.001
+        Actual Rows: 1
+        Actual Loops: 548
+        Cache Key: "o.customer_id"
+        Cache Mode: "logical"
+        Cache Hits: 348
+        Cache Misses: 200
+        Cache Evictions: 0
+        Cache Overflows: 0
+        Peak Memory Usage: 23
+        Shared Hit Blocks: 600
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Index Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Scan Direction: "Forward"
+            Index Name: "t_customers_pkey"
+            Relation Name: "t_customers"
+            Alias: "c"
+            Startup Cost: 0.28
+            Total Cost: 0.38
+            Plan Rows: 1
+            Plan Width: 12
+            Actual Startup Time: 0.001
+            Actual Total Time: 0.001
+            Actual Rows: 1
+            Actual Loops: 200
+            Index Cond: "(id = o.customer_id)"
+            Rows Removed by Index Recheck: 0
+            Shared Hit Blocks: 600
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 228
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.454
+  Triggers: 
+  Execution Time: 1.947

@@ -1,0 +1,37 @@
+Sort  (cost=4135.84..4135.97 rows=50 width=44) (actual time=14.457..16.758 rows=25.00 loops=1)
+  Sort Key: (sum(o.amount)) DESC
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=1349
+  ->  Finalize GroupAggregate  (cost=4123.27..4134.43 rows=50 width=44) (actual time=14.414..16.719 rows=25.00 loops=1)
+        Group Key: c.region_id
+        Buffers: shared hit=1346
+        ->  Gather Merge  (cost=4123.27..4132.96 rows=85 width=44) (actual time=14.408..16.698 rows=50.00 loops=1)
+              Workers Planned: 1
+              Workers Launched: 1
+              Buffers: shared hit=1346
+              ->  Sort  (cost=3123.26..3123.38 rows=50 width=44) (actual time=12.834..12.836 rows=25.00 loops=2)
+                    Sort Key: c.region_id
+                    Sort Method: quicksort  Memory: 27kB
+                    Buffers: shared hit=1346
+                    Worker 0:  Sort Method: quicksort  Memory: 27kB
+                    ->  Partial HashAggregate  (cost=3121.22..3121.85 rows=50 width=44) (actual time=12.812..12.818 rows=25.00 loops=2)
+                          Group Key: c.region_id
+                          Batches: 1  Memory Usage: 32kB
+                          Buffers: shared hit=1339
+                          Worker 0:  Batches: 1  Memory Usage: 32kB
+                          ->  Hash Join  (cost=29.50..2902.10 rows=29216 width=10) (actual time=0.184..9.512 rows=25000.00 loops=2)
+                                Hash Cond: (o.customer_id = c.id)
+                                Buffers: shared hit=1339
+                                ->  Parallel Seq Scan on t_orders o  (cost=0.00..2795.59 rows=29216 width=10) (actual time=0.007..6.565 rows=25000.00 loops=2)
+                                      Filter: (status = 'paid'::text)
+                                      Rows Removed by Filter: 75000
+                                      Buffers: shared hit=1325
+                                ->  Hash  (cost=17.00..17.00 rows=1000 width=8) (actual time=0.163..0.164 rows=1000.00 loops=2)
+                                      Buckets: 1024  Batches: 1  Memory Usage: 48kB
+                                      Buffers: shared hit=14
+                                      ->  Seq Scan on t_customers c  (cost=0.00..17.00 rows=1000 width=8) (actual time=0.007..0.065 rows=1000.00 loops=2)
+                                            Buffers: shared hit=14
+Planning:
+  Buffers: shared hit=206 read=5
+Planning Time: 0.578 ms
+Execution Time: 16.868 ms

@@ -1,0 +1,18 @@
+Nested Loop  (cost=6.12..2257.39 rows=1000 width=14) (actual time=0.086..1.772 rows=1000.00 loops=1)
+  Buffers: shared hit=1011 read=5
+  ->  Index Scan using t_customers_pkey on t_customers c  (cost=0.28..12.63 rows=5 width=12) (actual time=0.013..0.022 rows=5.00 loops=1)
+        Index Cond: (id = ANY ('{7,42,99,123,555}'::integer[]))
+        Index Searches: 2
+        Buffers: shared hit=6
+  ->  Bitmap Heap Scan on t_orders o  (cost=5.84..446.95 rows=200 width=10) (actual time=0.036..0.333 rows=200.00 loops=5)
+        Recheck Cond: (c.id = customer_id)
+        Heap Blocks: exact=1000
+        Buffers: shared hit=1005 read=5
+        ->  Bitmap Index Scan on t_orders_customer_id_idx  (cost=0.00..5.79 rows=200 width=0) (actual time=0.020..0.020 rows=200.00 loops=5)
+              Index Cond: (customer_id = c.id)
+              Index Searches: 5
+              Buffers: shared hit=5 read=5
+Planning:
+  Buffers: shared hit=207
+Planning Time: 0.461 ms
+Execution Time: 1.845 ms

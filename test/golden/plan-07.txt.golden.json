@@ -1,0 +1,397 @@
+{
+ "format": "text",
+ "duration": 34.891,
+ "query": "SELECT * FROM simple_stock.stock_items ORDER BY amount DESC, id LIMIT 5 OFFSET 44000;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": true,
+  "ioWrite": true,
+  "rows": true,
+  "ratio": false,
+  "rowsRemoved": false,
+  "filter": false,
+  "loops": false,
+  "buf": [
+   "shared-hit",
+   "temp-read",
+   "temp-written"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 1.118,
+  "ioWrite": 2.449,
+  "buf": {
+   "shared-hit": 637,
+   "temp-read": 829,
+   "temp-written": 835
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 34.878,
+  "rows": 5
+ },
+ "max": {
+  "timeExcl": 31.826,
+  "timeIncl": 34.878,
+  "rows": 44535,
+  "rowsRemoved": 0,
+  "loops": 1,
+  "ratio": 0,
+  "ioRead": 1.118,
+  "ioWrite": 2.449,
+  "buf": {
+   "shared-hit": 634,
+   "temp-read": 829,
+   "temp-written": 835
+  },
+  "costExcl": 5149.96,
+  "planRows": 44535
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Scan Table stock_items"
+ ],
+ "stats": [
+  {
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "index": null,
+   "time": 31.826,
+   "ioRead": 1.118,
+   "ioWrite": 2.449,
+   "rows": 44005,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 3,
+    "temp-read": 829,
+    "temp-written": 835
+   },
+   "ids": [
+    1
+   ],
+   "timePct": 91.2494982510465
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "stock_items",
+   "index": null,
+   "time": 1.793,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 44535,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ids": [
+    2
+   ],
+   "timePct": 5.140776420666322
+  },
+  {
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "index": null,
+   "time": 1.259,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 5,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 3.609725328287172
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "stock_items",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     2
+    ],
+    "indexes": [],
+    "cols": []
+   }
+  ],
+  "joins": []
+ },
+ "advice": [
+  {
+   "code": "LIM_SORT",
+   "badge": "LS",
+   "sev": "hint",
+   "obs": "LIMIT returns only a small fraction of the rows that are fetched and sorted below it.",
+   "hyp": "An index on the sort keys would deliver rows already ordered, letting the scan stop early.",
+   "next": null,
+   "nodes": [
+    {
+     "id": 0,
+     "ext": "rows=5"
+    },
+    {
+     "id": 1,
+     "ext": "amount DESC, id"
+    },
+    {
+     "id": 2,
+     "ext": "rows=44535"
+    }
+   ],
+   "idxs": [
+    {
+     "rel": "stock_items",
+     "name": "\"~stock_items-c8acf63c\"",
+     "type": "btree",
+     "cols": [
+      "amount",
+      "id"
+     ],
+     "where": [],
+     "def": "CREATE INDEX CONCURRENTLY \"~stock_items-c8acf63c\"\n  ON stock_items USING btree (amount, id);",
+     "comment": null,
+     "confidence": "exact"
+    }
+   ],
+   "impact": {
+    "ms": 34.878,
+    "pct": 100,
+    "level": "high"
+   }
+  },
+  {
+   "code": "DSK_SORT",
+   "badge": "DS",
+   "sev": "mem",
+   "obs": "The sort did not fit into work_mem and spilled to disk.",
+   "hyp": "An index providing the required order would avoid the sort entirely; more memory would keep it off disk.",
+   "next": "Test with more memory scoped to one session: BEGIN; SET LOCAL work_mem = '<observed spill + headroom>'; ... COMMIT; a global work_mem increase multiplies memory use across every concurrent backend.",
+   "nodes": [
+    {
+     "id": 1,
+     "ext": "external merge Disk: 3320kB"
+    }
+   ],
+   "impact": {
+    "ms": 31.826,
+    "pct": 91.2,
+    "level": "high"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Limit",
+   "lines": [
+    "Buffers: shared hit=637, temp read=829 written=835",
+    "I/O Timings: temp read=1.118 write=2.449"
+   ],
+   "costStartup": 6227.97,
+   "costTotal": 6227.99,
+   "planRows": 5,
+   "planWidth": 65,
+   "timeStartup": 34.876,
+   "timeTotal": 34.878,
+   "rows": 5,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 637,
+    "temp-read": 829,
+    "temp-written": 835
+   },
+   "ioRead": 1.118,
+   "ioWrite": 2.449,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 34.878,
+   "timeExcl": 1.259,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 5,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Limit  (cost=6227.97..6227.99 rows=5 width=65) (actual time=34.876..34.878 rows=5.00 loops=1)",
+   "costExcl": 0,
+   "advice": [
+    "LIM_SORT"
+   ]
+  },
+  {
+   "id": 1,
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Sort",
+   "lines": [
+    "Sort Key: amount DESC, id",
+    "Sort Method: external merge  Disk: 3320kB",
+    "Buffers: shared hit=637, temp read=829 written=835",
+    "I/O Timings: temp read=1.118 write=2.449"
+   ],
+   "costStartup": 6117.97,
+   "costTotal": 6229.31,
+   "planRows": 44535,
+   "planWidth": 65,
+   "timeStartup": 29.66,
+   "timeTotal": 33.619,
+   "rows": 44005,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 637,
+    "temp-read": 829,
+    "temp-written": 835
+   },
+   "ioRead": 1.118,
+   "ioWrite": 2.449,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": "external merge",
+   "timeIncl": 33.619,
+   "timeExcl": 31.826,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 44005,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 3,
+    "temp-read": 829,
+    "temp-written": 835
+   },
+   "ioReadExcl": 1.118,
+   "ioWriteExcl": 2.449,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Sort  (cost=6117.97..6229.31 rows=44535 width=65) (actual time=29.660..33.619 rows=44005.00 loops=1)",
+   "sortKey": "amount DESC, id",
+   "sortSpace": "Disk",
+   "sortSizeKb": 3320,
+   "costExcl": 5149.96,
+   "advice": [
+    "LIM_SORT",
+    "DSK_SORT"
+   ]
+  },
+  {
+   "id": 2,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "stock_items",
+   "relationRef": "stock_items",
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Seq Scan on stock_items",
+   "lines": [
+    "Buffers: shared hit=634"
+   ],
+   "costStartup": 0,
+   "costTotal": 1079.35,
+   "planRows": 44535,
+   "planWidth": 65,
+   "timeStartup": 0.004,
+   "timeTotal": 1.793,
+   "rows": 44535,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 634
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 1.793,
+   "timeExcl": 1.793,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 44535,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 634
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on stock_items  (cost=0.00..1079.35 rows=44535 width=65) (actual time=0.004..1.793 rows=44535.00 loops=1)",
+   "costExcl": 1079.35,
+   "advice": [
+    "LIM_SORT"
+   ]
+  }
+ ]
+}

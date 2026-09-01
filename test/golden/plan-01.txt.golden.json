@@ -1,0 +1,895 @@
+{
+ "format": "text",
+ "duration": 24.339,
+ "query": "WITH top_items AS MATERIALIZED (SELECT order_items_2_id, sum(amount) q FROM simple_stock.stock_items GROUP BY 1 ORDER BY q DESC LIMIT 100)\nSELECT t.order_items_2_id, t.q, oi.name, rank() OVER (ORDER BY t.q DESC) FROM top_items t JOIN simple_stock.order_items_2 oi ON oi.id = t.order_items_2_id;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": false,
+  "filter": true,
+  "loops": true,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 9939
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 24.3,
+  "rows": 100
+ },
+ "max": {
+  "timeExcl": 12.927,
+  "timeIncl": 24.3,
+  "rows": 44535,
+  "rowsRemoved": 0,
+  "loops": 100,
+  "ratio": 427,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 9636
+  },
+  "costExcl": 2115.31,
+  "planRows": 44535
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [
+  {
+   "code": "charge_inferred",
+   "severity": "info",
+   "message": "CTE/InitPlan/SubPlan time was attributed to the node that appears to execute it (heuristic)",
+   "count": 1,
+   "nodes": [
+    1
+   ]
+  }
+ ],
+ "domain": [
+  "Scan Table stock_items",
+  "Join",
+  "  ->  Scan CTE top_items",
+  "  ->  Scan Table order_items_2"
+ ],
+ "stats": [
+  {
+   "type": "GroupAggregate",
+   "xtype": "GroupAggregate",
+   "relation": null,
+   "index": null,
+   "time": 12.927,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 42700,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    4
+   ],
+   "timePct": 53.19753086419753
+  },
+  {
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "stock_items",
+   "index": "stock_items_order_2_idx",
+   "time": 6.705,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 44535,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ids": [
+    5
+   ],
+   "timePct": 27.59259259259259
+  },
+  {
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "index": null,
+   "time": 4.288,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    3
+   ],
+   "timePct": 17.646090534979425
+  },
+  {
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "order_items_2",
+   "index": "order_items_2_pkey",
+   "time": 0.3,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 100,
+   "buf": {
+    "shared-hit": 303
+   },
+   "ids": [
+    8
+   ],
+   "timePct": 1.2345679012345678
+  },
+  {
+   "type": "WindowAgg",
+   "xtype": "WindowAgg",
+   "relation": null,
+   "index": null,
+   "time": 0.049,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 0.20164609053497942
+  },
+  {
+   "type": "Nested Loop",
+   "xtype": "Nested Loop",
+   "relation": null,
+   "index": null,
+   "time": 0.014,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    6
+   ],
+   "timePct": 0.05761316872427984
+  },
+  {
+   "type": "CTE Scan",
+   "xtype": "CTE Scan",
+   "relation": "top_items",
+   "index": null,
+   "time": 0.011,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    7
+   ],
+   "timePct": 0.04526748971193415
+  },
+  {
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "index": null,
+   "time": 0.006,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 100,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": 0.02469135802469136
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "stock_items",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     5
+    ],
+    "indexes": [
+     {
+      "name": "stock_items_order_2_idx",
+      "nodes": [
+       5
+      ],
+      "cols": []
+     }
+    ],
+    "cols": [
+     {
+      "col": "amount",
+      "roles": [
+       "sort"
+      ],
+      "nodes": [
+       3
+      ]
+     },
+     {
+      "col": "order_items_2_id",
+      "roles": [
+       "sort"
+      ],
+      "nodes": [
+       4
+      ]
+     }
+    ]
+   },
+   {
+    "name": "top_items",
+    "schema": null,
+    "virtual": "CTE Scan",
+    "aliases": [
+     "t"
+    ],
+    "nodes": [
+     7
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "order_items_2_id",
+      "roles": [
+       "cond",
+       "join"
+      ],
+      "nodes": [
+       8
+      ]
+     }
+    ]
+   },
+   {
+    "name": "order_items_2",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "oi"
+    ],
+    "nodes": [
+     8
+    ],
+    "indexes": [
+     {
+      "name": "order_items_2_pkey",
+      "nodes": [
+       8
+      ],
+      "cols": [
+       "id"
+      ]
+     }
+    ],
+    "cols": [
+     {
+      "col": "id",
+      "roles": [
+       "cond",
+       "join"
+      ],
+      "nodes": [
+       8
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "order_items_2",
+     "col": "id"
+    },
+    "right": {
+     "rel": "top_items",
+     "col": "order_items_2_id"
+    },
+    "op": "=",
+    "nodes": [
+     8
+    ]
+   }
+  ]
+ },
+ "advice": [
+  {
+   "code": "IDX_COND",
+   "badge": "IC",
+   "sev": "hint",
+   "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
+   "hyp": null,
+   "next": null,
+   "nodes": [
+    {
+     "id": 5,
+     "ext": "rows=44535"
+    }
+   ],
+   "impact": {
+    "ms": 6.705,
+    "pct": 27.6,
+    "level": "high"
+   }
+  },
+  {
+   "code": "IDX_BUFF",
+   "badge": "IB",
+   "sev": "io",
+   "obs": "The scan reads many buffers per row it returns.",
+   "hyp": "Possible causes: table or index bloat, or the scan entering the middle of the index — the plan alone cannot tell.",
+   "next": "Verify bloat first (pgstattuple, dead tuples in pg_stat_user_tables) before any VACUUM FULL / pg_repack.",
+   "nodes": [
+    {
+     "id": 5,
+     "ext": "buffers=9636, rows=44535, ratio=4.6"
+    }
+   ],
+   "impact": {
+    "ms": 6.705,
+    "pct": 27.6,
+    "level": "high"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "WindowAgg",
+   "xtype": "WindowAgg",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1,
+    6
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "WindowAgg",
+   "lines": [
+    "Window: w1 AS (ORDER BY t.q ROWS UNBOUNDED PRECEDING)",
+    "Storage: Memory  Maximum Storage: 17kB",
+    "Buffers: shared hit=9939"
+   ],
+   "costStartup": 4509.62,
+   "costTotal": 5042.13,
+   "planRows": 100,
+   "planWidth": 53,
+   "timeStartup": 23.939,
+   "timeTotal": 24.3,
+   "rows": 100,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9939
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 24.3,
+   "timeExcl": 0.049,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "WindowAgg  (cost=4509.62..5042.13 rows=100 width=53) (actual time=23.939..24.300 rows=100.00 loops=1)",
+   "costExcl": 1.5
+  },
+  {
+   "id": 1,
+   "type": "CTE top_items",
+   "xtype": "CTE",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": "CTE",
+   "specName": "top_items",
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "CTE top_items",
+   "lines": [],
+   "costStartup": null,
+   "costTotal": null,
+   "planRows": null,
+   "planWidth": null,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 23.926,
+   "timeExcl": 0,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "CTE top_items",
+   "chargedTo": 7
+  },
+  {
+   "id": 2,
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3
+   ],
+   "depth": 2,
+   "indent": 4,
+   "head": "Limit",
+   "lines": [
+    "Buffers: shared hit=9636"
+   ],
+   "costStartup": 4503.7,
+   "costTotal": 4503.95,
+   "planRows": 100,
+   "planWidth": 36,
+   "timeStartup": 23.914,
+   "timeTotal": 23.926,
+   "rows": 100,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 23.926,
+   "timeExcl": 0.006,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Limit  (cost=4503.70..4503.95 rows=100 width=36) (actual time=23.914..23.926 rows=100.00 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 3,
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [
+    4
+   ],
+   "depth": 3,
+   "indent": 10,
+   "head": "Sort",
+   "lines": [
+    "Sort Key: (sum(stock_items.amount)) DESC",
+    "Sort Method: top-N heapsort  Memory: 31kB",
+    "Buffers: shared hit=9636"
+   ],
+   "costStartup": 4503.7,
+   "costTotal": 4610.45,
+   "planRows": 42700,
+   "planWidth": 36,
+   "timeStartup": 23.914,
+   "timeTotal": 23.92,
+   "rows": 100,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": "top-N heapsort",
+   "timeIncl": 23.92,
+   "timeExcl": 4.288,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 427,
+   "ratioDir": -1,
+   "rawHead": "Sort  (cost=4503.70..4610.45 rows=42700 width=36) (actual time=23.914..23.920 rows=100.00 loops=1)",
+   "sortKey": "(sum(stock_items.amount)) DESC",
+   "sortSpace": "Memory",
+   "sortSizeKb": 31,
+   "costExcl": 1738.71
+  },
+  {
+   "id": 4,
+   "type": "GroupAggregate",
+   "xtype": "GroupAggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 3,
+   "children": [
+    5
+   ],
+   "depth": 4,
+   "indent": 16,
+   "head": "GroupAggregate",
+   "lines": [
+    "Group Key: stock_items.order_items_2_id",
+    "Buffers: shared hit=9636"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 2871.74,
+   "planRows": 42700,
+   "planWidth": 36,
+   "timeStartup": 0.011,
+   "timeTotal": 19.632,
+   "rows": 42700,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 19.632,
+   "timeExcl": 12.927,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 42700,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "GroupAggregate  (cost=0.29..2871.74 rows=42700 width=36) (actual time=0.011..19.632 rows=42700.00 loops=1)",
+   "groupKey": "stock_items.order_items_2_id",
+   "costExcl": 756.43
+  },
+  {
+   "id": 5,
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "stock_items",
+   "relationRef": "stock_items",
+   "index": "stock_items_order_2_idx",
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 4,
+   "children": [],
+   "depth": 5,
+   "indent": 22,
+   "head": "Index Scan using stock_items_order_2_idx on stock_items",
+   "lines": [
+    "Index Searches: 1",
+    "Buffers: shared hit=9636"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 2115.31,
+   "planRows": 44535,
+   "planWidth": 10,
+   "timeStartup": 0.005,
+   "timeTotal": 6.705,
+   "rows": 44535,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 6.705,
+   "timeExcl": 6.705,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 44535,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 9636
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Index Scan using stock_items_order_2_idx on stock_items  (cost=0.29..2115.31 rows=44535 width=10) (actual time=0.005..6.705 rows=44535.00 loops=1)",
+   "costExcl": 2115.31,
+   "advice": [
+    "IDX_COND",
+    "IDX_BUFF"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "Nested Loop",
+   "xtype": "Nested Loop",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    7,
+    8
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "Nested Loop",
+   "lines": [
+    "Buffers: shared hit=9939"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 536.68,
+   "planRows": 100,
+   "planWidth": 45,
+   "timeStartup": 23.934,
+   "timeTotal": 24.251,
+   "rows": 100,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9939
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 24.251,
+   "timeExcl": 0.014,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Nested Loop  (cost=0.29..536.68 rows=100 width=45) (actual time=23.934..24.251 rows=100.00 loops=1)",
+   "costExcl": 529.33
+  },
+  {
+   "id": 7,
+   "type": "CTE Scan",
+   "xtype": "CTE Scan",
+   "relation": "top_items",
+   "relationRef": "top_items",
+   "index": null,
+   "alias": "t",
+   "spec": null,
+   "specName": null,
+   "parent": 6,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "CTE Scan on top_items t",
+   "lines": [
+    "Storage: Memory  Maximum Storage: 20kB",
+    "Buffers: shared hit=9636"
+   ],
+   "costStartup": 0,
+   "costTotal": 2,
+   "planRows": 100,
+   "planWidth": 36,
+   "timeStartup": 23.916,
+   "timeTotal": 23.937,
+   "rows": 100,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 9636
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 23.937,
+   "timeExcl": 0.011,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "CTE Scan on top_items t  (cost=0.00..2.00 rows=100 width=36) (actual time=23.916..23.937 rows=100.00 loops=1)",
+   "costExcl": 2
+  },
+  {
+   "id": 8,
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "order_items_2",
+   "relationRef": "order_items_2",
+   "index": "order_items_2_pkey",
+   "alias": "oi",
+   "spec": null,
+   "specName": null,
+   "parent": 6,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Index Scan using order_items_2_pkey on order_items_2 oi",
+   "lines": [
+    "Index Cond: (id = t.order_items_2_id)",
+    "Index Searches: 100",
+    "Buffers: shared hit=303"
+   ],
+   "costStartup": 0.29,
+   "costTotal": 5.35,
+   "planRows": 1,
+   "planWidth": 17,
+   "timeStartup": 0.003,
+   "timeTotal": 0.003,
+   "rows": 1,
+   "loops": 100,
+   "never": false,
+   "buf": {
+    "shared-hit": 303
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Index Cond",
+     "val": "(id = t.order_items_2_id)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.3,
+   "timeExcl": 0.3,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 100,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 303
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Index Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..5.35 rows=1 width=17) (actual time=0.003..0.003 rows=1.00 loops=100)",
+   "costExcl": 5.35
+  }
+ ]
+}

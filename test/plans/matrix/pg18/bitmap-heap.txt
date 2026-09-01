@@ -1,0 +1,20 @@
+Aggregate  (cost=2286.17..2286.18 rows=1 width=8) (actual time=5.786..5.787 rows=1.00 loops=1)
+  Buffers: shared hit=863 read=89
+  ->  Bitmap Heap Scan on t_events  (cost=711.52..2206.34 rows=31931 width=0) (actual time=1.507..4.463 rows=32001.00 loops=1)
+        Recheck Cond: ((kind = 3) OR ((id >= 1000) AND (id <= 30000)))
+        Heap Blocks: exact=863
+        Buffers: shared hit=863 read=89
+        ->  BitmapOr  (cost=711.52..711.52 rows=36104 width=0) (actual time=1.431..1.431 rows=0.00 loops=1)
+              Buffers: shared read=89
+              ->  Bitmap Index Scan on t_events_kind_idx  (cost=0.00..82.48 rows=7225 width=0) (actual time=0.240..0.240 rows=7143.00 loops=1)
+                    Index Cond: (kind = 3)
+                    Index Searches: 1
+                    Buffers: shared read=8
+              ->  Bitmap Index Scan on t_events_id_idx  (cost=0.00..613.08 rows=28879 width=0) (actual time=1.190..1.190 rows=29001.00 loops=1)
+                    Index Cond: ((id >= 1000) AND (id <= 30000))
+                    Index Searches: 1
+                    Buffers: shared read=81
+Planning:
+  Buffers: shared hit=90
+Planning Time: 0.254 ms
+Execution Time: 5.848 ms

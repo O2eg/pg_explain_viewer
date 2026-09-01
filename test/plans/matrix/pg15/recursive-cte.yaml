@@ -1,0 +1,213 @@
+- Plan: 
+    Node Type: "Aggregate"
+    Strategy: "Plain"
+    Partial Mode: "Simple"
+    Parallel Aware: false
+    Async Capable: false
+    Startup Cost: 25.10
+    Total Cost: 25.11
+    Plan Rows: 1
+    Plan Width: 8
+    Actual Startup Time: 0.269
+    Actual Total Time: 0.270
+    Actual Rows: 1
+    Actual Loops: 1
+    Shared Hit Blocks: 7
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Recursive Union"
+        Parent Relationship: "InitPlan"
+        Subplan Name: "CTE r"
+        Parallel Aware: false
+        Async Capable: false
+        Startup Cost: 0.00
+        Total Cost: 2.95
+        Plan Rows: 31
+        Plan Width: 4
+        Actual Startup Time: 0.002
+        Actual Total Time: 0.065
+        Actual Rows: 200
+        Actual Loops: 1
+        Shared Hit Blocks: 0
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Result"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Startup Cost: 0.00
+            Total Cost: 0.01
+            Plan Rows: 1
+            Plan Width: 4
+            Actual Startup Time: 0.001
+            Actual Total Time: 0.001
+            Actual Rows: 1
+            Actual Loops: 1
+            Shared Hit Blocks: 0
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+          - Node Type: "WorkTable Scan"
+            Parent Relationship: "Inner"
+            Parallel Aware: false
+            Async Capable: false
+            CTE Name: "r"
+            Alias: "r_1"
+            Startup Cost: 0.00
+            Total Cost: 0.23
+            Plan Rows: 3
+            Plan Width: 4
+            Actual Startup Time: 0.000
+            Actual Total Time: 0.000
+            Actual Rows: 1
+            Actual Loops: 200
+            Filter: "(n < 200)"
+            Rows Removed by Filter: 0
+            Shared Hit Blocks: 0
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+      - Node Type: "Hash Join"
+        Parent Relationship: "Outer"
+        Parallel Aware: false
+        Async Capable: false
+        Join Type: "Inner"
+        Startup Cost: 1.01
+        Total Cost: 22.07
+        Plan Rows: 31
+        Plan Width: 0
+        Actual Startup Time: 0.139
+        Actual Total Time: 0.259
+        Actual Rows: 200
+        Actual Loops: 1
+        Inner Unique: false
+        Hash Cond: "(c.id = r.n)"
+        Shared Hit Blocks: 7
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Seq Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Async Capable: false
+            Relation Name: "t_customers"
+            Alias: "c"
+            Startup Cost: 0.00
+            Total Cost: 17.00
+            Plan Rows: 1000
+            Plan Width: 4
+            Actual Startup Time: 0.006
+            Actual Total Time: 0.057
+            Actual Rows: 1000
+            Actual Loops: 1
+            Shared Hit Blocks: 7
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+          - Node Type: "Hash"
+            Parent Relationship: "Inner"
+            Parallel Aware: false
+            Async Capable: false
+            Startup Cost: 0.62
+            Total Cost: 0.62
+            Plan Rows: 31
+            Plan Width: 4
+            Actual Startup Time: 0.113
+            Actual Total Time: 0.113
+            Actual Rows: 200
+            Actual Loops: 1
+            Hash Buckets: 1024
+            Original Hash Buckets: 1024
+            Hash Batches: 1
+            Original Hash Batches: 1
+            Peak Memory Usage: 16
+            Shared Hit Blocks: 0
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+            Plans: 
+              - Node Type: "CTE Scan"
+                Parent Relationship: "Outer"
+                Parallel Aware: false
+                Async Capable: false
+                CTE Name: "r"
+                Alias: "r"
+                Startup Cost: 0.00
+                Total Cost: 0.62
+                Plan Rows: 31
+                Plan Width: 4
+                Actual Startup Time: 0.002
+                Actual Total Time: 0.091
+                Actual Rows: 200
+                Actual Loops: 1
+                Shared Hit Blocks: 0
+                Shared Read Blocks: 0
+                Shared Dirtied Blocks: 0
+                Shared Written Blocks: 0
+                Local Hit Blocks: 0
+                Local Read Blocks: 0
+                Local Dirtied Blocks: 0
+                Local Written Blocks: 0
+                Temp Read Blocks: 0
+                Temp Written Blocks: 0
+  Planning: 
+    Shared Hit Blocks: 136
+    Shared Read Blocks: 0
+    Shared Dirtied Blocks: 0
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+  Planning Time: 0.376
+  Triggers: 
+  Execution Time: 0.324

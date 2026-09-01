@@ -1,0 +1,7 @@
+# PostgreSQL EXPLAIN (FORMAT YAML) fixtures are stored verbatim. PostgreSQL
+# emits a space after mapping keys whose value starts on the following line.
+test/plans/matrix/**/*.yaml whitespace=-blank-at-eol
+
+# Raw text fixtures preserve psql alignment, line endings and incomplete
+# in-progress output exactly as captured.
+test/plans/*.txt -whitespace

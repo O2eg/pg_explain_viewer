@@ -1,0 +1,28 @@
+Result  (cost=9931.30..9931.31 rows=1 width=40) (actual time=39.407..42.021 rows=1 loops=1)
+  Buffers: shared hit=200008 read=160
+  CTE big
+    ->  Finalize GroupAggregate  (cost=1000.30..9885.44 rows=1000 width=36) (actual time=2.951..41.569 rows=1000 loops=1)
+          Group Key: t_orders.customer_id
+          Buffers: shared hit=200008 read=160
+          ->  Gather Merge  (cost=1000.30..9865.44 rows=1000 width=36) (actual time=2.878..41.002 rows=1159 loops=1)
+                Workers Planned: 1
+                Workers Launched: 1
+                Buffers: shared hit=200008 read=160
+                ->  Partial GroupAggregate  (cost=0.29..8752.93 rows=1000 width=36) (actual time=0.641..34.097 rows=580 loops=2)
+                      Group Key: t_orders.customer_id
+                      Buffers: shared hit=200008 read=160
+                      ->  Parallel Index Scan using t_orders_customer_id_idx on t_orders  (cost=0.29..8152.20 rows=117647 width=10) (actual time=0.016..23.978 rows=100000 loops=2)
+                            Buffers: shared hit=200008 read=160
+  InitPlan 2 (returns $2)
+    ->  Aggregate  (cost=23.33..23.34 rows=1 width=8) (actual time=39.286..39.286 rows=1 loops=1)
+          Buffers: shared hit=95938 read=75
+          ->  CTE Scan on big  (cost=0.00..22.50 rows=333 width=0) (actual time=2.953..39.228 rows=1000 loops=1)
+                Filter: (s > '100'::numeric)
+                Buffers: shared hit=95938 read=75
+  InitPlan 3 (returns $3)
+    ->  Aggregate  (cost=22.50..22.51 rows=1 width=32) (actual time=0.118..0.119 rows=1 loops=1)
+          ->  CTE Scan on big big_1  (cost=0.00..20.00 rows=1000 width=32) (actual time=0.001..0.041 rows=1000 loops=1)
+Planning:
+  Buffers: shared hit=127
+Planning Time: 0.341 ms
+Execution Time: 42.126 ms

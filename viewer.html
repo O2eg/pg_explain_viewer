@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pg-explain-viewer — PostgreSQL plan visualizer</title>
+<link rel="stylesheet" href="css/pgplan-theme.css"><!--PV:CSS-THEME-->
+<link rel="stylesheet" href="css/pgplan.css"><!--PV:CSS-MAIN-->
+<style>
+  /* viewer chrome (page shell only; the plan widget is styled by pgplan.css).
+     Palette and fonts follow the pg_diag report theme; dark is the default
+     scheme, like in the report. */
+  :root {
+    color-scheme: dark; /* native controls & scrollbars follow the theme */
+    --vw-bg: #17111f;
+    --vw-panel: #241a2d;
+    --vw-input-bg: #1d1526;
+    --vw-fg: #f8f0ff;
+    --vw-muted: #d8c8e8;
+    --vw-border: #463456;
+    --vw-border-strong: #725a87;
+    --vw-accent: #f3d46b;
+    --vw-accent-contrast: #24152f;
+    --vw-button-bg: #2b2035;
+    --vw-button-hover: #392847;
+    --vw-err-bg: #3f1717;
+    --vw-err-fg: #ffb4b4;
+    --vw-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  [data-pv-theme="light"] {
+    color-scheme: light;
+    --vw-bg: #fbf7ff;
+    --vw-panel: #ffffff;
+    --vw-input-bg: #fffdf7;
+    --vw-fg: #2b1d38;
+    --vw-muted: #746286;
+    --vw-border: #dfd2ec;
+    --vw-border-strong: #c9b3df;
+    --vw-accent: #f4cf6a;
+    --vw-accent-contrast: #2a1738;
+    --vw-button-bg: #fffaf0;
+    --vw-button-hover: #f6ecff;
+    --vw-err-bg: #fee2e2;
+    --vw-err-fg: #991b1b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--vw-bg);
+    color: var(--vw-fg);
+    font: 14px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  /* slim themed scrollbars everywhere (textareas, page, widget panes) */
+  * { scrollbar-width: thin; scrollbar-color: var(--vw-border-strong) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--vw-border-strong);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--vw-accent); background-clip: padding-box; }
+  *::-webkit-scrollbar-corner { background: transparent; }
+  .vw-wrap { max-width: 1700px; margin: 0 auto; padding: 18px 24px 48px; }
+  .vw-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .vw-title { font-size: 20px; font-weight: 600; margin: 0; }
+  .vw-title small { color: var(--vw-muted); font-weight: 400; margin-left: 10px; font-size: 14px; }
+  .vw-top .spacer { flex: 1; }
+  select, button {
+    font: inherit;
+    color: var(--vw-fg);
+    background: var(--vw-button-bg);
+    border: 1px solid var(--vw-border);
+    border-radius: 10px;
+    padding: 6px 13px;
+  }
+  button { cursor: pointer; }
+  #sample { max-width: 420px; }
+  button:hover, select:hover { background: var(--vw-button-hover); border-color: var(--vw-border-strong); }
+  button.primary {
+    background: var(--vw-accent);
+    color: var(--vw-accent-contrast);
+    border-color: var(--vw-accent);
+    font-weight: 600;
+  }
+  button.primary:hover { filter: brightness(1.06); }
+  .vw-input { margin-top: 14px; }
+  .vw-input textarea {
+    width: 100%;
+    height: 340px;
+    min-height: 220px; /* fixed floor: never collapses below a readable size */
+    resize: vertical;
+    font-family: var(--vw-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vw-fg);
+    background: var(--vw-input-bg);
+    border: 1px solid var(--vw-border);
+    border-radius: 10px;
+    padding: 10px 13px;
+  }
+  .vw-input textarea:focus { outline: none; border-color: var(--vw-accent); }
+  .vw-input textarea.vw-sql { height: 130px; min-height: 90px; margin-top: 8px; }
+
+  /* theme switch — same control as the pg_diag report header */
+  .vw-theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 9px;
+    border: 1px solid var(--vw-border);
+    border-radius: 10px;
+    background: var(--vw-button-bg);
+    color: var(--vw-muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  .vw-theme-toggle input {
+    appearance: none;
+    position: relative;
+    width: 42px;
+    height: 22px;
+    margin: 0;
+    border: 1px solid var(--vw-border-strong);
+    border-radius: 999px;
+    background: var(--vw-input-bg);
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  .vw-theme-toggle input::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--vw-muted);
+    transition: transform 120ms ease, background 120ms ease;
+  }
+  .vw-theme-toggle input:checked {
+    border-color: var(--vw-accent);
+    background: var(--vw-accent);
+  }
+  .vw-theme-toggle input:checked::before {
+    transform: translateX(20px);
+    background: var(--vw-accent-contrast);
+  }
+  .vw-bar { display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+  .vw-hint { color: var(--vw-muted); font-size: 14px; }
+  .vw-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--vw-border-strong);
+    border-radius: 10px;
+    color: var(--vw-err-fg);
+    background: var(--vw-err-bg);
+    font-family: var(--vw-mono);
+    font-size: 13px;
+    white-space: pre-wrap;
+    display: none;
+  }
+  .vw-out {
+    margin-top: 18px;
+    background: var(--vw-panel);
+    border: 1px solid var(--vw-border);
+    border-radius: 12px;
+    padding: 12px 18px 20px;
+    display: none;
+  }
+  .vw-out .pv { background: transparent; }
+</style>
+</head>
+<body>
+<div class="vw-wrap">
+  <div class="vw-top">
+    <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
+    <div class="spacer"></div>
+    <select id="sample" title="sample plans (from pg_stand logs)">
+      <option value="">— sample plan —</option>
+    </select>
+    <label class="vw-theme-toggle" title="Switch theme">
+      <span>Dark</span>
+      <input id="theme" type="checkbox">
+      <span>Light</span>
+    </label>
+  </div>
+
+  <div class="vw-input" id="inputbox">
+    <textarea id="src" spellcheck="false"
+      placeholder="Paste an EXPLAIN ANALYZE plan here — text, JSON or YAML format; auto_explain log entries (&quot;duration: … ms  plan:&quot; with Query Text) are understood too."></textarea>
+    <textarea id="sql" class="vw-sql" spellcheck="false"
+      placeholder="Optional: the SQL query text — used when the plan itself carries no Query Text (overrides it otherwise)."></textarea>
+    <div class="vw-bar">
+      <button class="primary" id="go">Visualize</button>
+      <button id="clear">Clear</button>
+      <span class="vw-hint">Ctrl+Enter — visualize · click a row — expand node details · click a column header — jump to the hottest node</span>
+    </div>
+    <div class="vw-error" id="error"></div>
+  </div>
+
+  <div class="vw-out" id="out"><div id="planview"></div></div>
+</div>
+
+<script src="vendor/highlight-11.11.1.min.js"></script><!--PV:JS-HLJS-->
+<script src="src/pgplan-expr.js"></script><!--PV:JS-EXPR-->
+<script src="src/pgplan.js"></script><!--PV:JS-CORE-->
+<script src="src/pgplan-render.js"></script><!--PV:JS-RENDER-->
+<script>window.PV_SAMPLES = {};</script><!--PV:SAMPLES-->
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const srcEl = $('src'), sqlEl = $('sql'), errEl = $('error'), outEl = $('out');
+
+  /* theme — dark by default, like the pg_diag report */
+  const applyTheme = t => {
+    document.documentElement.setAttribute('data-pv-theme', t === 'light' ? 'light' : 'dark');
+  };
+  let theme = 'dark';
+  try { theme = localStorage.getItem('pv-theme') || 'dark'; } catch (e) {}
+  applyTheme(theme);
+  const themeEl = $('theme');
+  themeEl.checked = theme === 'light'; // checked = light, like the report
+  themeEl.addEventListener('change', () => {
+    theme = themeEl.checked ? 'light' : 'dark';
+    try { localStorage.setItem('pv-theme', theme); } catch (e) {}
+    applyTheme(theme);
+    if (lastPlan) show(lastPlan); // re-render so heat colors pick up theme hues
+  });
+
+  /* samples */
+  const samples = window.PV_SAMPLES || {};
+  const sel = $('sample');
+  for (const name of Object.keys(samples)) {
+    const o = document.createElement('option');
+    o.value = name; o.textContent = name;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', () => {
+    if (!sel.value) return;
+    srcEl.value = samples[sel.value];
+    sqlEl.value = ''; // samples carry their own Query Text
+    visualize(true);
+  });
+
+  let lastPlan = null;
+
+  function show(plan) {
+    outEl.style.display = 'block';
+    PgPlanRender.render($('planview'), plan);
+  }
+
+  function visualize(scrollToResult) {
+    const input = srcEl.value;
+    errEl.style.display = 'none';
+    if (!input.trim()) return;
+    try {
+      lastPlan = PgPlan.parse(input, { query: sqlEl.value });
+      show(lastPlan);
+      if (scrollToResult) outEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      lastPlan = null;
+      outEl.style.display = 'none';
+      errEl.textContent = 'Parse error: ' + e.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  $('go').addEventListener('click', () => visualize(true));
+  $('clear').addEventListener('click', () => {
+    srcEl.value = ''; sqlEl.value = ''; sel.value = '';
+    lastPlan = null; // a later theme switch must not resurrect the old plan
+    outEl.style.display = 'none';
+    srcEl.focus();
+  });
+  for (const t of [srcEl, sqlEl]) {
+    t.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') visualize(true);
+    });
+  }
+
+  /* first sample by default */
+  const names = Object.keys(samples);
+  if (names.length) {
+    sel.value = names[0];
+    srcEl.value = samples[names[0]];
+    visualize(false);
+  }
+})();
+</script>
+</body>
+</html>

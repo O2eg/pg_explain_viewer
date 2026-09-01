@@ -1,0 +1,14 @@
+Update on t_orders  (cost=5.84..544.25 rows=0 width=0) (actual time=3.362..3.362 rows=0 loops=1)
+  Buffers: shared hit=2553 read=67 dirtied=78 written=2
+  ->  Bitmap Heap Scan on t_orders  (cost=5.84..544.25 rows=199 width=22) (actual time=0.039..0.909 rows=200 loops=1)
+        Recheck Cond: (customer_id = 77)
+        Heap Blocks: exact=200
+        Buffers: shared hit=203
+        ->  Bitmap Index Scan on t_orders_customer_id_idx  (cost=0.00..5.79 rows=199 width=0) (actual time=0.020..0.020 rows=200 loops=1)
+              Index Cond: (customer_id = 77)
+              Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=100
+Planning Time: 0.260 ms
+Trigger trg_audit: time=1.470 calls=200
+Execution Time: 4.895 ms

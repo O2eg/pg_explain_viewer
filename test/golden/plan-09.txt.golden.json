@@ -1,0 +1,374 @@
+{
+ "format": "text",
+ "duration": 0.035,
+ "query": "SELECT id FROM queue_skip_locked.tasks WHERE status='pending' ORDER BY priority DESC, id LIMIT 10 FOR UPDATE SKIP LOCKED;",
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": true,
+  "cost": false,
+  "estRows": false,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": true,
+  "ratio": true,
+  "rowsRemoved": false,
+  "filter": true,
+  "loops": false,
+  "buf": [
+   "shared-hit"
+  ]
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 25
+  },
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": 0.032,
+  "rows": 10
+ },
+ "max": {
+  "timeExcl": 0.022,
+  "timeIncl": 0.032,
+  "rows": 10,
+  "rowsRemoved": 0,
+  "loops": 1,
+  "ratio": 381.5,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {
+   "shared-hit": 20
+  },
+  "costExcl": 292.4,
+  "planRows": 3815
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Scan Table tasks"
+ ],
+ "stats": [
+  {
+   "type": "LockRows",
+   "xtype": "LockRows",
+   "relation": null,
+   "index": null,
+   "time": 0.022,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 10,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 20
+   },
+   "ids": [
+    1
+   ],
+   "timePct": 68.75
+  },
+  {
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "tasks",
+   "index": "tasks_pending_idx",
+   "time": 0.009,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 10,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ids": [
+    2
+   ],
+   "timePct": 28.125
+  },
+  {
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "index": null,
+   "time": 0.001,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 10,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": 3.125
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "tasks",
+    "schema": null,
+    "virtual": null,
+    "aliases": [],
+    "nodes": [
+     2
+    ],
+    "indexes": [
+     {
+      "name": "tasks_pending_idx",
+      "nodes": [
+       2
+      ],
+      "cols": []
+     }
+    ],
+    "cols": [
+     {
+      "col": "status",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       2
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": []
+ },
+ "advice": [
+  {
+   "code": "IDX_COND",
+   "badge": "IC",
+   "sev": "hint",
+   "obs": "The index is used without any key condition — only for ordered reading or a full traversal.",
+   "hyp": null,
+   "next": null,
+   "nodes": [
+    {
+     "id": 2,
+     "ext": "rows=10"
+    }
+   ],
+   "impact": {
+    "ms": 0.009,
+    "pct": 28.1,
+    "level": "minor"
+   }
+  },
+  {
+   "code": "ROW_RATIO",
+   "badge": "RR",
+   "sev": "info",
+   "obs": "The planner’s row estimate differs strongly from the actual count.",
+   "hyp": "Statistics may be outdated, or the predicate may be inherently hard to estimate (correlated columns, expressions).",
+   "next": "Run ANALYZE on the table; if the estimate stays off, consider extended statistics (CREATE STATISTICS).",
+   "nodes": [
+    {
+     "id": 2,
+     "ext": "rows-act=10, rows-est=3815, ratio=381.5"
+    }
+   ],
+   "impact": {
+    "ms": 0.009,
+    "pct": 28.1,
+    "level": "minor"
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Limit",
+   "xtype": "Limit",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 0,
+   "head": "Limit",
+   "lines": [
+    "Buffers: shared hit=25",
+    "WAL: records=10 bytes=540"
+   ],
+   "costStartup": 0.28,
+   "costTotal": 1.15,
+   "planRows": 10,
+   "planWidth": 18,
+   "timeStartup": 0.024,
+   "timeTotal": 0.032,
+   "rows": 10,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 25
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.032,
+   "timeExcl": 0.001,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 10,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Limit  (cost=0.28..1.15 rows=10 width=18) (actual time=0.024..0.032 rows=10.00 loops=1)",
+   "costExcl": 0
+  },
+  {
+   "id": 1,
+   "type": "LockRows",
+   "xtype": "LockRows",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 2,
+   "head": "LockRows",
+   "lines": [
+    "Buffers: shared hit=25",
+    "WAL: records=10 bytes=540"
+   ],
+   "costStartup": 0.28,
+   "costTotal": 330.55,
+   "planRows": 3815,
+   "planWidth": 18,
+   "timeStartup": 0.023,
+   "timeTotal": 0.031,
+   "rows": 10,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 25
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.031,
+   "timeExcl": 0.022,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 10,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 20
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 381.5,
+   "ratioDir": -1,
+   "rawHead": "LockRows  (cost=0.28..330.55 rows=3815 width=18) (actual time=0.023..0.031 rows=10.00 loops=1)",
+   "costExcl": 38.15
+  },
+  {
+   "id": 2,
+   "type": "Index Scan",
+   "xtype": "Index Scan",
+   "relation": "tasks",
+   "relationRef": "tasks",
+   "index": "tasks_pending_idx",
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [],
+   "depth": 2,
+   "indent": 8,
+   "head": "Index Scan using tasks_pending_idx on tasks",
+   "lines": [
+    "Filter: (status = 'pending'::text)",
+    "Index Searches: 1",
+    "Buffers: shared hit=5"
+   ],
+   "costStartup": 0.28,
+   "costTotal": 292.4,
+   "planRows": 3815,
+   "planWidth": 18,
+   "timeStartup": 0.006,
+   "timeTotal": 0.009,
+   "rows": 10,
+   "loops": 1,
+   "never": false,
+   "buf": {
+    "shared-hit": 5
+   },
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(status = 'pending'::text)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": 0.009,
+   "timeExcl": 0.009,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 10,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {
+    "shared-hit": 5
+   },
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": 381.5,
+   "ratioDir": -1,
+   "rawHead": "Index Scan using tasks_pending_idx on tasks  (cost=0.28..292.40 rows=3815 width=18) (actual time=0.006..0.009 rows=10.00 loops=1)",
+   "costExcl": 292.4,
+   "advice": [
+    "IDX_COND",
+    "ROW_RATIO"
+   ]
+  }
+ ]
+}

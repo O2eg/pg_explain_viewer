@@ -1,0 +1,14 @@
+Limit  (cost=52.37..57.79 rows=50 width=23) (actual time=1.485..1.490 rows=50 loops=1)
+  Buffers: shared hit=558 read=2
+  ->  Incremental Sort  (cost=52.37..21763.32 rows=200000 width=23) (actual time=1.484..1.486 rows=50 loops=1)
+        Sort Key: created, amount
+        Presorted Key: created
+        Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 30kB  Peak Memory: 30kB
+        Pre-sorted Groups: 1  Sort Method: top-N heapsort  Average Memory: 30kB  Peak Memory: 30kB
+        Buffers: shared hit=558 read=2
+        ->  Index Scan using t_orders_created_idx on t_orders  (cost=0.29..9040.23 rows=200000 width=23) (actual time=0.036..1.295 rows=548 loops=1)
+              Buffers: shared hit=548 read=2
+Planning:
+  Buffers: shared hit=119
+Planning Time: 0.315 ms
+Execution Time: 1.513 ms

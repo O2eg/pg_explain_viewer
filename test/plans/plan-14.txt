@@ -1,0 +1,186 @@
+duration: 0.116 ms  plan:
+Query Text: "SELECT count(*) FROM pagila.film f LEFT JOIN pagila.inventory i ON i.film_id=f.film_id WHERE f.rating='PG';"
+Plan: 
+  Node Type: "Aggregate"
+  Strategy: "Plain"
+  Partial Mode: "Simple"
+  Parallel Aware: false
+  Async Capable: false
+  Startup Cost: 26.12
+  Total Cost: 26.13
+  Plan Rows: 1
+  Plan Width: 8
+  Actual Startup Time: 0.114
+  Actual Total Time: 0.115
+  Actual Rows: 1.00
+  Actual Loops: 1
+  Disabled: false
+  Shared Hit Blocks: 14
+  Shared Read Blocks: 0
+  Shared Dirtied Blocks: 0
+  Shared Written Blocks: 0
+  Local Hit Blocks: 0
+  Local Read Blocks: 0
+  Local Dirtied Blocks: 0
+  Local Written Blocks: 0
+  Temp Read Blocks: 0
+  Temp Written Blocks: 0
+  Shared I/O Read Time: 0.000
+  Shared I/O Write Time: 0.000
+  Local I/O Read Time: 0.000
+  Local I/O Write Time: 0.000
+  Temp I/O Read Time: 0.000
+  Temp I/O Write Time: 0.000
+  WAL Records: 0
+  WAL FPI: 0
+  WAL Bytes: 0
+  WAL Buffers Full: 0
+  Plans: 
+    - Node Type: "Hash Join"
+      Parent Relationship: "Outer"
+      Parallel Aware: false
+      Async Capable: false
+      Join Type: "Right"
+      Startup Cost: 14.18
+      Total Cost: 25.82
+      Plan Rows: 119
+      Plan Width: 0
+      Actual Startup Time: 0.049
+      Actual Total Time: 0.109
+      Actual Rows: 119.00
+      Actual Loops: 1
+      Disabled: false
+      Inner Unique: true
+      Hash Cond: "(i.film_id = f.film_id)"
+      Shared Hit Blocks: 14
+      Shared Read Blocks: 0
+      Shared Dirtied Blocks: 0
+      Shared Written Blocks: 0
+      Local Hit Blocks: 0
+      Local Read Blocks: 0
+      Local Dirtied Blocks: 0
+      Local Written Blocks: 0
+      Temp Read Blocks: 0
+      Temp Written Blocks: 0
+      Shared I/O Read Time: 0.000
+      Shared I/O Write Time: 0.000
+      Local I/O Read Time: 0.000
+      Local I/O Write Time: 0.000
+      Temp I/O Read Time: 0.000
+      Temp I/O Write Time: 0.000
+      WAL Records: 0
+      WAL FPI: 0
+      WAL Bytes: 0
+      WAL Buffers Full: 0
+      Plans: 
+        - Node Type: "Seq Scan"
+          Parent Relationship: "Outer"
+          Parallel Aware: false
+          Async Capable: false
+          Relation Name: "inventory"
+          Alias: "i"
+          Startup Cost: 0.00
+          Total Cost: 10.04
+          Plan Rows: 604
+          Plan Width: 4
+          Actual Startup Time: 0.002
+          Actual Total Time: 0.023
+          Actual Rows: 604.00
+          Actual Loops: 1
+          Disabled: false
+          Shared Hit Blocks: 4
+          Shared Read Blocks: 0
+          Shared Dirtied Blocks: 0
+          Shared Written Blocks: 0
+          Local Hit Blocks: 0
+          Local Read Blocks: 0
+          Local Dirtied Blocks: 0
+          Local Written Blocks: 0
+          Temp Read Blocks: 0
+          Temp Written Blocks: 0
+          Shared I/O Read Time: 0.000
+          Shared I/O Write Time: 0.000
+          Local I/O Read Time: 0.000
+          Local I/O Write Time: 0.000
+          Temp I/O Read Time: 0.000
+          Temp I/O Write Time: 0.000
+          WAL Records: 0
+          WAL FPI: 0
+          WAL Bytes: 0
+          WAL Buffers Full: 0
+        - Node Type: "Hash"
+          Parent Relationship: "Inner"
+          Parallel Aware: false
+          Async Capable: false
+          Startup Cost: 13.49
+          Total Cost: 13.49
+          Plan Rows: 55
+          Plan Width: 4
+          Actual Startup Time: 0.044
+          Actual Total Time: 0.044
+          Actual Rows: 55.00
+          Actual Loops: 1
+          Disabled: false
+          Hash Buckets: 1024
+          Original Hash Buckets: 1024
+          Hash Batches: 1
+          Original Hash Batches: 1
+          Peak Memory Usage: 10
+          Shared Hit Blocks: 10
+          Shared Read Blocks: 0
+          Shared Dirtied Blocks: 0
+          Shared Written Blocks: 0
+          Local Hit Blocks: 0
+          Local Read Blocks: 0
+          Local Dirtied Blocks: 0
+          Local Written Blocks: 0
+          Temp Read Blocks: 0
+          Temp Written Blocks: 0
+          Shared I/O Read Time: 0.000
+          Shared I/O Write Time: 0.000
+          Local I/O Read Time: 0.000
+          Local I/O Write Time: 0.000
+          Temp I/O Read Time: 0.000
+          Temp I/O Write Time: 0.000
+          WAL Records: 0
+          WAL FPI: 0
+          WAL Bytes: 0
+          WAL Buffers Full: 0
+          Plans: 
+            - Node Type: "Seq Scan"
+              Parent Relationship: "Outer"
+              Parallel Aware: false
+              Async Capable: false
+              Relation Name: "film"
+              Alias: "f"
+              Startup Cost: 0.00
+              Total Cost: 13.49
+              Plan Rows: 55
+              Plan Width: 4
+              Actual Startup Time: 0.004
+              Actual Total Time: 0.039
+              Actual Rows: 55.00
+              Actual Loops: 1
+              Disabled: false
+              Filter: "(rating = 'PG'::pagila.mpaa_rating)"
+              Rows Removed by Filter: 224
+              Shared Hit Blocks: 10
+              Shared Read Blocks: 0
+              Shared Dirtied Blocks: 0
+              Shared Written Blocks: 0
+              Local Hit Blocks: 0
+              Local Read Blocks: 0
+              Local Dirtied Blocks: 0
+              Local Written Blocks: 0
+              Temp Read Blocks: 0
+              Temp Written Blocks: 0
+              Shared I/O Read Time: 0.000
+              Shared I/O Write Time: 0.000
+              Local I/O Read Time: 0.000
+              Local I/O Write Time: 0.000
+              Temp I/O Read Time: 0.000
+              Temp I/O Write Time: 0.000
+              WAL Records: 0
+              WAL FPI: 0
+              WAL Bytes: 0
+              WAL Buffers Full: 0

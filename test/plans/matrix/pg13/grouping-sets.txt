@@ -1,0 +1,12 @@
+MixedAggregate  (cost=0.00..6356.66 rows=1005 width=17) (actual time=47.042..47.048 rows=15 loops=1)
+  Hash Key: status
+  Hash Key: (customer_id % 10)
+  Group Key: ()
+  Batches: 1  Memory Usage: 81kB
+  Buffers: shared hit=1329
+  ->  Seq Scan on t_orders  (cost=0.00..3836.55 rows=200604 width=9) (actual time=0.005..16.589 rows=200000 loops=1)
+        Buffers: shared hit=1329
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.245 ms
+Execution Time: 47.139 ms

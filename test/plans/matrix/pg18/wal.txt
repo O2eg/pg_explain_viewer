@@ -1,0 +1,6 @@
+Insert on t_events  (cost=0.00..6.25 rows=0 width=0) (actual time=1.503..1.503 rows=0.00 loops=1)
+  Buffers: shared hit=2545 read=7 dirtied=15 written=4
+  WAL: records=1509 bytes=105828
+  ->  Function Scan on generate_series g  (cost=0.00..6.25 rows=500 width=40) (actual time=0.032..0.089 rows=500.00 loops=1)
+Planning Time: 0.043 ms
+Execution Time: 1.534 ms

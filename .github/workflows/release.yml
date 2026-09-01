@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm test
+      - name: Build offline viewer
+        run: python3 build.py
+      - name: Attach viewer and license notices to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pg-explain-viewer.html
+            LICENSE
+            THIRD_PARTY_NOTICES.md
+            vendor/highlight-11.11.1.LICENSE.txt
+          generate_release_notes: true

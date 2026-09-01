@@ -1,0 +1,35 @@
+                                                                                          QUERY PLAN                                                                                           
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=4492.35..4492.40 rows=20 width=16) (actual time=33.572..33.577 rows=20.00 loops=1)
+   Buffers: shared hit=721 read=234
+   I/O Timings: shared read=0.545
+   ->  Sort  (cost=4492.35..4603.69 rows=44535 width=16) (actual time=33.570..33.574 rows=20.00 loops=1)
+         Sort Key: (count(oi.id)) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         Buffers: shared hit=721 read=234
+         I/O Timings: shared read=0.545
+         ->  HashAggregate  (cost=2861.94..3307.29 rows=44535 width=16) (actual time=25.433..30.275 rows=44535.00 loops=1)
+               Group Key: s.id
+               Batches: 1  Memory Usage: 2841kB
+               Buffers: shared hit=718 read=234
+               I/O Timings: shared read=0.545
+               ->  Hash Left Join  (cost=1443.00..2639.27 rows=44535 width=16) (actual time=8.374..17.793 rows=44535.00 loops=1)
+                     Hash Cond: (s.order_items_2_id = oi.id)
+                     Buffers: shared hit=718 read=234
+                     I/O Timings: shared read=0.545
+                     ->  Seq Scan on stock_items s  (cost=0.00..1079.35 rows=44535 width=12) (actual time=0.005..2.216 rows=44535.00 loops=1)
+                           Buffers: shared hit=634
+                     ->  Hash  (cost=818.00..818.00 rows=50000 width=8) (actual time=8.101..8.102 rows=50000.00 loops=1)
+                           Buckets: 65536  Batches: 1  Memory Usage: 2466kB
+                           Buffers: shared hit=84 read=234
+                           I/O Timings: shared read=0.545
+                           ->  Seq Scan on order_items_2 oi  (cost=0.00..818.00 rows=50000 width=8) (actual time=0.203..3.238 rows=50000.00 loops=1)
+                                 Buffers: shared hit=84 read=234
+                                 I/O Timings: shared read=0.545
+ Settings: effective_cache_size = '265MB', maintenance_io_concurrency = '8', max_parallel_workers = '0', max_parallel_workers_per_gather = '0', random_page_cost = '3.13', work_mem = '3235kB'
+ Planning:
+   Buffers: shared hit=330
+ Planning Time: 0.697 ms
+ Execution Time: 34.466 ms
+(31 rows)
+

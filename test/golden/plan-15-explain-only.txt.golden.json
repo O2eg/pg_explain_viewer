@@ -1,0 +1,574 @@
+{
+ "format": "text",
+ "duration": null,
+ "query": null,
+ "planningTime": null,
+ "executionTime": null,
+ "inProgress": false,
+ "truncated": false,
+ "queryId": null,
+ "columns": {
+  "time": false,
+  "cost": true,
+  "estRows": true,
+  "ioRead": false,
+  "ioWrite": false,
+  "rows": false,
+  "ratio": false,
+  "rowsRemoved": false,
+  "filter": true,
+  "loops": false,
+  "buf": []
+ },
+ "totals": {
+  "rowsRemoved": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {},
+  "bufReadBytes": 0,
+  "bufHitBytes": 0,
+  "time": null,
+  "rows": 0
+ },
+ "max": {
+  "timeExcl": 0,
+  "timeIncl": 0,
+  "rows": 0,
+  "rowsRemoved": 0,
+  "loops": 0,
+  "ratio": 0,
+  "ioRead": 0,
+  "ioWrite": 0,
+  "buf": {},
+  "costExcl": 417,
+  "planRows": 16000
+ },
+ "ext": [],
+ "triggers": [],
+ "diagnostics": [],
+ "domain": [
+  "Join",
+  "  ->  Scan Table orders",
+  "  ->  Scan Table customers"
+ ],
+ "stats": [
+  {
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    0
+   ],
+   "timePct": null
+  },
+  {
+   "type": "HashAggregate",
+   "xtype": "HashAggregate",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    1
+   ],
+   "timePct": null
+  },
+  {
+   "type": "Hash Join",
+   "xtype": "Hash Join",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    2
+   ],
+   "timePct": null
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "orders",
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    3
+   ],
+   "timePct": null
+  },
+  {
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    4
+   ],
+   "timePct": null
+  },
+  {
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "customers",
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 0,
+   "rowsRemoved": 0,
+   "loops": 0,
+   "buf": {},
+   "ids": [
+    5
+   ],
+   "timePct": null
+  }
+ ],
+ "schema": {
+  "rels": [
+   {
+    "name": "orders",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "o"
+    ],
+    "nodes": [
+     3
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "customer_id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       2
+      ]
+     },
+     {
+      "col": "amount",
+      "roles": [
+       "filter"
+      ],
+      "nodes": [
+       3
+      ]
+     }
+    ]
+   },
+   {
+    "name": "customers",
+    "schema": null,
+    "virtual": null,
+    "aliases": [
+     "c"
+    ],
+    "nodes": [
+     5
+    ],
+    "indexes": [],
+    "cols": [
+     {
+      "col": "region",
+      "roles": [
+       "sort"
+      ],
+      "nodes": [
+       1
+      ]
+     },
+     {
+      "col": "id",
+      "roles": [
+       "join"
+      ],
+      "nodes": [
+       2
+      ]
+     }
+    ]
+   }
+  ],
+  "joins": [
+   {
+    "left": {
+     "rel": "customers",
+     "col": "id"
+    },
+    "right": {
+     "rel": "orders",
+     "col": "customer_id"
+    },
+    "op": "=",
+    "nodes": [
+     2
+    ]
+   }
+  ]
+ },
+ "advice": [],
+ "nodes": [
+  {
+   "id": 0,
+   "type": "Sort",
+   "xtype": "Sort",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": null,
+   "children": [
+    1
+   ],
+   "depth": 0,
+   "indent": 1,
+   "head": "Sort",
+   "lines": [
+    "Sort Key: (count(*)) DESC"
+   ],
+   "costStartup": 606.17,
+   "costTotal": 606.18,
+   "planRows": 4,
+   "planWidth": 13,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Sort  (cost=606.17..606.18 rows=4 width=13)",
+   "sortKey": "(count(*)) DESC",
+   "costExcl": 0.05
+  },
+  {
+   "id": 1,
+   "type": "HashAggregate",
+   "xtype": "HashAggregate",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 0,
+   "children": [
+    2
+   ],
+   "depth": 1,
+   "indent": 3,
+   "head": "HashAggregate",
+   "lines": [
+    "Group Key: c.region"
+   ],
+   "costStartup": 606.09,
+   "costTotal": 606.13,
+   "planRows": 4,
+   "planWidth": 13,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "HashAggregate  (cost=606.09..606.13 rows=4 width=13)",
+   "groupKey": "c.region",
+   "costExcl": 80.04
+  },
+  {
+   "id": 2,
+   "type": "Hash Join",
+   "xtype": "Hash Join",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 1,
+   "children": [
+    3,
+    4
+   ],
+   "depth": 2,
+   "indent": 9,
+   "head": "Hash Join",
+   "lines": [
+    "Hash Cond: (o.customer_id = c.id)"
+   ],
+   "costStartup": 67,
+   "costTotal": 526.09,
+   "planRows": 16000,
+   "planWidth": 5,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Hash Cond",
+     "val": "(o.customer_id = c.id)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash Join  (cost=67.00..526.09 rows=16000 width=5)",
+   "costExcl": 67.09
+  },
+  {
+   "id": 3,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "orders",
+   "relationRef": "orders",
+   "index": null,
+   "alias": "o",
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [],
+   "depth": 3,
+   "indent": 15,
+   "head": "Seq Scan on orders o",
+   "lines": [
+    "Filter: (amount > '100'::numeric)"
+   ],
+   "costStartup": 0,
+   "costTotal": 417,
+   "planRows": 16000,
+   "planWidth": 8,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [
+    {
+     "key": "Filter",
+     "val": "(amount > '100'::numeric)"
+    }
+   ],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on orders o  (cost=0.00..417.00 rows=16000 width=8)",
+   "costExcl": 417
+  },
+  {
+   "id": 4,
+   "type": "Hash",
+   "xtype": "Hash",
+   "relation": null,
+   "relationRef": null,
+   "index": null,
+   "alias": null,
+   "spec": null,
+   "specName": null,
+   "parent": 2,
+   "children": [
+    5
+   ],
+   "depth": 3,
+   "indent": 15,
+   "head": "Hash",
+   "lines": [],
+   "costStartup": 42,
+   "costTotal": 42,
+   "planRows": 2000,
+   "planWidth": 13,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Hash  (cost=42.00..42.00 rows=2000 width=13)",
+   "costExcl": 0
+  },
+  {
+   "id": 5,
+   "type": "Seq Scan",
+   "xtype": "Seq Scan",
+   "relation": "customers",
+   "relationRef": "customers",
+   "index": null,
+   "alias": "c",
+   "spec": null,
+   "specName": null,
+   "parent": 4,
+   "children": [],
+   "depth": 4,
+   "indent": 21,
+   "head": "Seq Scan on customers c",
+   "lines": [],
+   "costStartup": 0,
+   "costTotal": 42,
+   "planRows": 2000,
+   "planWidth": 13,
+   "timeStartup": null,
+   "timeTotal": null,
+   "rows": null,
+   "loops": null,
+   "never": false,
+   "buf": {},
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rowsRemoved": 0,
+   "rowsRemovedBy": {},
+   "filters": [],
+   "workers": null,
+   "workersPlanned": null,
+   "workersLaunched": null,
+   "heapFetches": null,
+   "sortMethod": null,
+   "timeIncl": null,
+   "timeExcl": null,
+   "prlTime": null,
+   "gatherWorkers": null,
+   "rowsTotal": 0,
+   "rowsRemovedTotal": 0,
+   "bufExcl": {},
+   "ioReadExcl": 0,
+   "ioWriteExcl": 0,
+   "ratio": null,
+   "ratioDir": 0,
+   "rawHead": "Seq Scan on customers c  (cost=0.00..42.00 rows=2000 width=13)",
+   "costExcl": 42
+  }
+ ]
+}

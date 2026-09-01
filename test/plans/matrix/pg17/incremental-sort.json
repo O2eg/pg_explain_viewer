@@ -1,0 +1,117 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Limit",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 43.26,
+      "Total Cost": 47.80,
+      "Plan Rows": 50,
+      "Plan Width": 23,
+      "Actual Startup Time": 1.265,
+      "Actual Total Time": 1.270,
+      "Actual Rows": 50,
+      "Actual Loops": 1,
+      "Shared Hit Blocks": 560,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0,
+      "Plans": [
+        {
+          "Node Type": "Incremental Sort",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 43.26,
+          "Total Cost": 18190.66,
+          "Plan Rows": 200000,
+          "Plan Width": 23,
+          "Actual Startup Time": 1.264,
+          "Actual Total Time": 1.266,
+          "Actual Rows": 50,
+          "Actual Loops": 1,
+          "Sort Key": ["created", "amount"],
+          "Presorted Key": ["created"],
+          "Full-sort Groups": {
+            "Group Count": 1,
+            "Sort Methods Used": ["quicksort"],
+            "Sort Space Memory": {
+              "Average Sort Space Used": 29,
+              "Peak Sort Space Used": 29
+            }
+          },
+          "Pre-sorted Groups": {
+            "Group Count": 1,
+            "Sort Methods Used": ["top-N heapsort"],
+            "Sort Space Memory": {
+              "Average Sort Space Used": 29,
+              "Peak Sort Space Used": 29
+            }
+          },
+          "Shared Hit Blocks": 560,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Forward",
+              "Index Name": "t_orders_created_idx",
+              "Relation Name": "t_orders",
+              "Alias": "t_orders",
+              "Startup Cost": 0.29,
+              "Total Cost": 9039.50,
+              "Plan Rows": 200000,
+              "Plan Width": 23,
+              "Actual Startup Time": 0.018,
+              "Actual Total Time": 1.086,
+              "Actual Rows": 548,
+              "Actual Loops": 1,
+              "Shared Hit Blocks": 550,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            }
+          ]
+        }
+      ]
+    },
+    "Planning": {
+      "Shared Hit Blocks": 123,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.284,
+    "Triggers": [
+    ],
+    "Execution Time": 1.292
+  }
+]

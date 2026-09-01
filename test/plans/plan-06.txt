@@ -1,0 +1,29 @@
+duration: 26.515 ms  plan:
+Query Text: WITH top_items AS MATERIALIZED (SELECT order_items_2_id, sum(amount) q FROM simple_stock.stock_items GROUP BY 1 ORDER BY q DESC LIMIT 100)
+SELECT t.order_items_2_id, t.q, oi.name, rank() OVER (ORDER BY t.q DESC) FROM top_items t JOIN simple_stock.order_items_2 oi ON oi.id = t.order_items_2_id;
+WindowAgg  (cost=4509.62..5042.13 rows=100 width=53) (actual time=26.118..26.479 rows=100.00 loops=1)
+  Window: w1 AS (ORDER BY t.q ROWS UNBOUNDED PRECEDING)
+  Storage: Memory  Maximum Storage: 17kB
+  Buffers: shared hit=9939
+  CTE top_items
+    ->  Limit  (cost=4503.70..4503.95 rows=100 width=36) (actual time=26.072..26.082 rows=100.00 loops=1)
+          Buffers: shared hit=9636
+          ->  Sort  (cost=4503.70..4610.45 rows=42700 width=36) (actual time=26.070..26.075 rows=100.00 loops=1)
+                Sort Key: (sum(stock_items.amount)) DESC
+                Sort Method: top-N heapsort  Memory: 31kB
+                Buffers: shared hit=9636
+                ->  GroupAggregate  (cost=0.29..2871.74 rows=42700 width=36) (actual time=0.014..21.446 rows=42700.00 loops=1)
+                      Group Key: stock_items.order_items_2_id
+                      Buffers: shared hit=9636
+                      ->  Index Scan using stock_items_order_2_idx on stock_items  (cost=0.29..2115.31 rows=44535 width=10) (actual time=0.008..7.410 rows=44535.00 loops=1)
+                            Index Searches: 1
+                            Buffers: shared hit=9636
+  ->  Nested Loop  (cost=0.29..536.68 rows=100 width=45) (actual time=26.113..26.431 rows=100.00 loops=1)
+        Buffers: shared hit=9939
+        ->  CTE Scan on top_items t  (cost=0.00..2.00 rows=100 width=36) (actual time=26.074..26.094 rows=100.00 loops=1)
+              Storage: Memory  Maximum Storage: 20kB
+              Buffers: shared hit=9636
+        ->  Index Scan using order_items_2_pkey on order_items_2 oi  (cost=0.29..5.35 rows=1 width=17) (actual time=0.003..0.003 rows=1.00 loops=100)
+              Index Cond: (id = t.order_items_2_id)
+              Index Searches: 100
+              Buffers: shared hit=303

@@ -1,0 +1,35 @@
+duration: 6.993 ms  plan:
+Query Text: SELECT date_trunc('day', ts) d, count(*) FROM partition_aging.events WHERE ts >= now() - interval '5 days' GROUP BY 1 ORDER BY 1;
+GroupAggregate  (cost=1902.74..2245.64 rows=17145 width=16) (actual time=5.587..6.987 rows=6.00 loops=1)
+  Group Key: (date_trunc('day'::text, events.ts))
+  Buffers: shared hit=185
+  ->  Sort  (cost=1902.74..1945.60 rows=17145 width=8) (actual time=5.564..6.109 rows=17117.00 loops=1)
+        Sort Key: (date_trunc('day'::text, events.ts))
+        Sort Method: quicksort  Memory: 769kB
+        Buffers: shared hit=185
+        ->  Append  (cost=0.15..696.97 rows=17145 width=8) (actual time=0.015..4.611 rows=17117.00 loops=1)
+              Buffers: shared hit=182
+              Subplans Removed: 25
+              ->  Seq Scan on events_2026_08_26 events_1  (cost=0.00..13.45 rows=229 width=8) (actual time=0.015..0.102 rows=228.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Rows Removed by Filter: 222
+                    Buffers: shared hit=5
+              ->  Seq Scan on events_2026_08_27 events_2  (cost=0.00..14.80 rows=490 width=8) (actual time=0.008..0.134 rows=490.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Buffers: shared hit=5
+              ->  Seq Scan on events_2026_08_28 events_3  (cost=0.00..17.32 rows=566 width=8) (actual time=0.005..0.148 rows=566.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Buffers: shared hit=6
+              ->  Seq Scan on events_2026_08_29 events_4  (cost=0.00..19.92 rows=646 width=8) (actual time=0.003..0.145 rows=646.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Buffers: shared hit=7
+              ->  Seq Scan on events_2026_08_30 events_5  (cost=0.00..33.08 rows=1104 width=8) (actual time=0.007..0.234 rows=1104.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Buffers: shared hit=11
+              ->  Seq Scan on events_2026_08_31 events_6  (cost=0.00..429.66 rows=14083 width=8) (actual time=0.005..2.933 rows=14083.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+                    Buffers: shared hit=148
+              ->  Seq Scan on events_2026_09_01 events_7  (cost=0.00..0.00 rows=1 width=8) (actual time=0.005..0.005 rows=0.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
+              ->  Seq Scan on events_2026_09_02 events_8  (cost=0.00..0.00 rows=1 width=8) (actual time=0.007..0.007 rows=0.00 loops=1)
+                    Filter: (ts >= (now() - '5 days'::interval))
