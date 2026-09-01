@@ -504,7 +504,11 @@ truncated plan, an `excl_overshoot`, a plan without `BUFFERS` — and says
 why instead of drawing. Hover tooltips carry the numbers, through the
 widget's existing `data-pv-tip` machinery.
 
-Design and step-by-step plan: `docs/charts.md`.
+Only the latency composition survives as a donut; everything else lacks a
+shared denominator or has too many categories for angles, and becomes
+ranked or stacked bars. One tab, three sections (time / rows /
+resources). Design, the ranked list of eleven candidate charts with
+measured coverage, and the step-by-step plan: `docs/charts.md`.
 
 ### Deliberately re-sequenced vs. a naive reading
 
