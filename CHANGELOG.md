@@ -4,6 +4,82 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.4.3] — 2026-09-01
+
+Validation round against the 30 largest public plans available (96–449
+nodes each, up to 76-minute executions, per-node times and totals
+cross-checked against an independent viewer — treated as a second
+opinion, not ground truth). After the fixes below, 26 of 30 plans
+converge Σ self ≈ root within 1%; the rest are honestly diagnosed
+(parallel estimate, quantization, a genuinely cut plan).
+
+- **CTE with several scans charged by time fit**: the CTE used to be
+  charged to the first `CTE Scan` in document order; on a real 233-node
+  plan a cheap tuplestore re-reader appeared before the scan that
+  actually paid for a 684-second CTE, so Σ self reached 2× the root.
+  The payer is now the scan whose own time absorbs the CTE (tightest
+  covering fit).
+- **Bottom-fed truncation detected structurally**: a plan cut below a
+  join — last line syntactically fine, children missing — used to pass
+  as complete, and the advisor ran on a beheaded tree (real 118-node
+  archive plan). A join with fewer than two children or a single-input
+  operator (Sort, Hash, Aggregate, …) with none now flags
+  `truncated_input` and disables advice.
+- **Monotonic repair of quantized times (`metric_raised`)**: per-loop
+  actual times are printed with 1 µs resolution, so a `Memoize` at
+  21.8M loops printed `0.000` while its child accumulated 5.8 s — the
+  child then double-counted into Σ self (+17% on three archive plans).
+  When the deficit fits the rounding budget, the parent's inclusive
+  time is raised to its children's sum bottom-up.
+- **Bare spec headers re-charged only on provable overload**: mangled
+  sources drop `(returns $N)` from InitPlan/SubPlan headers, leaving no
+  marker to find the executor by. Such sections stay on the syntactic
+  parent (a target-list SubPlan really does execute there) unless the
+  parent provably cannot contain them — then the tightest covering
+  main-tree node takes the charge (bodies of other spec sections are
+  excluded as circular). Fixed +70% Σ self on a real plan with four
+  bare InitPlans without disturbing plans where the parent was right.
+- **Advice family collapsing**: a big plan fired the same rule on
+  dozens of nodes (20× `ANY_SLOW`, 40× `ROW_RATIO`, 157 `ROW_RATIO`
+  minors on a 449-node plan). Only the three highest-impact entries per
+  code remain individual cards; the rest roll into one aggregate entry
+  (`agg: N`) carrying combined impact, all affected nodes and the
+  rolled-up DDL candidates. One 449-node plan went from 51 cards to 9.
+- **Diagnostics tab**: parser/analyzer diagnostics moved from a
+  tooltip-only summary chip into their own tab after recommendations —
+  cards with severity icons (warnings first), stable code, occurrence
+  count, clickable node links and sample lines; the summary chip now
+  opens the tab. `renderDiagnostics` is also exported standalone.
+- **Sample-plan combobox removed**: the viewer no longer embeds the 17
+  demo plans or auto-loads one on open — paste a plan, get a
+  visualization. The dist artifact shrank 403 → 358 KB;
+  `tools/browser-smoke.py` sweeps the same plans straight from
+  `test/plans/` instead.
+- **Canvas pan & zoom**: the diagram and relations panes gained −/+
+  zoom buttons (animated, anchored to the viewport centre, 0.25×–4×)
+  and drag-to-pan; a press that does not move stays a click, so node
+  navigation keeps working. Zooming the relations pane reflows the
+  cards like browser zoom and the join edges track the new layout at
+  any scale. Both panes are capped at 78vh so the canvas scrolls
+  instead of the page.
+- **Four new diagram modes**: *by I/O time* (actual milliseconds from
+  I/O Timings — buffer pages may all be cache hits), *by rows*, *by
+  rows removed* (work thrown away by filters) and *by estimate error* —
+  the latter on a diverging scale (blue = underestimated, red =
+  overestimated, same mapping as the plan table; misses under 2× are
+  ignored as planner noise). Buttons appear only when the plan carries
+  the data; node tooltips gained rows-removed / self-I/O / estimate
+  lines. Edge thickness by row flow was already there.
+- **PostgreSQL 10 and 11 in the format matrix** (legacy systems still
+  run them): `tools/gen-fixtures.sh` now covers 10…18 — legacy images,
+  `EXECUTE PROCEDURE` trigger spelling, a pre-12 `cte-spill` variant
+  (`AS MATERIALIZED` is 12+ syntax), JIT probed per build (absent on
+  10). Found and fixed: the pre-12 TEXT tail spellings
+  `Planning time:` / `Execution time:` (and 9.x `Total runtime:`) were
+  not recognized as plan totals — they are canonicalized now, so
+  planning/execution time chips and `EXT_*` advice work on legacy
+  plans. 37 new parity triples committed.
+
 ## [0.4.2] — 2026-09-01
 
 Advisor precision round, driven by a real 61-node production plan and a

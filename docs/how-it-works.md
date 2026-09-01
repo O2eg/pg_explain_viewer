@@ -39,15 +39,36 @@ timeExcl = timeIncl − Σ timeIncl(charged children)
 
 The subtlety is CTE / InitPlan / SubPlan sections. Their execution time
 is *already contained* in the node that actually runs them — a CTE runs
-lazily inside the first `CTE Scan` that reads it, an InitPlan/SubPlan
-inside the node whose conditions reference `$N` / `(InitPlan N)` /
-`(SubPlan N)`. The analyzer finds that node (`spec.chargedTo`) and
-subtracts the section there, not at its syntactic parent. Without this,
-self times would double-count and Σ self ≠ root inclusive.
+lazily inside the `CTE Scan` that first demands its rows, an
+InitPlan/SubPlan inside the node whose conditions reference `$N` /
+`(InitPlan N)` / `(SubPlan N)`. The analyzer finds that node
+(`spec.chargedTo`) and subtracts the section there, not at its syntactic
+parent. Without this, self times would double-count and Σ self ≠ root
+inclusive.
+
+When several `CTE Scan`s read the same CTE, the payer is chosen by time
+fit — the scan whose own inclusive time can absorb the CTE (tightest
+covering fit), not the first one in document order: a cheap tuplestore
+re-reader can appear earlier than the scan that actually executed the
+CTE. Sections whose headers lost their `(returns $N)` markers (mangled
+sources) stay on the syntactic parent unless the parent *provably
+cannot contain them* (its children plus charged sections exceed its own
+inclusive time); only then is the tightest covering main-tree node in
+the parent's subtree charged instead — bodies of other spec sections
+are excluded because they mirror the section's time exactly and would
+create a circular charge.
 
 When the executing node is found heuristically, the plan carries a
 `charge_inferred` diagnostic; when it cannot be found and the time stays
 on the syntactic parent — `charge_fallback`.
+
+Per-loop actual times are printed with 1 µs resolution, so at millions
+of loops a parent can print *less* inclusive time than its children
+accumulate (a `Memoize` at 21.8M loops prints `0.000` while its child
+holds seconds). When the deficit fits the rounding budget
+(`0.0005 ms × loops`), the parent's inclusive time is raised to the
+children's sum bottom-up (`metric_raised`); larger deficits are left
+alone and show up as `excl_overshoot` / `metric_clamped`.
 
 Negative results (rounding, attribution overlap) are clamped to zero and
 reported via `metric_clamped`. The invariant the test suite enforces on
@@ -80,6 +101,13 @@ Every advice entry separates:
   plan time. Findings under 2% / 1 ms are demoted to the collapsed
   "minor observations" section.
 
+A big plan can trigger the same rule on dozens of nodes (an archive
+sweep found 20× `ANY_SLOW` and 40× `ROW_RATIO` in single plans). Only
+the three highest-impact entries per code are kept as individual cards;
+the rest collapse into one aggregate entry (`agg: N`) that carries the
+combined impact, all affected nodes (row badges still mark them), and
+any DDL candidates from the rolled-up entries.
+
 `CREATE INDEX` suggestions carry `confidence`:
 
 - `exact` — every condition was analyzed and covered;
@@ -101,6 +129,7 @@ workload.
 | `truncated_input` | the plan is cut off (tail or missing ancestors); advice disabled |
 | `unsupported_field` | structured JSON/YAML fields with no text representation yet (e.g. Grouping Sets) |
 | `metric_clamped` | negative self time clamped to zero |
+| `metric_raised` | parent inclusive time raised to its children's sum (per-loop 1 µs rounding at high loop counts) |
 | `charge_inferred` / `charge_fallback` | CTE/InitPlan/SubPlan attribution was heuristic / not found |
 | `parallel_estimate` | wall-clock attribution under Gather is approximate |
 | `excl_overshoot` | self times add up to more than the root wall-clock (parallel rounding) — treat them as upper bounds |

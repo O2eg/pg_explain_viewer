@@ -1,0 +1,10 @@
+Gather Merge  (cost=8584.86..15278.09 rows=58202 width=43)
+  Workers Planned: 1
+  ->  Sort  (cost=7584.85..7730.35 rows=58202 width=43)
+        Sort Key: o.created
+        ->  Hash Join  (cost=29.50..2978.51 rows=58202 width=43)
+              Hash Cond: (o.customer_id = c.id)
+              ->  Parallel Seq Scan on t_orders o  (cost=0.00..2795.59 rows=58202 width=23)
+                    Filter: (amount > '50'::numeric)
+              ->  Hash  (cost=17.00..17.00 rows=1000 width=16)
+                    ->  Seq Scan on t_customers c  (cost=0.00..17.00 rows=1000 width=16)

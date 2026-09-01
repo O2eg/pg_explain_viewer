@@ -263,6 +263,78 @@
     });
   }
 
+  /* ================= canvas pan & zoom ================= */
+
+  // drag-to-pan on a scroll container. A press that never crosses the
+  // threshold stays a click (node navigation keeps working); once it does,
+  // the pointer is captured and the trailing click is swallowed.
+  function attachPan(scrollEl) {
+    let sx = 0, sy = 0, sl = 0, st = 0, active = false, moved = false;
+    scrollEl.classList.add('pv-pan');
+    scrollEl.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      active = true; moved = false;
+      sx = e.clientX; sy = e.clientY;
+      sl = scrollEl.scrollLeft; st = scrollEl.scrollTop;
+    });
+    scrollEl.addEventListener('pointermove', e => {
+      if (!active) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+      if (!moved) {
+        moved = true;
+        scrollEl.classList.add('pv-grabbing');
+        try { scrollEl.setPointerCapture(e.pointerId); } catch (err) { /* detached */ }
+      }
+      scrollEl.scrollLeft = sl - dx;
+      scrollEl.scrollTop = st - dy;
+      e.preventDefault();
+    });
+    const end = () => { active = false; scrollEl.classList.remove('pv-grabbing'); };
+    scrollEl.addEventListener('pointerup', end);
+    scrollEl.addEventListener('pointercancel', end);
+    scrollEl.addEventListener('click', e => {
+      if (moved) { moved = false; e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
+
+  // − / + buttons with an animated zoom anchored to the viewport centre.
+  // applyScale(z) resizes the pane content for scale z; it is called every
+  // animation frame, so it must be cheap and idempotent.
+  function attachZoom(head, scrollEl, applyScale) {
+    const group = el('div', 'pv-zoom', head);
+    let z = 1, zTarget = 1, anim = null;
+    const zoomTo = target => {
+      target = Math.min(4, Math.max(0.25, target));
+      zTarget = target;
+      const from = z;
+      if (anim) cancelAnimationFrame(anim);
+      const cx = (scrollEl.scrollLeft + scrollEl.clientWidth / 2) / from;
+      const cy = (scrollEl.scrollTop + scrollEl.clientHeight / 2) / from;
+      const t0 = performance.now(), DUR = 180;
+      const step = now => {
+        const t = Math.min(1, (now - t0) / DUR);
+        const e = 1 - (1 - t) * (1 - t); // ease-out
+        z = from + (target - from) * e;
+        applyScale(z);
+        scrollEl.scrollLeft = cx * z - scrollEl.clientWidth / 2;
+        scrollEl.scrollTop = cy * z - scrollEl.clientHeight / 2;
+        anim = t < 1 ? requestAnimationFrame(step) : null;
+      };
+      anim = requestAnimationFrame(step);
+    };
+    const mk = (label, factor, name) => {
+      const b = btn('pv-dg-mode pv-zoom-btn', group);
+      b.textContent = label;
+      b.setAttribute('aria-label', name);
+      tip(b, name);
+      // rapid clicks compound from the target, not the mid-animation value
+      b.addEventListener('click', () => zoomTo(zTarget * factor));
+    };
+    mk('−', 1 / 1.4, 'zoom out');
+    mk('+', 1.4, 'zoom in');
+  }
+
   function nodeLink(ctx, id, label) {
     const a = btn('pv-nodelink');
     a.textContent = label != null ? label : '#' + id;
@@ -824,6 +896,47 @@
 
   /* ================= stats pane ================= */
 
+  /* ================= diagnostics pane ================= */
+
+  function renderDiagnostics(container, plan, ctx) {
+    ctx = ctx || makeLocalCtx(container);
+    bindTooltips(container.closest('.pv') || container);
+    const list = el('div', 'pv-diaglist', container);
+    // warnings (trust-affecting) first, notes after; stable within a group
+    const diags = (plan.diagnostics || []).slice()
+      .sort((a, b) => (a.severity === 'warn' ? 0 : 1) - (b.severity === 'warn' ? 0 : 1));
+    for (const d of diags) {
+      const item = el('div', 'pv-diagitem pv-diagitem-' + d.severity, list);
+      const ico = el('span', 'pv-diag-ico pv-diag-ico-' + d.severity, item);
+      ico.textContent = d.severity === 'warn' ? '!' : 'i';
+      tip(ico, d.severity === 'warn'
+        ? 'warning: affects how much to trust the numbers'
+        : 'note: a model adjustment or approximation');
+      const body = el('div', 'pv-diagbody', item);
+      const head = el('div', 'pv-diaghead', body);
+      el('span', 'pv-diagcode', head).textContent = d.code;
+      if (d.count > 1) {
+        const c = el('span', 'pv-diagcount', head);
+        c.textContent = '×' + d.count;
+        tip(c, d.count + ' occurrences');
+      }
+      el('div', 'pv-diagmsg', body).textContent = d.message;
+      if (d.nodes && d.nodes.length) {
+        const nl = el('div', 'pv-diagnodes', body);
+        el('span', 'pv-diagnodes-l', nl).textContent = 'nodes';
+        for (const id of d.nodes) nl.appendChild(nodeLink(ctx, id));
+        if (d.count > d.nodes.length) {
+          el('span', 'pv-diagmore', nl).textContent =
+            '+' + (d.count - d.nodes.length) + ' more';
+        }
+      }
+      if (d.samples && d.samples.length) {
+        const sm = el('div', 'pv-diagsamples', body);
+        for (const s of d.samples) el('div', 'pv-diagsample', sm).textContent = s;
+      }
+    }
+  }
+
   function renderStats(container, plan, ctx) {
     ctx = ctx || makeLocalCtx(container);
     bindTooltips(container.closest('.pv') || container);
@@ -1209,8 +1322,16 @@
     };
     const hasTime = plan.columns.time;
     const hasBuf = plan.columns.buf.length > 0;
+    const hasIo = real.some(n => (n.ioReadExcl || 0) + (n.ioWriteExcl || 0) > 0);
+    const hasRows = plan.columns.rows;
+    const hasRemoved = real.some(n => (n.rowsRemovedTotal || 0) > 0);
+    const hasRatio = real.some(n => n.ratio != null);
     if (hasTime) mkMode('time', 'by time');
     if (hasBuf) mkMode('buffers', 'by buffers');
+    if (hasIo) mkMode('io', 'by I/O time');
+    if (hasRows) mkMode('rows', 'by rows');
+    if (hasRemoved) mkMode('removed', 'by rows removed');
+    if (hasRatio) mkMode('estimate', 'by estimate error');
     if (!hasTime && !hasBuf) mkMode('cost', 'by cost');
 
     const scroll = el('div', 'pv-dg-scroll', container);
@@ -1221,6 +1342,11 @@
     svg.setAttribute('height', height);
     svg.classList.add('pv-dg');
     scroll.appendChild(svg);
+    attachPan(scroll);
+    attachZoom(head, scroll, zz => {
+      svg.setAttribute('width', Math.round(width * zz));
+      svg.setAttribute('height', Math.round(height * zz));
+    });
 
     const maxRows = Math.max(...real.map(n => n.rowsTotal), 1);
     const edgeW = n => 1.5 + 10 * Math.log(1 + n.rowsTotal) / Math.log(1 + maxRows);
@@ -1287,7 +1413,13 @@
 
       tip(g, `#${n.id} ${n.head}\n`
         + (n.timeExcl != null ? `self time: ${fmtMs(n.timeExcl)}\n` : '')
-        + `rows: ${fmtInt(n.rowsTotal)}` + (n.loops > 1 ? `, loops: ${fmtInt(n.loops)}` : ''));
+        + `rows: ${fmtInt(n.rowsTotal)}` + (n.loops > 1 ? `, loops: ${fmtInt(n.loops)}` : '')
+        + ((n.rowsRemovedTotal || 0) > 0 ? `\nrows removed: ${fmtInt(n.rowsRemovedTotal)}` : '')
+        + ((n.ioReadExcl || 0) + (n.ioWriteExcl || 0) > 0
+          ? `\nself I/O: ${fmtMs((n.ioReadExcl || 0) + (n.ioWriteExcl || 0))}` : '')
+        + (n.ratio != null
+          ? `\nestimate: ${n.ratio === Infinity ? '∞' : '×' + fmtNum(n.ratio, 1)} `
+            + (n.ratioDir > 0 ? 'underestimated' : 'overestimated') : ''));
 
       g.addEventListener('click', () => ctx.goToNode(n.id));
       keyable(g, () => ctx.goToNode(n.id));
@@ -1298,10 +1430,39 @@
       for (const [k, b] of Object.entries(modeBtns)) {
         b.classList.toggle('pv-dg-mode-on', k === mode);
       }
+      const reset = ring => { ring.style.stroke = ''; ring.style.strokeWidth = ''; };
+      if (mode === 'estimate') {
+        // diverging scale, not a heat ramp: hue encodes the direction of the
+        // planner's miss (blue = underestimated, red = overestimated — same
+        // mapping as the plan table), intensity its log-scaled magnitude
+        // misses under 2× are within planner noise — no ring, only real ones
+        const mag = n => n.ratio == null || n.ratio < 2 ? 0
+          : n.ratio === Infinity ? Infinity : Math.log(n.ratio);
+        let maxMag = 0;
+        for (const n of real) {
+          const m = mag(n);
+          if (m !== Infinity && m > maxMag) maxMag = m;
+        }
+        for (const n of real) {
+          const ring = rings.get(n.id);
+          const m = mag(n);
+          if (m > 0) {
+            const f = m === Infinity ? 1 : maxMag > 0 ? m / maxMag : 1;
+            ring.style.stroke = heat(hues, n.ratioDir > 0 ? hues.under : hues.over,
+              0.25 + 0.75 * f);
+            ring.style.strokeWidth = (2 + 4 * f).toFixed(1);
+          } else {
+            reset(ring);
+          }
+        }
+        return;
+      }
       const val = n => mode === 'time' ? (n.timeExcl || 0)
-        : mode === 'buffers'
-          ? Object.values(n.bufExcl).reduce((s, v) => s + v, 0)
-          : (n.costExcl || 0);
+        : mode === 'buffers' ? Object.values(n.bufExcl).reduce((s, v) => s + v, 0)
+        : mode === 'io' ? (n.ioReadExcl || 0) + (n.ioWriteExcl || 0)
+        : mode === 'rows' ? (n.rowsTotal || 0)
+        : mode === 'removed' ? (n.rowsRemovedTotal || 0)
+        : (n.costExcl || 0);
       const maxV = Math.max(...real.map(val), 0);
       for (const n of real) {
         const ring = rings.get(n.id);
@@ -1310,8 +1471,7 @@
           ring.style.stroke = heatWarm(hues, r, 0.25 + 0.75 * r);
           ring.style.strokeWidth = (2 + 4 * r).toFixed(1);
         } else {
-          ring.style.stroke = '';
-          ring.style.strokeWidth = '';
+          reset(ring);
         }
       }
     }
@@ -1332,12 +1492,36 @@
       return;
     }
 
+    const head = el('div', 'pv-dg-head', container);
     const box = el('div', 'pv-relbox', container);
+    // box (scroll viewport) > sizer (reserves the scaled extent) > wrap
+    // (transform: scale) — cards and the edge overlay scale together
+    const sizer = el('div', 'pv-relsizer', box);
+    const wrap = el('div', 'pv-relwrap', sizer);
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
     svg.classList.add('pv-rel-edges');
-    box.appendChild(svg);
-    const flow = el('div', 'pv-relflow', box);
+    wrap.appendChild(svg);
+    const flow = el('div', 'pv-relflow', wrap);
+    let zoom = 1;
+    const applyScale = zz => {
+      zoom = zz;
+      if (zz === 1) {
+        wrap.style.transform = '';
+        wrap.style.width = '';
+        sizer.style.height = '';
+      } else {
+        // narrow the layout so the scaled content still fills the pane
+        // width (browser-zoom feel: cards grow and reflow, growth is
+        // vertical), then reserve the scaled height for the scrollbars
+        wrap.style.width = (box.clientWidth / zz) + 'px';
+        wrap.style.transform = 'scale(' + zz + ')';
+        sizer.style.height = (wrap.scrollHeight * zz) + 'px';
+      }
+      drawEdges();
+    };
+    attachPan(box);
+    attachZoom(head, box, applyScale);
 
     // order relations: joined neighbours near each other (simple: by first node id)
     const rels = schema.rels.slice()
@@ -1396,9 +1580,12 @@
     // join edges between column rows
     function drawEdges() {
       while (svg.firstChild) svg.removeChild(svg.firstChild);
-      const base = box.getBoundingClientRect();
-      svg.setAttribute('width', box.scrollWidth);
-      svg.setAttribute('height', box.scrollHeight);
+      // coordinates in wrap space (unscaled): the wrap rect moves with the
+      // scroll and scales with the zoom, so dividing by the current zoom is
+      // the whole correction
+      const base = wrap.getBoundingClientRect();
+      svg.setAttribute('width', wrap.scrollWidth);
+      svg.setAttribute('height', wrap.scrollHeight);
       for (const j of schema.joins) {
         const a = colEls.get(j.left.rel + '|' + j.left.col);
         const b = colEls.get(j.right.rel + '|' + j.right.col);
@@ -1409,10 +1596,10 @@
         const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
         // connect nearest edges
         const aRight = ra.right < rb.left;
-        const x1 = (aRight ? ra.right : ra.left) - base.left + box.scrollLeft;
-        const x2 = (aRight ? rb.left : rb.right) - base.left + box.scrollLeft;
-        const y1 = ra.top + ra.height / 2 - base.top + box.scrollTop;
-        const y2 = rb.top + rb.height / 2 - base.top + box.scrollTop;
+        const x1 = ((aRight ? ra.right : ra.left) - base.left) / zoom;
+        const x2 = ((aRight ? rb.left : rb.right) - base.left) / zoom;
+        const y1 = (ra.top + ra.height / 2 - base.top) / zoom;
+        const y2 = (rb.top + rb.height / 2 - base.top) / zoom;
         const dx = Math.max(24, Math.abs(x2 - x1) / 3) * (aRight ? 1 : -1);
         const path = document.createElementNS(svgNS, 'path');
         path.setAttribute('d', `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`);
@@ -1422,10 +1609,11 @@
         svg.appendChild(path);
       }
     }
-    // draw after layout; redraw on resize
+    // draw after layout; on pane resize re-apply the scale (the layout
+    // width depends on the pane width) and redraw
     requestAnimationFrame(drawEdges);
     if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(() => drawEdges());
+      const ro = new ResizeObserver(() => applyScale(zoom));
       ro.observe(box);
       ctx.addCleanup(() => ro.disconnect());
     }
@@ -1470,12 +1658,13 @@
     // parser/analyzer diagnostics: approximations, clamps, ignored lines
     if (plan.diagnostics && plan.diagnostics.length) {
       const worst = plan.diagnostics.some(d => d.severity === 'warn') ? 'warn' : 'info';
-      const c = el('span', 'pv-chip pv-chip-diag pv-diag-' + worst, summary);
+      const c = btn('pv-chip pv-chip-diag pv-diag-' + worst, summary);
       c.innerHTML = '<span class="pv-chip-l">diagnostics</span>'
         + '<span class="pv-chip-v">' + plan.diagnostics.length + '</span>';
       tip(c, plan.diagnostics.map(d =>
         '[' + d.severity + '] ' + d.code + ': ' + d.message
         + (d.count > 1 ? ' (×' + d.count + ')' : '')).join('\n'));
+      if (ctx) c.addEventListener('click', () => ctx.setTab('diagnostics'));
     }
 
     // advice badges: unique codes with node links (minor findings stay in
@@ -1540,6 +1729,11 @@
       },
       applicable: p => (p.advice && p.advice.length > 0)
         || (p.coaching && p.coaching.length > 0),
+    },
+    {
+      name: 'diagnostics',
+      label: p => 'diagnostics (' + p.diagnostics.length + ')',
+      applicable: p => p.diagnostics && p.diagnostics.length > 0,
     },
     { name: 'stats', label: 'stats', applicable: p => p.stats && p.stats.length > 0 },
     { name: 'diagram', label: 'diagram', applicable: p => p.nodes.filter(n => !n.spec).length > 1 },
@@ -1631,6 +1825,7 @@
       switch (name) {
         case 'plan': tableApi = renderTable(pane, plan, ctx, opts) || tableApi; break;
         case 'advice': adviceApi = renderAdvice(pane, plan, ctx) || adviceApi; break;
+        case 'diagnostics': renderDiagnostics(pane, plan, ctx); break;
         case 'stats': renderStats(pane, plan, ctx); break;
         case 'diagram': renderDiagram(pane, plan, ctx); break;
         case 'relations': renderRelations(pane, plan, ctx); break;
@@ -1663,7 +1858,7 @@
   return {
     render,
     destroy: destroyIn,
-    renderTable, renderAdvice, renderStats, renderDiagram, renderRelations,
+    renderTable, renderAdvice, renderDiagnostics, renderStats, renderDiagram, renderRelations,
     renderText, renderQuery, renderDomain,
     fmtBytes, fmtMs, fmtNum, fmtInt,
   };

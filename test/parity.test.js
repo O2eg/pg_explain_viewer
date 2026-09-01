@@ -1,5 +1,5 @@
 'use strict';
-// Format-parity tests over the PG 12…18 matrix corpus: the TEXT, JSON and
+// Format-parity tests over the PG 10…18 matrix corpus: the TEXT, JSON and
 // YAML captures of the same EXPLAIN must normalize to the same tree and the
 // same planner estimates through the current (text-canonical) pipeline.
 // Actual metrics come from three separate executions, so only their

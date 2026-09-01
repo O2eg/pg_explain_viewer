@@ -1,0 +1,9 @@
+Limit  (cost=0.00..0.05 rows=3 width=4) (actual time=0.010..0.012 rows=3 loops=1)
+  Buffers: shared hit=1
+  ->  Append  (cost=0.00..3352.04 rows=201604 width=4) (actual time=0.010..0.010 rows=3 loops=1)
+        Buffers: shared hit=1
+        ->  Seq Scan on t_customers  (cost=0.00..17.00 rows=1000 width=4) (actual time=0.009..0.009 rows=3 loops=1)
+              Buffers: shared hit=1
+        ->  Seq Scan on t_orders  (cost=0.00..3335.04 rows=200604 width=4) (never executed)
+Planning time: 0.336 ms
+Execution time: 0.038 ms

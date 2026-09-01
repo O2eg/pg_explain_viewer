@@ -746,3 +746,40 @@ Execution Time: 9000.4 ms`);
   assert.doesNotMatch(a.nodes[0].ext, /no buffer data/);
   assert.match(a.nodes[0].ext, /bufmem=500/);
 });
+
+/* ---------------- family collapsing ---------------- */
+
+test('same-code entries beyond three collapse into one aggregate', () => {
+  // archive sweep: big plans fired the same rule on dozens of nodes
+  // (20× ANY_SLOW, 40× ROW_RATIO in one plan) drowning the material top
+  const scans = [];
+  for (let i = 1; i <= 6; i++) {
+    scans.push(`  ->  Seq Scan on t${i}  (cost=0.00..1000.00 rows=100 width=8) (actual time=0.10..5${i}.00 rows=100.00 loops=1)
+        Filter: (status = 'x'::text)
+        Rows Removed by Filter: 10000`);
+  }
+  const p = P(`Append  (cost=0.00..6000.00 rows=600 width=8) (actual time=0.10..320.00 rows=600.00 loops=1)
+${scans.join('\n')}
+Execution Time: 320.5 ms`);
+  const fam = p.advice.filter(a => a.code === 'SEQ_RRBF');
+  assert.equal(fam.length, 4, 'expected 3 kept + 1 aggregate: ' + fam.length);
+  const agg = fam.find(a => a.agg);
+  assert.ok(agg, 'no aggregate entry');
+  assert.equal(agg.agg, 3);
+  assert.match(agg.obs, /^3 more nodes match this pattern/);
+  assert.equal(agg.hyp, null);
+  assert.equal(agg.nodes.length, 3, 'aggregate must carry the tail nodes');
+  assert.ok(agg.idxs.length >= 1, 'DDL candidates from the tail must survive');
+  assert.ok(agg.impact.ms > 100, 'combined impact: ' + agg.impact.ms);
+  // the three kept entries are the highest-impact ones (t6, t5, t4)
+  const keptRels = fam.filter(a => !a.agg)
+    .map(a => p.nodes[a.nodes[0].id].relation).join(' ');
+  assert.match(keptRels, /t6/);
+  // four same-code entries do NOT collapse
+  const small = P(`Append  (cost=0.00..4000.00 rows=400 width=8) (actual time=0.10..215.00 rows=400.00 loops=1)
+${scans.slice(0, 4).join('\n')}
+Execution Time: 215.5 ms`);
+  const fam4 = small.advice.filter(a => a.code === 'SEQ_RRBF');
+  assert.equal(fam4.length, 4);
+  assert.ok(!fam4.some(a => a.agg));
+});

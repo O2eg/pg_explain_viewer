@@ -76,7 +76,6 @@
     padding: 6px 13px;
   }
   button { cursor: pointer; }
-  #sample { max-width: 420px; }
   button:hover, select:hover { background: var(--vw-button-hover); border-color: var(--vw-border-strong); }
   button.primary {
     background: var(--vw-accent);
@@ -180,9 +179,6 @@
   <div class="vw-top">
     <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
     <div class="spacer"></div>
-    <select id="sample" title="sample plans (from pg_stand logs)">
-      <option value="">— sample plan —</option>
-    </select>
     <label class="vw-theme-toggle" title="Switch theme">
       <span>Dark</span>
       <input id="theme" type="checkbox">
@@ -210,7 +206,6 @@
 <script src="src/pgplan-expr.js"></script><!--PV:JS-EXPR-->
 <script src="src/pgplan.js"></script><!--PV:JS-CORE-->
 <script src="src/pgplan-render.js"></script><!--PV:JS-RENDER-->
-<script>window.PV_SAMPLES = {};</script><!--PV:SAMPLES-->
 <script>
 (function () {
   'use strict';
@@ -231,21 +226,6 @@
     try { localStorage.setItem('pv-theme', theme); } catch (e) {}
     applyTheme(theme);
     if (lastPlan) show(lastPlan); // re-render so heat colors pick up theme hues
-  });
-
-  /* samples */
-  const samples = window.PV_SAMPLES || {};
-  const sel = $('sample');
-  for (const name of Object.keys(samples)) {
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name;
-    sel.appendChild(o);
-  }
-  sel.addEventListener('change', () => {
-    if (!sel.value) return;
-    srcEl.value = samples[sel.value];
-    sqlEl.value = ''; // samples carry their own Query Text
-    visualize(true);
   });
 
   let lastPlan = null;
@@ -273,7 +253,7 @@
 
   $('go').addEventListener('click', () => visualize(true));
   $('clear').addEventListener('click', () => {
-    srcEl.value = ''; sqlEl.value = ''; sel.value = '';
+    srcEl.value = ''; sqlEl.value = '';
     lastPlan = null; // a later theme switch must not resurrect the old plan
     outEl.style.display = 'none';
     srcEl.focus();
@@ -284,13 +264,6 @@
     });
   }
 
-  /* first sample by default */
-  const names = Object.keys(samples);
-  if (names.length) {
-    sel.value = names[0];
-    srcEl.value = samples[names[0]];
-    visualize(false);
-  }
 })();
 </script>
 </body>

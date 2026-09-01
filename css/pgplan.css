@@ -594,7 +594,13 @@ td.pv-ids .pv-nodelink { margin-right: 7px; }
   border-color: var(--pv-guide-hl);
 }
 
-.pv-dg-scroll { overflow: auto; }
+.pv-dg-scroll { overflow: auto; max-height: 78vh; cursor: grab; }
+
+.pv-grabbing { cursor: grabbing; user-select: none; }
+
+.pv-zoom { margin-left: auto; display: flex; gap: 4px; }
+
+.pv-zoom-btn { min-width: 26px; text-align: center; }
 
 .pv-dg-edge {
   fill: none;
@@ -648,7 +654,9 @@ td.pv-ids .pv-nodelink { margin-right: 7px; }
 
 /* ---------------- relations pane ---------------- */
 
-.pv-relbox { position: relative; overflow: auto; }
+.pv-relbox { position: relative; overflow: auto; max-height: 78vh; cursor: grab; }
+
+.pv-relwrap { position: relative; transform-origin: 0 0; }
 
 .pv-rel-edges {
   position: absolute;
@@ -826,3 +834,88 @@ pre.pv-sql {
 }
 
 .pv-tooltip[hidden] { display: none; }
+
+/* ---------------- diagnostics pane ---------------- */
+
+.pv-diaglist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.pv-diagitem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--pv-border);
+  border-radius: 10px;
+  background: var(--pv-bg);
+  padding: 10px 14px;
+}
+
+.pv-diag-ico {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  font-family: var(--pv-font-mono);
+  font-size: var(--pv-fs-sm);
+  font-weight: 700;
+  color: var(--pv-badge-fg);
+}
+
+.pv-diag-ico-warn { background: var(--pv-sev-warn); }
+.pv-diag-ico-info { background: var(--pv-sev-info); }
+
+.pv-diagbody { min-width: 0; flex: 1; }
+
+.pv-diaghead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pv-diagcode {
+  font-family: var(--pv-font-mono);
+  font-size: var(--pv-fs-sm);
+  font-weight: 600;
+}
+
+.pv-diagcount {
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+}
+
+.pv-diagmsg { margin-top: 3px; }
+
+.pv-diagnodes {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.pv-diagnodes-l,
+.pv-diagmore {
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+}
+
+.pv-diagsamples {
+  margin-top: 6px;
+  border-left: 3px solid var(--pv-border);
+  padding: 2px 0 2px 10px;
+}
+
+.pv-diagsample {
+  font-family: var(--pv-font-mono);
+  font-size: var(--pv-fs-sm);
+  color: var(--pv-fg-muted);
+  overflow-wrap: anywhere;
+}

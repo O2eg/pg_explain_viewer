@@ -1,0 +1,18 @@
+Limit  (cost=10133.00..10133.05 rows=20 width=23) (actual time=67.867..67.870 rows=20 loops=1)
+  Buffers: shared hit=1334, temp read=371 written=424
+  ->  Sort  (cost=10133.00..10233.27 rows=40108 width=23) (actual time=67.865..67.867 rows=20 loops=1)
+        Sort Key: (rank() OVER (?))
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=1334, temp read=371 written=424
+        ->  WindowAgg  (cost=8263.58..9065.74 rows=40108 width=23) (actual time=40.359..63.793 rows=40000 loops=1)
+              Buffers: shared hit=1331, temp read=371 written=424
+              ->  Sort  (cost=8263.58..8363.85 rows=40108 width=15) (actual time=40.348..47.567 rows=40000 loops=1)
+                    Sort Key: status, amount DESC
+                    Sort Method: external merge  Disk: 1088kB
+                    Buffers: shared hit=1331, temp read=371 written=424
+                    ->  Seq Scan on t_orders  (cost=0.00..3825.00 rows=40108 width=15) (actual time=0.004..10.667 rows=40000 loops=1)
+                          Filter: (customer_id < 200)
+                          Rows Removed by Filter: 160000
+                          Buffers: shared hit=1325
+Planning Time: 0.241 ms
+Execution Time: 68.149 ms

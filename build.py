@@ -2,7 +2,7 @@
 """Build the self-contained single-file viewer: dist/pg-explain-viewer.html.
 
 Inlines css/pgplan-theme.css, css/pgplan.css, src/pgplan.js,
-src/pgplan-render.js and every plan from test/plans/ into viewer.html.
+src/pgplan-render.js and every plan from test/plans/ into pg-explain-viewer.html.
 No external resources remain — the result works from file:// offline.
 """
 import json
@@ -18,7 +18,7 @@ def read(p: pathlib.Path) -> str:
 
 
 def main() -> None:
-    html = read(ROOT / "viewer.html")
+    html = read(ROOT / "pg-explain-viewer.html")
 
     def inline_css(marker: str, path: str) -> None:
         nonlocal html
@@ -38,32 +38,6 @@ def main() -> None:
     inline_js("<!--PV:JS-EXPR-->", "src/pgplan-expr.js")
     inline_js("<!--PV:JS-CORE-->", "src/pgplan.js")
     inline_js("<!--PV:JS-RENDER-->", "src/pgplan-render.js")
-
-    samples = {}
-    plans_dir = ROOT / "test" / "plans"
-    for p in sorted(plans_dir.glob("plan-*.txt")):
-        text = read(p)
-        # label: file stem + first word of the plan root / format hint
-        first = text.split("\n", 2)
-        label = p.stem
-        for line in text.split("\n"):
-            s = line.strip()
-            if s.startswith("Query Text:"):
-                q = s[len("Query Text:"):].strip().strip('"')
-                label = f"{p.stem} · {q[:58]}{'…' if len(q) > 58 else ''}"
-                break
-            if s.startswith("{"):
-                label = f"{p.stem} · JSON"
-        samples[label] = text
-
-    marker = "<!--PV:SAMPLES-->"
-    tag_re = re.compile(r'<script>window\.PV_SAMPLES = \{\};</script>' + re.escape(marker))
-    payload = json.dumps(samples, ensure_ascii=False)
-    # </script> inside sample text would terminate the block early
-    payload = payload.replace("</", "<\\/")
-    html = tag_re.sub(
-        lambda m: "<script>window.PV_SAMPLES = " + payload + ";</script>", html, count=1
-    )
 
     assert "PV:" not in html, "unresolved build markers remain"
 
@@ -85,7 +59,7 @@ def main() -> None:
     DIST.mkdir(exist_ok=True)
     out = DIST / "pg-explain-viewer.html"
     out.write_text(html, encoding="utf-8")
-    print(f"built {out} ({out.stat().st_size / 1024:.0f} KB, {len(samples)} samples)")
+    print(f"built {out} ({out.stat().st_size / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":

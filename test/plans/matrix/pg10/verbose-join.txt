@@ -1,0 +1,27 @@
+Limit  (cost=7295.94..7295.99 rows=20 width=18) (actual time=40.517..40.521 rows=20 loops=1)
+  Output: o.id, o.amount, c.name
+  Buffers: shared hit=1338
+  ->  Sort  (cost=7295.94..7590.12 rows=117673 width=18) (actual time=40.515..40.518 rows=20 loops=1)
+        Output: o.id, o.amount, c.name
+        Sort Key: o.amount DESC
+        Sort Method: top-N heapsort  Memory: 28kB
+        Buffers: shared hit=1338
+        ->  Hash Join  (cost=29.50..4164.70 rows=117673 width=18) (actual time=0.225..28.283 rows=116589 loops=1)
+              Output: o.id, o.amount, c.name
+              Inner Unique: true
+              Hash Cond: (o.customer_id = c.id)
+              Buffers: shared hit=1335
+              ->  Seq Scan on viz.t_orders o  (cost=0.00..3825.00 rows=117673 width=14) (actual time=0.014..13.863 rows=116705 loops=1)
+                    Output: o.id, o.customer_id, o.amount, o.status, o.created
+                    Filter: (o.created > '2025-06-01'::date)
+                    Rows Removed by Filter: 83295
+                    Buffers: shared hit=1325
+              ->  Hash  (cost=17.00..17.00 rows=1000 width=12) (actual time=0.182..0.183 rows=1000 loops=1)
+                    Output: c.name, c.id
+                    Buckets: 1024  Batches: 1  Memory Usage: 55kB
+                    Buffers: shared hit=7
+                    ->  Seq Scan on viz.t_customers c  (cost=0.00..17.00 rows=1000 width=12) (actual time=0.005..0.078 rows=1000 loops=1)
+                          Output: c.name, c.id
+                          Buffers: shared hit=7
+Planning time: 0.497 ms
+Execution time: 40.551 ms

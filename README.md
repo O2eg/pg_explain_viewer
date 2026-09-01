@@ -21,8 +21,8 @@ recommendations. No server, no history, no network.
 | `vendor/highlight-11.11.1.min.js` | highlight.js — the same library and version the pg_diag report vendors. Optional peer for SQL highlighting (query pane, CREATE INDEX blocks): the renderer uses `window.hljs` when present, otherwise falls back to plain text. Token colors are themed via `--pv-hl-*`. |
 | `css/pgplan-theme.css` | **Theme**: every color and font as `--pv-*` custom properties on the `.pv` container. Palette, fonts and sizing follow the **pg_diag report theme** (purple/gold surfaces, system-ui + ui-monospace). Typography is a unified three-step scale reused everywhere: `--pv-fs-lg` 15.5px (headings), `--pv-fs` 14px (base), `--pv-fs-sm` 13px (secondary) — no other text sizes exist in the widget. Built-in light (default for the bare container) and dark (`data-pv-theme="dark"` on the container or any ancestor — pg_diag's default scheme) variants. A host application re-skins the widget by overriding the variables. |
 | `css/pgplan.css` | Structural styles; contains no literal colors or fonts. |
-| `viewer.html` | Dev page (links the files directly). |
-| `build.py` | Builds the self-contained `dist/pg-explain-viewer.html` (inlines CSS + JS + sample plans; works offline from `file://`). |
+| `pg-explain-viewer.html` | Dev page (links the files directly). |
+| `build.py` | Builds the self-contained `dist/pg-explain-viewer.html` (inlines CSS + JS; works offline from `file://`). |
 | `test/plans/` | Real PG18 plans harvested from the pg_stand demo stand csvlog (auto_explain: text/json/yaml, DML, parallel, CTE, InitPlan/SubPlan, partitions, external sort + temp I/O) plus `EXPLAIN`-without-ANALYZE and psql-framed fixtures. |
 | `test/*.test.js` | `node:test` suite: `npm test` (parser invariants, golden-model snapshots, advisor spot checks, format-parity for the PG matrix). `UPDATE_GOLDEN=1 npm test` regenerates the snapshots in `test/golden/`. |
 
@@ -59,12 +59,27 @@ standalone pane renders (`renderTable(el, …)` etc.) call
 `PgPlanRender.destroy(el)` when the element is retired.
 
 `render()` builds a self-contained widget: summary chips (+ advice badges)
-and internal tabs — **plan** (table), **recommendations**, **stats**,
+and internal tabs — **plan** (table), **recommendations**,
+**diagnostics** (parser/analyzer notes and warnings as cards with
+severity icons and node links; the summary chip jumps there), **stats**,
 **diagram**, **relations**, **text**, **model**, **query**. Tabs without
 data are hidden automatically. All cross-links work inside the widget:
 advice badges, column headers (jump to the hottest node), stats node
 lists, diagram nodes and relation cards navigate to the plan row with a
 pulse highlight.
+
+The diagram highlights nodes **by time**, **by buffers**, **by I/O
+time** (actual milliseconds from I/O Timings — pages in `by buffers`
+may all be cache hits), **by rows**, **by rows removed** (work thrown
+away by filters — index candidates at a glance) and **by estimate
+error** (a diverging scale: blue = the planner underestimated, red =
+overestimated, misses under 2× ignored); buttons appear only when the
+plan carries the data. Edge thickness always shows the row flow.
+
+Both canvas panes — **diagram** and **relations** — pan by dragging and
+zoom with the −/+ buttons (animated, anchored to the viewport centre);
+zooming the relations pane reflows the cards like browser zoom, and the
+join edges follow.
 
 Single panes can be embedded separately:
 
@@ -92,10 +107,12 @@ Per node (`plan.nodes[i]`, in plan-text order):
 - `advice`: recommendation entries that involve this node.
 
 CTE / InitPlan / SubPlan sections are **charged** (`chargedTo`) to the node
-that actually executes them: a CTE to its first executed `CTE Scan`,
-an Init/SubPlan to the node whose conditions reference `$N` /
-`(InitPlan N)` / `(SubPlan N)`. Exclusive metrics are subtracted there, so
-the sum of self times matches the root inclusive time.
+that actually executes them: a CTE to the `CTE Scan` whose own time can
+absorb it (tightest covering fit — a cheap tuplestore re-reader may
+precede the paying scan in document order), an Init/SubPlan to the node
+whose conditions reference `$N` / `(InitPlan N)` / `(SubPlan N)`.
+Exclusive metrics are subtracted there, so the sum of self times matches
+the root inclusive time.
 
 Plan-level: `plan.stats` (aggregates), `plan.domain` (structural model),
 `plan.advice` (all recommendations), `plan.totals`, `plan.max`,
@@ -189,7 +206,7 @@ harvest `auto_explain.sample_rate=1`, `log_min_duration=0`,
 - JSON/YAML go through the canonical-text pipeline; structured fields
   with no text representation yet (e.g. `Grouping Sets` internals) are
   reported via the `unsupported_field` diagnostic instead of being
-  dropped silently. Format-parity tests over the PostgreSQL 12…18 matrix
+  dropped silently. Format-parity tests over the PostgreSQL 10…18 matrix
   assert that TEXT/JSON/YAML of the same EXPLAIN normalize to the same
   tree, estimates and conditions.
 - Everything heuristic (parallel wall-clock attribution, CTE/SubPlan

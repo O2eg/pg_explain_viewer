@@ -11,12 +11,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT=test/plans/matrix
-VERSIONS=${VERSIONS:-"12 13 14 15 16 17 18"}
+VERSIONS=${VERSIONS:-"10 11 12 13 14 15 16 17 18"}
 
 image_for() {
   case "$1" in
-    18) echo "postgres:18" ;;
-    *)  echo "postgres:$1-bookworm" ;;
+    18)    echo "postgres:18" ;;
+    10|11) echo "postgres:$1-bullseye" ;;  # EOL majors: last builds are bullseye
+    *)     echo "postgres:$1-bookworm" ;;
   esac
 }
 
@@ -61,8 +62,10 @@ CREATE INDEX ON t_events (kind);
 CREATE TABLE t_audit (id serial, order_id int, note text);
 CREATE FUNCTION viz.audit_fn() RETURNS trigger LANGUAGE plpgsql AS
   $$ BEGIN INSERT INTO viz.t_audit(order_id, note) VALUES (NEW.id, 'upd'); RETURN NEW; END $$;
+-- EXECUTE PROCEDURE, not FUNCTION: PG10 accepts only the old spelling and
+-- every later version still accepts it
 CREATE TRIGGER trg_audit AFTER UPDATE ON t_orders
-  FOR EACH ROW EXECUTE FUNCTION viz.audit_fn();
+  FOR EACH ROW EXECUTE PROCEDURE viz.audit_fn();
 
 CREATE TABLE t_merge_tgt AS SELECT id, name, region_id FROM t_customers WHERE id <= 500;
 
@@ -101,14 +104,14 @@ SQL
 # name|minver|maxver|explain-options|settings (';'-separated, may be empty)|query
 SET_PARALLEL="SET parallel_setup_cost=0; SET parallel_tuple_cost=0; SET min_parallel_table_scan_size=0; SET max_parallel_workers_per_gather=2"
 SHAPES=(
-"basic-join|12|18|ANALYZE, BUFFERS||SELECT c.region_id, count(*), sum(o.amount) FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.status = 'paid' GROUP BY c.region_id ORDER BY 3 DESC"
-"verbose-join|12|18|ANALYZE, BUFFERS, VERBOSE||SELECT o.id, o.amount, c.name FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.created > DATE '2025-06-01' ORDER BY o.amount DESC LIMIT 20"
-"explain-only|12|18|COSTS||SELECT * FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.amount > 50 ORDER BY o.created"
-"nestloop-index|12|18|ANALYZE, BUFFERS|SET enable_hashjoin=off; SET enable_mergejoin=off|SELECT c.name, o.amount FROM viz.t_customers c JOIN viz.t_orders o ON o.customer_id = c.id WHERE c.id IN (7, 42, 99, 123, 555)"
-"parallel-workers|12|18|ANALYZE, BUFFERS|$SET_PARALLEL|SELECT status, count(*), sum(amount) FROM viz.t_orders GROUP BY status ORDER BY 3"
-"parallel-sort|12|18|ANALYZE, BUFFERS|$SET_PARALLEL; SET work_mem='256kB'|SELECT * FROM viz.t_orders ORDER BY amount DESC LIMIT 100"
+"basic-join|10|18|ANALYZE, BUFFERS||SELECT c.region_id, count(*), sum(o.amount) FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.status = 'paid' GROUP BY c.region_id ORDER BY 3 DESC"
+"verbose-join|10|18|ANALYZE, BUFFERS, VERBOSE||SELECT o.id, o.amount, c.name FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.created > DATE '2025-06-01' ORDER BY o.amount DESC LIMIT 20"
+"explain-only|10|18|COSTS||SELECT * FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.amount > 50 ORDER BY o.created"
+"nestloop-index|10|18|ANALYZE, BUFFERS|SET enable_hashjoin=off; SET enable_mergejoin=off|SELECT c.name, o.amount FROM viz.t_customers c JOIN viz.t_orders o ON o.customer_id = c.id WHERE c.id IN (7, 42, 99, 123, 555)"
+"parallel-workers|10|18|ANALYZE, BUFFERS|$SET_PARALLEL|SELECT status, count(*), sum(amount) FROM viz.t_orders GROUP BY status ORDER BY 3"
+"parallel-sort|10|18|ANALYZE, BUFFERS|$SET_PARALLEL; SET work_mem='256kB'|SELECT * FROM viz.t_orders ORDER BY amount DESC LIMIT 100"
 "partitioned|12|18|ANALYZE, BUFFERS||SELECT val, count(*) FROM viz.t_part GROUP BY val ORDER BY val LIMIT 10"
-"jit|12|18|ANALYZE, BUFFERS|SET jit=on; SET jit_above_cost=0; SET jit_inline_above_cost=0; SET jit_optimize_above_cost=0|SELECT sum(amount * 1.1) FROM viz.t_orders"
+"jit|11|18|ANALYZE, BUFFERS|SET jit=on; SET jit_above_cost=0; SET jit_inline_above_cost=0; SET jit_optimize_above_cost=0|SELECT sum(amount * 1.1) FROM viz.t_orders"
 "incremental-sort|13|18|ANALYZE, BUFFERS||SELECT * FROM viz.t_orders ORDER BY created, amount LIMIT 50"
 "memoize|14|18|ANALYZE, BUFFERS|SET enable_hashjoin=off; SET enable_mergejoin=off|SELECT c.name, o.amount FROM viz.t_orders o JOIN viz.t_customers c ON c.id = o.customer_id WHERE o.created = DATE '2025-03-01'"
 "tid-range|14|18|ANALYZE, BUFFERS||SELECT count(*) FROM viz.t_events WHERE ctid >= '(0,1)' AND ctid < '(50,1)'"
@@ -116,20 +119,21 @@ SHAPES=(
 "serialize|17|18|ANALYZE, BUFFERS, SERIALIZE||SELECT * FROM viz.t_orders WHERE customer_id < 100 ORDER BY id LIMIT 500"
 "planning-memory|17|18|ANALYZE, BUFFERS, MEMORY||SELECT count(*) FROM viz.t_orders WHERE created BETWEEN DATE '2025-02-01' AND DATE '2025-03-01'"
 "disabled-nodes|17|18|ANALYZE, BUFFERS|SET enable_seqscan=off|SELECT count(*) FROM viz.t_events WHERE payload LIKE 'x%'"
+"cte-spill|10|11|ANALYZE, BUFFERS|SET work_mem='64kB'|WITH big AS (SELECT customer_id, sum(amount) s FROM viz.t_orders GROUP BY customer_id) SELECT (SELECT count(*) FROM big WHERE s > 100), (SELECT max(s) FROM big)"
 "cte-spill|12|18|ANALYZE, BUFFERS|SET work_mem='64kB'|WITH big AS MATERIALIZED (SELECT customer_id, sum(amount) s FROM viz.t_orders GROUP BY customer_id) SELECT (SELECT count(*) FROM big WHERE s > 100), (SELECT max(s) FROM big)"
-"recursive-cte|12|18|ANALYZE, BUFFERS||WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 200) SELECT count(*) FROM r JOIN viz.t_customers c ON c.id = r.n"
-"window-spill|12|18|ANALYZE, BUFFERS|SET work_mem='64kB'|SELECT id, amount, rank() OVER (PARTITION BY status ORDER BY amount DESC) FROM viz.t_orders WHERE customer_id < 200 ORDER BY 3 LIMIT 20"
-"bitmap-heap|12|18|ANALYZE, BUFFERS|SET work_mem='64kB'; SET enable_seqscan=off|SELECT count(*) FROM viz.t_events WHERE kind = 3 OR (id BETWEEN 1000 AND 30000)"
+"recursive-cte|10|18|ANALYZE, BUFFERS||WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 200) SELECT count(*) FROM r JOIN viz.t_customers c ON c.id = r.n"
+"window-spill|10|18|ANALYZE, BUFFERS|SET work_mem='64kB'|SELECT id, amount, rank() OVER (PARTITION BY status ORDER BY amount DESC) FROM viz.t_orders WHERE customer_id < 200 ORDER BY 3 LIMIT 20"
+"bitmap-heap|10|18|ANALYZE, BUFFERS|SET work_mem='64kB'; SET enable_seqscan=off|SELECT count(*) FROM viz.t_events WHERE kind = 3 OR (id BETWEEN 1000 AND 30000)"
 "wal|13|18|ANALYZE, BUFFERS, WAL||INSERT INTO viz.t_events SELECT g, g % 7, 'wal' FROM generate_series(1, 500) g"
-"triggers|12|18|ANALYZE, BUFFERS||UPDATE viz.t_orders SET amount = amount + 0.01 WHERE customer_id = 77"
-"fdw|12|18|ANALYZE, VERBOSE||SELECT * FROM viz.f_customers WHERE region_id = 3"
-"geqo|12|18|ANALYZE, BUFFERS|SET geqo=on; SET geqo_threshold=2; SET geqo_seed=0|SELECT count(*) FROM viz.t_customers a JOIN viz.t_customers b ON b.id = a.id JOIN viz.t_customers c ON c.id = b.id JOIN viz.t_customers d ON d.id = c.id JOIN viz.t_customers e ON e.id = d.id JOIN viz.t_customers f ON f.id = e.id"
-"init-subplan|12|18|ANALYZE, BUFFERS||SELECT c.id, (SELECT count(*) FROM viz.t_orders o WHERE o.customer_id = c.id) FROM viz.t_customers c WHERE c.region_id > (SELECT avg(region_id) FROM viz.t_customers) LIMIT 50"
-"never-executed|12|18|ANALYZE, BUFFERS||SELECT * FROM (SELECT id FROM viz.t_customers UNION ALL SELECT id FROM viz.t_orders) u LIMIT 3"
-"one-time-filter|12|18|ANALYZE, BUFFERS||SELECT * FROM viz.t_customers WHERE now() > TIMESTAMP '2100-01-01'"
-"setop|12|18|ANALYZE, BUFFERS||SELECT id FROM viz.t_customers EXCEPT SELECT customer_id FROM viz.t_orders WHERE amount > 90"
-"quoted-idents|12|18|ANALYZE, BUFFERS||SELECT * FROM viz.\"we\"\"ird\\tbl\" WHERE val = 'v7'"
-"grouping-sets|12|18|ANALYZE, BUFFERS||SELECT status, customer_id % 10 AS grp, count(*) FROM viz.t_orders GROUP BY GROUPING SETS ((status), (grp), ())"
+"triggers|10|18|ANALYZE, BUFFERS||UPDATE viz.t_orders SET amount = amount + 0.01 WHERE customer_id = 77"
+"fdw|10|18|ANALYZE, VERBOSE||SELECT * FROM viz.f_customers WHERE region_id = 3"
+"geqo|10|18|ANALYZE, BUFFERS|SET geqo=on; SET geqo_threshold=2; SET geqo_seed=0|SELECT count(*) FROM viz.t_customers a JOIN viz.t_customers b ON b.id = a.id JOIN viz.t_customers c ON c.id = b.id JOIN viz.t_customers d ON d.id = c.id JOIN viz.t_customers e ON e.id = d.id JOIN viz.t_customers f ON f.id = e.id"
+"init-subplan|10|18|ANALYZE, BUFFERS||SELECT c.id, (SELECT count(*) FROM viz.t_orders o WHERE o.customer_id = c.id) FROM viz.t_customers c WHERE c.region_id > (SELECT avg(region_id) FROM viz.t_customers) LIMIT 50"
+"never-executed|10|18|ANALYZE, BUFFERS||SELECT * FROM (SELECT id FROM viz.t_customers UNION ALL SELECT id FROM viz.t_orders) u LIMIT 3"
+"one-time-filter|10|18|ANALYZE, BUFFERS||SELECT * FROM viz.t_customers WHERE now() > TIMESTAMP '2100-01-01'"
+"setop|10|18|ANALYZE, BUFFERS||SELECT id FROM viz.t_customers EXCEPT SELECT customer_id FROM viz.t_orders WHERE amount > 90"
+"quoted-idents|10|18|ANALYZE, BUFFERS||SELECT * FROM viz.\"we\"\"ird\\tbl\" WHERE val = 'v7'"
+"grouping-sets|10|18|ANALYZE, BUFFERS||SELECT status, customer_id % 10 AS grp, count(*) FROM viz.t_orders GROUP BY GROUPING SETS ((status), (grp), ())"
 )
 # heavy or format-invariant shapes: only oldest + newest version
 LIMITED_SHAPES="partitioned geqo"

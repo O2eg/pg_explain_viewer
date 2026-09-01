@@ -762,7 +762,12 @@
 
       // --- extension tail entries (Planning Time, JIT, Settings, ...) ---
       const am = RE_ATTR.exec(body);
-      const attrKey = am ? am[1] : null;
+      let attrKey = am ? am[1] : null;
+      // PG ≤ 11 spells these lowercase in TEXT format ("Execution time:");
+      // JSON/YAML always capitalize, so canonicalize for parity
+      if (attrKey === 'Planning time') attrKey = 'Planning Time';
+      else if (attrKey === 'Execution time') attrKey = 'Execution Time';
+      else if (attrKey === 'Total runtime') attrKey = 'Total Runtime';
       if (rootSeen && base >= 0 && indent <= base && attrKey && EXT_HEADS.has(attrKey)) {
         const entry = { key: attrKey, value: am[2] !== undefined ? am[2] : '', lines: [body] };
         if (/^(Planning Time|Execution Time|Total Runtime)$/.test(attrKey)) {
@@ -950,6 +955,38 @@
       }
     }
 
+    // structural tail truncation: every join prints two children and every
+    // single-input operator prints one, unconditionally (never-executed
+    // subtrees included) — a node missing them means the text below it was
+    // cut off even though the last line itself is well-formed (real archive
+    // case: a 118-node plan ending at a childless Nested Loop Semi Join)
+    if (!truncated && nodes.length) {
+      const kids = new Array(nodes.length).fill(0);
+      for (const n of nodes) {
+        if (n.parent != null) kids[n.parent]++;
+      }
+      const oneInput = new Set(['Sort', 'Incremental Sort', 'Hash',
+        'Materialize', 'Memoize', 'Aggregate', 'GroupAggregate',
+        'HashAggregate', 'MixedAggregate', 'WindowAgg', 'Unique', 'Limit',
+        'LockRows', 'Gather', 'Gather Merge', 'Subquery Scan', 'ProjectSet',
+        'Group', 'Bitmap Heap Scan']);
+      const cut = [];
+      for (const n of nodes) {
+        if (n.spec) continue;
+        const isJoin = /^Nested Loop\b/.test(n.xtype)
+          || /^(?:Merge|Hash)(?: \w+)* Join\b/.test(n.xtype);
+        if ((isJoin && kids[n.id] < 2) || (oneInput.has(n.xtype) && kids[n.id] < 1)) {
+          cut.push(n.head);
+        }
+      }
+      if (cut.length) {
+        truncated = true;
+        addDiag('truncated_input', 'warn',
+          'Plan nodes are missing their children: the plan tail is likely cut off; recommendations are disabled',
+          cut.slice(0, 3));
+      }
+    }
+
     return { nodes, ext, triggers, query, diagnostics, truncated };
   }
 
@@ -1060,6 +1097,7 @@
     };
     const chargeInferred = [];
     const chargeFallback = [];
+    const bareFallback = [];
     for (const spec of nodes) {
       if (!spec.spec) continue;
       spec.chargedTo = spec.parent; // default: syntactic parent
@@ -1067,12 +1105,23 @@
 
       if (spec.spec === 'CTE') {
         const name = unquote(spec.specName || '');
+        // All scans of this CTE outside its own subtree. The one that pays
+        // for the CTE's execution is the one whose actual time can absorb
+        // it (lazy execution happens inside the scan that demands rows
+        // first) — document order is only a tie-break, not evidence.
+        const scans = nodes.filter(n =>
+          (n.xtype === 'CTE Scan' || n.xtype === 'WorkTable Scan')
+          && n.relation === name && n.loops && !isDescendantOf(n.id, spec.id));
         let target = null;
-        for (const n of nodes) {
-          if ((n.xtype === 'CTE Scan' || n.xtype === 'WorkTable Scan')
-              && n.relation === name && n.loops && !isDescendantOf(n.id, spec.id)) {
-            target = n; break;
-          }
+        if (scans.length === 1) {
+          target = scans[0];
+        } else if (scans.length > 1) {
+          const dev = Math.max(0.002, spec.timeIncl * 0.02);
+          const covering = scans.filter(n =>
+            n.timeIncl != null && n.timeIncl >= spec.timeIncl - dev);
+          target = covering.length
+            ? covering.reduce((a, b) => (a.timeIncl <= b.timeIncl ? a : b))
+            : scans.reduce((a, b) => ((a.timeIncl || 0) >= (b.timeIncl || 0) ? a : b));
         }
         if (target) {
           spec.chargedTo = target.id;
@@ -1089,25 +1138,91 @@
       const nm = /(InitPlan|SubPlan)\s*(\d*)/.exec(specHead);
       if (nm) markers.push('(' + nm[1] + (nm[2] ? ' ' + nm[2] : '') + ')');
       for (const p of specHead.matchAll(/\$\d+/g)) markers.push(p[0]);
-      if (!markers.length) { chargeFallback.push(spec.id); continue; }
-
-      const refRe = new RegExp(markers
-        .map(m => m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .map(m => (m.startsWith('\\$') ? m + '(?![\\d])' : m))
-        .join('|'));
-      const candidates = nodes.filter(n =>
-        !n.spec && n.id !== spec.id && n.timeIncl != null && n.loops
-        && !isDescendantOf(n.id, spec.id)
-        && (refRe.test(n.lines.join('\n')) || refRe.test(n.head)));
-      if (!candidates.length) { chargeFallback.push(spec.id); continue; }
-      // tightest fit that still covers the section's time
       const dev = Math.max(0.002, spec.timeIncl * 0.02);
-      const covering = candidates.filter(n => n.timeIncl >= spec.timeIncl - dev);
-      const pick = (covering.length ? covering : candidates)
-        .reduce((a, b) => (a.timeIncl <= b.timeIncl ? a : b));
+      let pick = null;
+      if (markers.length) {
+        const refRe = new RegExp(markers
+          .map(m => m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .map(m => (m.startsWith('\\$') ? m + '(?![\\d])' : m))
+          .join('|'));
+        const candidates = nodes.filter(n =>
+          !n.spec && n.id !== spec.id && n.timeIncl != null && n.loops
+          && !isDescendantOf(n.id, spec.id)
+          && (refRe.test(n.lines.join('\n')) || refRe.test(n.head)));
+        if (candidates.length) {
+          // tightest fit that still covers the section's time
+          const covering = candidates.filter(n => n.timeIncl >= spec.timeIncl - dev);
+          pick = (covering.length ? covering : candidates)
+            .reduce((a, b) => (a.timeIncl <= b.timeIncl ? a : b));
+        }
+      }
+      if (!pick) {
+        chargeFallback.push(spec.id);
+        // headers from mangled sources lose "(returns $N)", so the marker
+        // search cannot succeed — remember these for the overload pass below
+        if (spec.timeIncl > 0.05 && !/\$\d/.test(specHead)) bareFallback.push(spec);
+        continue;
+      }
       spec.chargedTo = pick.id;
       if (pick.id !== spec.parent) chargeInferred.push(spec.id);
     }
+
+    const chargedBy = new Map(); // nodeId -> [spec nodes charged to it]
+    for (const n of nodes) {
+      if (n.spec && n.chargedTo != null && n.chargedTo !== n.parent) {
+        if (!chargedBy.has(n.chargedTo)) chargedBy.set(n.chargedTo, []);
+        chargedBy.get(n.chargedTo).push(n);
+      }
+    }
+
+    // -- overload re-attribution: a section left on its syntactic parent is
+    // usually right (a target-list SubPlan executes inside the owning node),
+    // so re-charge a bare-header section elsewhere ONLY when the parent
+    // provably cannot contain it — its children plus charged sections sum to
+    // more than its own inclusive time (real archive case: four bare
+    // InitPlans stayed on a root they did not fit into, +70% Σ self). The
+    // new target is the tightest covering main-tree node in the parent's
+    // subtree; bodies of other spec sections mirror the section's time
+    // exactly and would create a circular charge, so they are excluded.
+    if (bareFallback.length) {
+      const insideSpec = (id) => {
+        for (let p = nodes[id].parent; p != null; p = nodes[p].parent) {
+          if (nodes[p].spec) return true;
+        }
+        return false;
+      };
+      const loadOf = (n) => {
+        let sum = 0;
+        for (const c of n.children) {
+          const ch = nodes[c];
+          if (ch.spec && ch.chargedTo != null && ch.chargedTo !== n.id) continue;
+          if (ch.timeIncl != null) sum += ch.timeIncl;
+        }
+        for (const s of chargedBy.get(n.id) || []) sum += s.timeIncl || 0;
+        return sum;
+      };
+      bareFallback.sort((a, b) => b.timeIncl - a.timeIncl);
+      for (const spec of bareFallback) {
+        const parent = spec.parent != null ? nodes[spec.parent] : null;
+        if (!parent || parent.timeIncl == null) continue;
+        if (loadOf(parent) <= parent.timeIncl + Math.max(0.05, parent.timeIncl * 0.001)) continue;
+        const dev = Math.max(0.002, spec.timeIncl * 0.02);
+        const scope = nodes.filter(n =>
+          !n.spec && n.id !== spec.id && n.id !== parent.id
+          && n.timeIncl != null && n.loops
+          && !insideSpec(n.id) && isDescendantOf(n.id, parent.id)
+          && n.timeIncl >= spec.timeIncl - dev);
+        if (!scope.length) continue;
+        const pick = scope.reduce((a, b) => (a.timeIncl <= b.timeIncl ? a : b));
+        spec.chargedTo = pick.id;
+        if (!chargedBy.has(pick.id)) chargedBy.set(pick.id, []);
+        chargedBy.get(pick.id).push(spec);
+        chargeInferred.push(spec.id);
+        const fi = chargeFallback.indexOf(spec.id);
+        if (fi >= 0) chargeFallback.splice(fi, 1);
+      }
+    }
+
     if (chargeInferred.length) {
       addDiag('charge_inferred', 'info',
         'CTE/InitPlan/SubPlan time was attributed to the node that appears to execute it (heuristic)', chargeInferred);
@@ -1116,15 +1231,41 @@
       addDiag('charge_fallback', 'info',
         'The executing node of some CTE/InitPlan/SubPlan sections was not found: their time stays on the syntactic parent', chargeFallback);
     }
-
-    // -- exclusive metrics: incl - sum(charged children incl), clamped at 0
-    const chargedBy = new Map(); // nodeId -> [spec nodes charged to it]
-    for (const n of nodes) {
-      if (n.spec && n.chargedTo != null && n.chargedTo !== n.parent) {
-        if (!chargedBy.has(n.chargedTo)) chargedBy.set(n.chargedTo, []);
-        chargedBy.get(n.chargedTo).push(n);
+    // -- monotonic repair: per-loop actual times are printed with 1 µs
+    // resolution, so at millions of loops a parent can print less inclusive
+    // time than its own children accumulate beneath it (real archive case:
+    // Memoize at 21.8M loops prints "0.000" while its Index Scan child
+    // holds 5.8 s — which then double-counts into Σ self). When the deficit
+    // is explainable by that rounding, raise the parent to the children's
+    // sum bottom-up before subtracting. Deficits beyond the rounding budget
+    // are left alone — they are diagnosed as excl_overshoot / clamped.
+    const inclRaised = [];
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      if (n.spec || n.timeIncl == null || n.loops == null) continue;
+      let sum = 0, loopsBudget = n.loops;
+      for (const c of n.children) {
+        const ch = nodes[c];
+        if (ch.spec && ch.chargedTo != null && ch.chargedTo !== n.id) continue;
+        if (ch.timeIncl != null) { sum += ch.timeIncl; loopsBudget += ch.loops || 0; }
+      }
+      for (const s of chargedBy.get(n.id) || []) {
+        if (s.timeIncl != null) { sum += s.timeIncl; loopsBudget += s.loops || 0; }
+      }
+      const deficit = round3(sum - n.timeIncl);
+      if (deficit > 0.005 && deficit <= 0.0005 * loopsBudget + 0.05) {
+        n.inclRaised = deficit;
+        n.timeIncl = round3(sum);
+        inclRaised.push(n.id);
       }
     }
+    if (inclRaised.length) {
+      addDiag('metric_raised', 'info',
+        'Inclusive time of some nodes was raised to the sum of their children: '
+        + 'per-loop actual times are printed with 1 µs resolution and lose '
+        + 'precision at high loop counts', inclRaised);
+    }
+
     const clamped = [];
     for (const n of nodes) {
       let childTime = 0, hasChildTime = false;
@@ -1479,7 +1620,7 @@
     // an incomplete tree breaks the row/time relations the rules depend on
     if (plan.truncated) { plan.advice = []; return; }
     const nodes = plan.nodes;
-    const advice = [];
+    let advice = [];
     const real = n => n && !n.spec;
     const firstRealChild = n => {
       for (const c of n.children) if (real(nodes[c])) return nodes[c];
@@ -1842,12 +1983,72 @@
       };
     }
     // material findings first (by attributable time), minor section last
-    advice.sort((x, y) => {
+    const byImpact = (x, y) => {
       const mx = x.impact.level === 'minor' ? 1 : 0;
       const my = y.impact.level === 'minor' ? 1 : 0;
       if (mx !== my) return mx - my;
       return (y.impact.ms || 0) - (x.impact.ms || 0);
-    });
+    };
+    advice.sort(byImpact);
+
+    // -- family collapsing: a big plan can trigger the same rule on dozens
+    // of nodes (archive sweep: 20× ANY_SLOW, 40× ROW_RATIO in one plan).
+    // Keep the three highest-impact entries per code and roll the rest into
+    // one aggregate entry; DDL candidates from rolled-up entries survive on
+    // the aggregate, and row badges still mark every affected node.
+    {
+      advice.forEach((a, i) => { a._ord = i; });
+      const byCode = new Map();
+      for (const a of advice) {
+        if (!byCode.has(a.code)) byCode.set(a.code, []);
+        byCode.get(a.code).push(a);
+      }
+      const collapsed = [];
+      for (const group of byCode.values()) {
+        if (group.length <= 4) { collapsed.push(...group); continue; }
+        const kept = group.slice(0, 3), tail = group.slice(3);
+        collapsed.push(...kept);
+        const ms = tail.reduce((s, a) => s + (a.impact.ms || 0), 0);
+        const hasMs = tail.some(a => a.impact.ms != null);
+        const pct = hasMs && totalTime ? ms / totalTime * 100 : null;
+        let level = 'unknown';
+        if (hasMs) {
+          if ((pct != null && pct < 2) || ms < 1) level = 'minor';
+          else if (pct == null) level = 'low';
+          else if (pct >= 20) level = 'high';
+          else if (pct >= 5) level = 'medium';
+          else level = 'low';
+        }
+        const idxs = [];
+        const seenIdx = new Set();
+        for (const a of tail) {
+          for (const ix of a.idxs || []) {
+            const key = ix.def || ix.name;
+            if (seenIdx.has(key)) continue;
+            seenIdx.add(key);
+            idxs.push(ix);
+          }
+        }
+        collapsed.push({
+          _ord: tail[0]._ord,
+          code: tail[0].code, sev: tail[0].sev, agg: tail.length,
+          obs: tail.length + ' more nodes match this pattern'
+            + (hasMs ? ', combined self time ' + round3(ms) + ' ms'
+              + (pct != null ? ' (' + (Math.round(pct * 10) / 10) + '% of total)' : '') : ''),
+          hyp: null,
+          next: 'The top entries above show the same pattern in detail; '
+            + 'row badges mark every affected node in the plan table',
+          nodes: tail.reduce((s, a) => s.concat(a.nodes), []),
+          ext: [],
+          impact: { ms: hasMs ? round3(ms) : null,
+                    pct: pct != null ? Math.round(pct * 10) / 10 : null, level },
+          idxs,
+        });
+      }
+      advice = collapsed;
+      advice.sort((x, y) => byImpact(x, y) || (x._ord || 0) - (y._ord || 0));
+      advice.forEach(a => { delete a._ord; });
+    }
 
     plan.advice = advice;
   }

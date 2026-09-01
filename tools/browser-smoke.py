@@ -9,9 +9,10 @@ unsafe DDL).
 Needs playwright + Chrome. Point PWLIB at a pip --target directory holding
 playwright if it is not importable, e.g.:
     python -m pip install --target="$PWLIB" playwright
-    PWLIB=... python3 tools/browser-smoke.py [path/to/viewer.html]
+    PWLIB=... python3 tools/browser-smoke.py [path/to/pg-explain-viewer.html]
 """
 import os
+import pathlib
 import sys
 
 if os.environ.get("PWLIB"):
@@ -47,10 +48,11 @@ with sync_playwright() as p:
     page.on("dialog", lambda d: (failures.append("dialog opened: " + d.message), d.dismiss()))
     page.goto("file://" + VIEWER)
 
-    # ---- sweep: all samples x tabs x both themes ----
-    n = page.eval_on_selector("#sample", "el => el.options.length")
-    for i in range(1, n):
-        page.select_option("#sample", index=i)
+    # ---- sweep: every repo sample plan x tabs x both themes ----
+    plans = sorted(pathlib.Path(ROOT, "test", "plans").glob("plan-*.txt"))
+    for pf in plans:
+        page.fill("#src", pf.read_text())
+        page.click("#go")
         page.wait_for_selector(".pv-summary", timeout=5000)
         for t in page.query_selector_all(".pv-tab"):
             t.click()
@@ -58,7 +60,7 @@ with sync_playwright() as p:
         for t in page.query_selector_all(".pv-tab"):
             t.click()
         page.click("#theme")
-    check("sample sweep (%d samples, both themes)" % (n - 1), True)
+    check("plan sweep (%d plans, both themes)" % len(plans), True)
 
     # ---- hostile input: nothing executes, payloads render as text ----
     page.fill("#src", HOSTILE)

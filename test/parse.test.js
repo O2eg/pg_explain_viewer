@@ -219,6 +219,37 @@ test('plan starting mid-tree (arrow root) is flagged truncated', () => {
   assert.ok(p.diagnostics.some(d => d.code === 'truncated_input'));
 });
 
+test('well-formed tail with missing children is flagged truncated', () => {
+  // real-archive pattern: the stored plan ends at a join whose children were
+  // cut off, with the last line itself syntactically complete — balanced
+  // parens and a clean root, so only the tree shape gives the cut away
+  const p = PgPlan.parse(`Sort  (cost=10.00..10.10 rows=10 width=8) (actual time=99.00..100.00 rows=10.00 loops=1)
+  Sort Key: t.a
+  ->  Nested Loop Semi Join  (cost=0.00..9.00 rows=10 width=8) (actual time=1.00..99.00 rows=10.00 loops=1)
+        Join Filter: (t.a = q.a)`);
+  assert.equal(p.truncated, true);
+  const d = p.diagnostics.find(x => x.code === 'truncated_input');
+  assert.ok(d && /missing their children/.test(d.message), JSON.stringify(p.diagnostics));
+  assert.deepEqual(p.advice, []);
+  // never-executed joins keep their children in real output — not truncated
+  const ok = PgPlan.parse(`Nested Loop  (cost=0.00..9.00 rows=10 width=8) (never executed)
+  ->  Seq Scan on t  (cost=0.00..4.00 rows=10 width=8) (never executed)
+  ->  Seq Scan on q  (cost=0.00..4.00 rows=1 width=8) (never executed)`, { tolerant: true });
+  assert.equal(ok.truncated, false);
+});
+
+test('PG10/11 lowercase tail spellings are canonicalized', () => {
+  // before PG 12 the TEXT format prints "Planning time:" / "Execution time:"
+  // (and 9.x printed "Total runtime:") while JSON/YAML always capitalize
+  const p = PgPlan.parse(`Seq Scan on t  (cost=0.00..1.00 rows=1 width=4) (actual time=0.01..0.02 rows=1 loops=1)
+Planning time: 0.517 ms
+Execution time: 16.833 ms`);
+  assert.equal(p.planningTime, 0.517);
+  assert.equal(p.executionTime, 16.833);
+  const keys = p.ext.map(e => e.key);
+  assert.ok(keys.includes('Planning Time') && keys.includes('Execution Time'), keys);
+});
+
 test('dropped lines outside any node are diagnosed', () => {
   const p = PgPlan.parse('Seq Scan on t  (cost=0.00..1.00 rows=1 width=4)'
     + ' (actual time=0.01..0.02 rows=1 loops=1)\n'
@@ -395,6 +426,54 @@ Execution Time: 100.4 ms`);
   // and the join above is NOT double-discounted
   const join = p.nodes[0];
   assert.ok(join.timeExcl > 80, 'join self time wrongly reduced: ' + join.timeExcl);
+});
+
+test('CTE with several scans is charged to the scan that absorbs its time', () => {
+  // real-archive pattern (233-node plan, 684 s): two CTE Scans read the same
+  // CTE; the document-first one is a cheap tuplestore re-reader, the later
+  // one paid for the CTE's execution (huge startup time). Charging the CTE
+  // to the first scan clamped that scan to zero and double-counted the whole
+  // CTE subtree in Σ self (sumExcl reached 2× the root).
+  const p = PgPlan.parse(`Nested Loop  (cost=1.00..20.00 rows=1 width=8) (actual time=95.00..100.00 rows=1.00 loops=1)
+  CTE heavy
+    ->  Seq Scan on big  (cost=0.00..10.00 rows=1000 width=8) (actual time=0.50..90.00 rows=1000.00 loops=1)
+  ->  CTE Scan on heavy  (cost=0.00..0.04 rows=2 width=8) (actual time=0.01..0.05 rows=1.00 loops=1)
+  ->  CTE Scan on heavy heavy_1  (cost=0.00..0.04 rows=2 width=8) (actual time=91.00..95.00 rows=1.00 loops=1)
+Execution Time: 100.4 ms`);
+  const cte = p.nodes.find(n => n.spec === 'CTE');
+  const cheap = p.nodes.find(n => n.xtype === 'CTE Scan' && !/heavy_1/.test(n.rawHead));
+  const payer = p.nodes.find(n => n.xtype === 'CTE Scan' && /heavy_1/.test(n.rawHead));
+  assert.ok(cte && cheap && payer);
+  assert.equal(cte.chargedTo, payer.id, 'CTE must be charged to the covering scan');
+  assert.ok(Math.abs(payer.timeExcl - 5) < 0.02, 'payer self = incl - CTE: ' + payer.timeExcl);
+  assert.ok(Math.abs(cheap.timeExcl - 0.05) < 0.02, 'cheap re-reader keeps its own time: ' + cheap.timeExcl);
+  const sumExcl = p.nodes.filter(n => !n.spec).reduce((s, n) => s + n.timeExcl, 0);
+  assert.ok(Math.abs(sumExcl - 100) < 0.1, 'Σ self must converge to root: ' + sumExcl);
+});
+
+test('bare InitPlan header (no "returns $N") is charged by time fit', () => {
+  // mangled sources drop "(returns $N)" from spec headers, so the $-marker
+  // search finds nothing and the section used to stay on the root — double
+  // counting its time (real archive case: four bare InitPlans, +70% Σ self).
+  // The fallback picks the tightest covering main-tree node; the body of the
+  // CTE the InitPlan reads mirrors its time exactly and must NOT be picked.
+  const p = PgPlan.parse(`Result  (cost=10.00..10.10 rows=20 width=8) (actual time=0.00..10.00 rows=20.00 loops=1)
+  CTE data
+    ->  Seq Scan on src  (cost=0.00..5.00 rows=100 width=8) (actual time=0.10..6.00 rows=100.00 loops=1)
+  InitPlan 2
+    ->  Aggregate  (cost=6.00..6.01 rows=1 width=8) (actual time=6.50..6.50 rows=1.00 loops=1)
+          ->  CTE Scan on data  (cost=0.00..5.00 rows=100 width=8) (actual time=0.10..6.20 rows=100.00 loops=1)
+  ->  Seq Scan on big  (cost=0.00..8.00 rows=20 width=8) (actual time=6.60..9.90 rows=20.00 loops=1)
+        Filter: (v > $0)`);
+  const init = p.nodes.find(n => n.spec && /^InitPlan/.test(n.type));
+  const big = p.nodes.find(n => n.relation === 'big');
+  const cteBody = p.nodes.find(n => n.relation === 'src');
+  assert.ok(init && big && cteBody);
+  assert.equal(init.chargedTo, big.id, 'InitPlan must be charged to the covering main-tree node');
+  assert.ok(Math.abs(big.timeExcl - 3.4) < 0.02, 'executor self = incl - InitPlan: ' + big.timeExcl);
+  assert.ok(Math.abs(cteBody.timeExcl - 6.0) < 0.02);
+  const sumExcl = p.nodes.filter(n => !n.spec).reduce((s, n) => s + n.timeExcl, 0);
+  assert.ok(Math.abs(sumExcl - 10) < 0.05, 'Σ self must converge to root: ' + sumExcl);
 });
 
 test('parallel attribution overshoot is diagnosed, not silent', () => {

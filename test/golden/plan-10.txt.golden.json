@@ -31,12 +31,12 @@
   },
   "bufReadBytes": 0,
   "bufHitBytes": 0,
-  "time": 0.671,
+  "time": 0.698,
   "rows": 1
  },
  "max": {
   "timeExcl": 0.5,
-  "timeIncl": 0.671,
+  "timeIncl": 0.698,
   "rows": 500,
   "rowsRemoved": 0,
   "loops": 500,
@@ -62,12 +62,13 @@
    ]
   },
   {
-   "code": "metric_clamped",
+   "code": "metric_raised",
    "severity": "info",
-   "message": "Negative exclusive time was clamped to zero (attribution/rounding artifact)",
-   "count": 1,
+   "message": "Inclusive time of some nodes was raised to the sum of their children: per-loop actual times are printed with 1 µs resolution and lose precision at high loop counts",
+   "count": 2,
    "nodes": [
-    5
+    5,
+    0
    ]
   }
  ],
@@ -95,7 +96,7 @@
    "ids": [
     7
    ],
-   "timePct": 69.06077348066299
+   "timePct": 71.63323782234957
   },
   {
    "type": "Recursive Union",
@@ -112,7 +113,7 @@
    "ids": [
     2
    ],
-   "timePct": 19.33701657458564
+   "timePct": 20.057306590257884
   },
   {
    "type": "CTE Scan",
@@ -129,24 +130,7 @@
    "ids": [
     6
    ],
-   "timePct": 7.872928176795581
-  },
-  {
-   "type": "Aggregate",
-   "xtype": "Aggregate",
-   "relation": null,
-   "index": null,
-   "time": 0.026,
-   "ioRead": 0,
-   "ioWrite": 0,
-   "rows": 1,
-   "rowsRemoved": 0,
-   "loops": 1,
-   "buf": {},
-   "ids": [
-    0
-   ],
-   "timePct": 3.591160220994475
+   "timePct": 8.166189111747851
   },
   {
    "type": "Result",
@@ -163,7 +147,7 @@
    "ids": [
     3
    ],
-   "timePct": 0.13812154696132597
+   "timePct": 0.14326647564469916
   },
   {
    "type": "WorkTable Scan",
@@ -196,6 +180,23 @@
    "buf": {},
    "ids": [
     5
+   ],
+   "timePct": 0
+  },
+  {
+   "type": "Aggregate",
+   "xtype": "Aggregate",
+   "relation": null,
+   "index": null,
+   "time": 0,
+   "ioRead": 0,
+   "ioWrite": 0,
+   "rows": 1,
+   "rowsRemoved": 0,
+   "loops": 1,
+   "buf": {},
+   "ids": [
+    0
    ],
    "timePct": 0
   }
@@ -326,8 +327,8 @@
    "workersLaunched": null,
    "heapFetches": null,
    "sortMethod": null,
-   "timeIncl": 0.671,
-   "timeExcl": 0.026,
+   "timeIncl": 0.698,
+   "timeExcl": 0,
    "prlTime": null,
    "gatherWorkers": null,
    "rowsTotal": 1,
@@ -338,6 +339,7 @@
    "ratio": null,
    "ratioDir": 0,
    "rawHead": "Aggregate  (cost=31.27..31.28 rows=1 width=8) (actual time=0.670..0.671 rows=1.00 loops=1)",
+   "inclRaised": 0.027,
    "costExcl": 0.09
   },
   {
@@ -600,7 +602,7 @@
    "workersLaunched": null,
    "heapFetches": null,
    "sortMethod": null,
-   "timeIncl": 0.645,
+   "timeIncl": 0.698,
    "timeExcl": 0,
    "prlTime": null,
    "gatherWorkers": null,
@@ -612,7 +614,7 @@
    "ratio": 15.451612903225806,
    "ratioDir": 1,
    "rawHead": "Nested Loop  (cost=0.28..28.55 rows=31 width=0) (actual time=0.042..0.645 rows=479.00 loops=1)",
-   "exclClamped": 0.053,
+   "inclRaised": 0.053,
    "costExcl": 27.03
   },
   {

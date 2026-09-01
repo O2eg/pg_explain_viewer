@@ -1,0 +1,5 @@
+Result  (cost=0.01..17.01 rows=1000 width=16) (actual time=0.001..0.001 rows=0 loops=1)
+  One-Time Filter: (now() > '2100-01-01 00:00:00'::timestamp without time zone)
+  ->  Seq Scan on t_customers  (cost=0.01..17.01 rows=1000 width=16) (never executed)
+Planning Time: 0.144 ms
+Execution Time: 0.040 ms

@@ -1,0 +1,19 @@
+Result  (cost=11562.02..11562.03 rows=1 width=40) (actual time=76.094..76.096 rows=1 loops=1)
+  Buffers: shared hit=200011 read=538
+  CTE big
+    ->  GroupAggregate  (cost=0.42..11516.17 rows=1000 width=36) (actual time=0.984..75.555 rows=1000 loops=1)
+          Group Key: t_orders.customer_id
+          Buffers: shared hit=200011 read=538
+          ->  Index Scan using t_orders_customer_id_idx on t_orders  (cost=0.42..10503.67 rows=200000 width=10) (actual time=0.010..53.512 rows=200000 loops=1)
+                Buffers: shared hit=200011 read=538
+  InitPlan 2 (returns $1)
+    ->  Aggregate  (cost=23.33..23.34 rows=1 width=8) (actual time=75.964..75.964 rows=1 loops=1)
+          Buffers: shared hit=200011 read=538
+          ->  CTE Scan on big  (cost=0.00..22.50 rows=333 width=0) (actual time=0.987..75.884 rows=1000 loops=1)
+                Filter: (s > '100'::numeric)
+                Buffers: shared hit=200011 read=538
+  InitPlan 3 (returns $2)
+    ->  Aggregate  (cost=22.50..22.51 rows=1 width=32) (actual time=0.128..0.128 rows=1 loops=1)
+          ->  CTE Scan on big big_1  (cost=0.00..20.00 rows=1000 width=32) (actual time=0.000..0.041 rows=1000 loops=1)
+Planning time: 0.286 ms
+Execution time: 76.153 ms

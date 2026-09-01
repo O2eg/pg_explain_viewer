@@ -39,7 +39,7 @@ PWLIB="$PWD/.pwlib" python3 -m playwright install chromium
 PWLIB="$PWD/.pwlib" PW_CHANNEL= python3 tools/browser-smoke.py
 ```
 
-Regenerating the PostgreSQL 12…18 format matrix (needs Docker):
+Regenerating the PostgreSQL 10…18 format matrix (needs Docker):
 
 ```bash
 tools/gen-fixtures.sh                       # all versions, all shapes

@@ -1,0 +1,83 @@
+- Plan: 
+    Node Type: "ModifyTable"
+    Operation: "Update"
+    Parallel Aware: false
+    Relation Name: "t_orders"
+    Alias: "t_orders"
+    Startup Cost: 5.96
+    Total Cost: 544.62
+    Plan Rows: 199
+    Plan Width: 39
+    Actual Startup Time: 3.008
+    Actual Total Time: 3.009
+    Actual Rows: 0
+    Actual Loops: 1
+    Shared Hit Blocks: 3103
+    Shared Read Blocks: 3
+    Shared Dirtied Blocks: 3
+    Shared Written Blocks: 0
+    Local Hit Blocks: 0
+    Local Read Blocks: 0
+    Local Dirtied Blocks: 0
+    Local Written Blocks: 0
+    Temp Read Blocks: 0
+    Temp Written Blocks: 0
+    Plans: 
+      - Node Type: "Bitmap Heap Scan"
+        Parent Relationship: "Member"
+        Parallel Aware: false
+        Relation Name: "t_orders"
+        Alias: "t_orders"
+        Startup Cost: 5.96
+        Total Cost: 544.62
+        Plan Rows: 199
+        Plan Width: 39
+        Actual Startup Time: 0.064
+        Actual Total Time: 1.526
+        Actual Rows: 200
+        Actual Loops: 1
+        Recheck Cond: "(customer_id = 77)"
+        Rows Removed by Index Recheck: 0
+        Exact Heap Blocks: 204
+        Lossy Heap Blocks: 0
+        Shared Hit Blocks: 208
+        Shared Read Blocks: 0
+        Shared Dirtied Blocks: 0
+        Shared Written Blocks: 0
+        Local Hit Blocks: 0
+        Local Read Blocks: 0
+        Local Dirtied Blocks: 0
+        Local Written Blocks: 0
+        Temp Read Blocks: 0
+        Temp Written Blocks: 0
+        Plans: 
+          - Node Type: "Bitmap Index Scan"
+            Parent Relationship: "Outer"
+            Parallel Aware: false
+            Index Name: "t_orders_customer_id_idx"
+            Startup Cost: 0.00
+            Total Cost: 5.91
+            Plan Rows: 199
+            Plan Width: 0
+            Actual Startup Time: 0.040
+            Actual Total Time: 0.040
+            Actual Rows: 600
+            Actual Loops: 1
+            Index Cond: "(customer_id = 77)"
+            Shared Hit Blocks: 4
+            Shared Read Blocks: 0
+            Shared Dirtied Blocks: 0
+            Shared Written Blocks: 0
+            Local Hit Blocks: 0
+            Local Read Blocks: 0
+            Local Dirtied Blocks: 0
+            Local Written Blocks: 0
+            Temp Read Blocks: 0
+            Temp Written Blocks: 0
+  Planning Time: 0.238
+  Triggers: 
+    - Trigger Name: "trg_audit"
+      Relation: "t_orders"
+      Time: 1.520
+      Calls: 200
+  Execution Time: 4.585
