@@ -9,8 +9,12 @@
   line-height: 1.45;
 }
 
-/* interactive controls are real <button>s; :where() keeps specificity at
-   zero so the per-control classes below still win */
+/* Interactive controls are real <button>s; :where() keeps specificity at
+   zero so the per-control classes below still win. It also reaches markup a
+   host hands over through `opts.inputPane` (the `.pv-pane-host` pane) — a
+   host style with one class in the selector outranks it. Excluding that
+   subtree here would need a complex `:not()`, which Safari 14/15 rejects,
+   taking the whole rule with it. */
 .pv :where(button) {
   font: inherit;
   color: inherit;

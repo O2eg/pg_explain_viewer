@@ -4,6 +4,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versioning is
 semver-ish (0.x — public preview line). History before git starts here
 was tracked manually.
 
+## [0.5.3] — 2026-09-01
+
+### Fixed
+
+- Host controls handed to the widget through `opts.inputPane` lost their
+  own look: the widget's zero-specificity control reset
+  (`.pv :where(button)`, specificity 0-1-0) outranks a bare `button`
+  selector (0-0-1), so once the viewer's form moved into the first tab,
+  **Visualize** and **Clear** dropped their padding, border and
+  background. The pane now carries `.pv-pane-host` as a styling hook, the
+  reset documents that it reaches host markup, and the page qualifies its
+  own controls with a class. Excluding the pane in CSS would need a
+  complex `:not()`, which Safari 14/15 — inside the documented browser
+  floor — rejects, dropping the whole rule with it.
+
 ## [0.5.2] — 2026-09-01
 
 ### Changed

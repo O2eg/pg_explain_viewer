@@ -15,7 +15,11 @@
  *     opts.expanded   : start with all plan nodes expanded
  *     opts.summary    : show the summary chip row (default true)
  *     opts.inputPane  : element to show as a first "Input data" tab; the
- *                       widget moves it into the pane and never disposes it
+ *                       widget moves it into the pane and never disposes it.
+ *                       The pane carries `.pv-pane-host`; note that the
+ *                       widget's zero-specificity control reset
+ *                       (`.pv :where(button)`) still applies inside it, so
+ *                       host styles need at least one class in the selector
  *
  * Low-level API (render a single pane into your own layout):
  *   PgPlanRender.renderTable(container, plan, ctx, opts)
@@ -1906,7 +1910,13 @@
       pane.hidden = true;
       pane.setAttribute('role', 'tabpanel');
       pane.setAttribute('aria-labelledby', uid + '-tab-' + p.name);
-      if (p.name === 'input') pane.appendChild(opts.inputPane);
+      if (p.name === 'input') {
+        // the widget resets its own controls with `.pv :where(button)`, which
+        // still reaches host markup living in a pane; the class is the hook a
+        // host styles against
+        pane.classList.add('pv-pane-host');
+        pane.appendChild(opts.inputPane);
+      }
       paneEls.set(p.name, pane);
     }
 

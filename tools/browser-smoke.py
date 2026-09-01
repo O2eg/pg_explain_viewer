@@ -200,6 +200,17 @@ Execution Time: 100.4 ms"""
           layout["active"] != "Input data", layout)
     check("the host element really moved into the pane", layout["inputInPane"], layout)
 
+    # the widget resets bare <button>s; host controls must survive the move
+    controls = page.evaluate("""() => {
+      const pick = id => { const s = getComputedStyle(document.getElementById(id));
+        return [s.backgroundColor, s.border, s.padding, s.fontSize].join('|'); };
+      return { go: pick('go'), clear: pick('clear') };
+    }""")
+    check("host buttons keep their own styling inside the widget pane",
+          "0px none" not in controls["go"] and "0px none" not in controls["clear"]
+          and controls["clear"].split("|")[2] != "0px",
+          controls)
+
     check("tablist role present", page.query_selector(".pv-tabbar[role=tablist]") is not None)
     check("tabs are buttons with role=tab and aria-selected",
           page.evaluate("""() => [...document.querySelectorAll('.pv-tab')]

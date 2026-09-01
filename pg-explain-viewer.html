@@ -82,23 +82,32 @@
     stroke: currentColor; fill: none; stroke-width: 1.8;
     stroke-linecap: round; stroke-linejoin: round;
   }
-  select, button {
+  /* .vw-wrap qualifies every control: the input form is moved into the
+     widget's first tab after the first render, and the widget resets bare
+     buttons there (`.pv :where(button)`) — one class in the selector is
+     enough to keep these looking like themselves wherever they end up */
+  .vw-wrap select, .vw-wrap button {
     font: inherit;
     color: var(--vw-fg);
     background: var(--vw-button-bg);
     border: 1px solid var(--vw-border);
     border-radius: 10px;
     padding: 6px 13px;
+    line-height: normal;
+    margin: 0;
   }
-  button { cursor: pointer; }
-  button:hover, select:hover { background: var(--vw-button-hover); border-color: var(--vw-border-strong); }
-  button.primary {
+  .vw-wrap button { cursor: pointer; }
+  .vw-wrap button:hover, .vw-wrap select:hover {
+    background: var(--vw-button-hover);
+    border-color: var(--vw-border-strong);
+  }
+  .vw-wrap button.primary {
     background: var(--vw-accent);
     color: var(--vw-accent-contrast);
     border-color: var(--vw-accent);
     font-weight: 600;
   }
-  button.primary:hover { filter: brightness(1.06); }
+  .vw-wrap button.primary:hover { filter: brightness(1.06); }
   .vw-input { margin-top: 14px; }
   .vw-input textarea {
     width: 100%;
@@ -199,7 +208,7 @@
     <div>
       <h1 class="vw-title">pg-explain-viewer<small>PostgreSQL query plan visualizer</small></h1>
       <div class="vw-ident">
-        <span>version <span id="version">0.5.2</span></span>
+        <span>version <span id="version">0.5.3</span></span>
         <a class="vw-link" href="https://github.com/O2eg/pg_explain_viewer" target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 3.5h6.5a1 1 0 0 1 1 1V13"></path>
